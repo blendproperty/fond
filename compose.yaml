@@ -1,0 +1,27 @@
+services:
+  fond:
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+    expose:
+      - '3000'
+    networks:
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=${TRAEFIK_NETWORK:?Set existing Traefik network}'
+      - 'traefik.http.routers.fond.rule=Host(`${FOND_HOST:?Set approved FOND hostname}`)'
+      - 'traefik.http.routers.fond.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}'
+      - 'traefik.http.routers.fond.tls=true'
+      - 'traefik.http.routers.fond.tls.certresolver=${TRAEFIK_CERTRESOLVER:?Set existing TLS resolver}'
+      - 'traefik.http.services.fond.loadbalancer.server.port=3000'
+networks:
+  proxy:
+    external: true
+    name: '${TRAEFIK_NETWORK:?Set existing Traefik network}'
