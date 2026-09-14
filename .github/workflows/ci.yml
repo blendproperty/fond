@@ -17,4 +17,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          FOND_STAFF_CODE: ci-test-code
+          FOND_DB_PATH: ':memory:'
       - run: docker build -t fond:ci .
