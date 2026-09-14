@@ -18,6 +18,11 @@ export async function POST(request: Request) {
       lines: body.lines,
       collectionTime: body.collectionTime,
       source: 'customer',
+      fulfillment: body.fulfillment === 'delivery' ? 'delivery' : 'collection',
+      contactNumber: typeof body.contactNumber === 'string' ? body.contactNumber : null,
+      company: typeof body.company === 'string' ? body.company : null,
+      building: typeof body.building === 'string' ? body.building : null,
+      whatsappOptIn: !!body.whatsappOptIn,
     });
     return NextResponse.json(
       {
