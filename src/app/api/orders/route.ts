@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createOrder, getOrderByReference } from '@/lib/orders';
+import { SubmissionConflictError, createOrder, getOrderByReference } from '@/lib/orders';
 
 // Real order intake for the customer PWA. Yoco has been dropped entirely
 // (2026-09-14 decision) - this endpoint now genuinely accepts orders into
@@ -12,7 +12,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Missing basket, name or collection time.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
   try {
+    const submissionKey = request.headers.get('Idempotency-Key');
+    if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
     const order = createOrder({
+      submissionKey,
       customerName: body.customerName,
       note: typeof body.note === 'string' ? body.note : null,
       lines: body.lines,
@@ -34,7 +37,7 @@ export async function POST(request: Request) {
       { status: 201, headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    return NextResponse.json({ code: 'INVALID_ORDER', message: error instanceof Error ? error.message : 'Could not place that order.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ code: 'INVALID_ORDER', message: error instanceof Error ? error.message : 'Could not place that order.' }, { status: error instanceof SubmissionConflictError ? 409 : 400, headers: { 'Cache-Control': 'no-store' } });
   }
 }
 

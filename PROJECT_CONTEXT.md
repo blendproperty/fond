@@ -1,5 +1,18 @@
 # FOND ordering PWA
 
+
+## 2026-09-14 - reliable order lifecycle review branch (current checkpoint)
+
+This checkpoint supersedes obsolete preview/Yoco descriptions below. Baseline verified against GitHub origin/main a57649e. Current model is guest PWA ordering into FOND's own staff tablet, manual POS capture if needed, payment in person, and no Yoco integration. Admin currently provides menu/specials and order history, not a complete CRM. Individual staff accounts are not implemented.
+
+Implementation: feature/reliable-order-lifecycle adds atomic persistent idempotency for customer/manual orders, browser retry keys and double-submit guards, full-entropy references with a unique index for new references, purchased line snapshots, transactional status audit events, stale-status rejection and server-confirmed tablet updates with visible errors. Staff-only history API records shared-staff-tablet honestly. Health now checks DB access and reports ordering mode. Deployment workflow waits for successful main verification and checks the exact triggering SHA. README reconciled with actual application.
+
+Testing: 26 unit tests passed; Next production build/TypeScript passed; all 10 Playwright desktop/mobile tests passed, including API duplicate/conflict checks, anonymous access rejection, staff/admin separation and lifecycle history. Initial API test failed because Secure cookies are not automatically sent by the HTTP test client; the corrected local test explicitly forwards the server-issued cookie. Docker image fond:reliability built successfully (manifest list sha256:11562fabc0257bbc46ae4a89e82e4f558b8bec430da6cd861d002f9007ca06bf). No Docker runtime or restart/restore test is claimed for this checkpoint.
+
+Commit/push: this checkpoint is included in the feature branch commit; remote presence is verified after push in the task handoff. Merge: not merged. Deployment/configuration: no production changes; workflow execution and migration against a production backup remain unverified. Live production verification: read-only site, hero image and health returned HTTP 200 during the initial review; the live health still reported obsolete preview mode. No live order or message was sent.
+
+Open gates: review/merge and CI evidence; database backup/restore and controlled staff UAT before promotion; named staff roles and access controls; capacity/hours/availability policies; durable notification outbox/retries and provider delivery verification; delivery/payment business rules; customer history/auth design; real-device installation. Historical orders keep old short references and cannot retroactively gain purchased item snapshots or earlier audit events. New retry keys protect unchanged submissions; changed payloads are new requests. Audit history currently has an authenticated API only, no history UI. No complete CRM, automated POS or printer integration is claimed.
+
 ## Canonical repository and scope
 
 Repository: https://github.com/blendproperty/fond. Initial remote was empty on 2026-09-11; fresh checkout created in `fond-app` under the Menu Comparison workspace. This file is canonical for the ordering application. The existing menu-voting Sites project is separate and unchanged. No `.openai/hosting.json` exists here; the user explicitly requested Next.js, Docker, Traefik and Hostinger VPS.

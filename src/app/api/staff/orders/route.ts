@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
-import { createOrder, listActiveOrders } from '@/lib/orders';
+import { SubmissionConflictError, createOrder, listActiveOrders } from '@/lib/orders';
 
 async function requireStaff() {
   const store = await cookies();
@@ -27,7 +27,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Missing basket, name or collection time.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
   try {
+    const submissionKey = request.headers.get('Idempotency-Key');
+    if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
     const order = createOrder({
+      submissionKey,
       customerName: body.customerName,
       note: typeof body.note === 'string' ? body.note : null,
       lines: body.lines,
@@ -36,6 +39,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ order }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    return NextResponse.json({ code: 'INVALID_ORDER', message: error instanceof Error ? error.message : 'Could not place that order.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ code: 'INVALID_ORDER', message: error instanceof Error ? error.message : 'Could not place that order.' }, { status: error instanceof SubmissionConflictError ? 409 : 400, headers: { 'Cache-Control': 'no-store' } });
   }
 }
