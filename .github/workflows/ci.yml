@@ -19,5 +19,6 @@ jobs:
       - run: npm run test:e2e
         env:
           FOND_STAFF_CODE: ci-test-code
+          FOND_ADMIN_CODE: ci-admin-code
           FOND_DB_PATH: ':memory:'
       - run: docker build -t fond:ci .

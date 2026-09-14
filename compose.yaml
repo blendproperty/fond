@@ -3,8 +3,11 @@ services:
     build: .
     restart: unless-stopped
     init: true
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
+      FOND_DB_PATH: /app/data/fond.sqlite
     volumes:
       - fond-data:/app/data
     expose:

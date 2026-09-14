@@ -41,9 +41,47 @@ export function getDb(): DatabaseSync {
       status TEXT NOT NULL,
       source TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      fulfillment TEXT NOT NULL DEFAULT 'collection',
+      contact_number TEXT,
+      company TEXT,
+      building TEXT,
+      whatsapp_opt_in INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS menu_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      price_cents INTEGER NOT NULL,
+      diet_json TEXT NOT NULL DEFAULT '[]',
+      symbol TEXT NOT NULL DEFAULT '🍽️',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      available INTEGER NOT NULL DEFAULT 1,
+      is_special INTEGER NOT NULL DEFAULT 0,
+      special_label TEXT,
+      special_price_cents INTEGER,
       updated_at TEXT NOT NULL
     );
   `);
+  // Additive migration for databases created before the delivery/WhatsApp
+  // fields existed (2026-09-14 later addition) - CREATE TABLE IF NOT EXISTS
+  // above only helps brand-new databases, so existing SQLite files on the
+  // VPS need these columns added explicitly. Safe to run on every startup:
+  // each ALTER is skipped once the column already exists.
+  const existingColumns = new Set(
+    (db.prepare(`PRAGMA table_info(orders)`).all() as { name: string }[]).map((c) => c.name),
+  );
+  const migrations: [string, string][] = [
+    ['fulfillment', `ALTER TABLE orders ADD COLUMN fulfillment TEXT NOT NULL DEFAULT 'collection'`],
+    ['contact_number', `ALTER TABLE orders ADD COLUMN contact_number TEXT`],
+    ['company', `ALTER TABLE orders ADD COLUMN company TEXT`],
+    ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
+    ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
+  ];
+  for (const [column, sql] of migrations) {
+    if (!existingColumns.has(column)) db.exec(sql);
+  }
   instance = db;
   return db;
 }
