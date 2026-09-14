@@ -1,0 +1,55 @@
+import { test, before, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+
+process.env.FOND_DB_PATH = ':memory:';
+let resetDbForTests: () => void;
+let createOrder: typeof import('../src/lib/orders').createOrder;
+let getOrderByReference: typeof import('../src/lib/orders').getOrderByReference;
+let listActiveOrders: typeof import('../src/lib/orders').listActiveOrders;
+let updateOrderStatus: typeof import('../src/lib/orders').updateOrderStatus;
+let OrderTransitionError: typeof import('../src/lib/orders').OrderTransitionError;
+
+before(async () => {
+  ({ resetDbForTests } = await import('../src/lib/db'));
+  ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, OrderTransitionError } = await import('../src/lib/orders'));
+});
+
+beforeEach(() => resetDbForTests());
+
+const lines = [{ id: 'espresso-single', quantity: 2 }];
+
+test('customer orders start at received; staff orders start at accepted', () => {
+  const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  assert.equal(customer.status, 'received');
+  assert.match(customer.reference, /^FOND-/);
+  const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff' });
+  assert.equal(staff.status, 'accepted');
+});
+
+test('rejects missing name, collection time or an empty/invalid basket', () => {
+  assert.throws(() => createOrder({ customerName: '', lines, collectionTime: 'ASAP', source: 'customer' }));
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: '', source: 'customer' }));
+  assert.throws(() => createOrder({ customerName: 'Jane', lines: [], collectionTime: 'ASAP', source: 'customer' }));
+  assert.throws(() => createOrder({ customerName: 'Jane', lines: [{ id: 'missing', quantity: 1 }], collectionTime: 'ASAP', source: 'customer' }));
+});
+
+test('an order can be looked up by reference and only active orders are listed', () => {
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  assert.equal(getOrderByReference(order.reference)?.id, order.id);
+  assert.equal(getOrderByReference('FOND-NOPE'), null);
+  assert.equal(listActiveOrders().length, 1);
+  updateOrderStatus(order.id, 'accepted');
+  updateOrderStatus(order.id, 'ready');
+  updateOrderStatus(order.id, 'completed');
+  assert.equal(listActiveOrders().length, 0);
+});
+
+test('valid transitions succeed and invalid ones are rejected', () => {
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  assert.equal(updateOrderStatus(order.id, 'accepted').status, 'accepted');
+  assert.throws(() => updateOrderStatus(order.id, 'completed'), OrderTransitionError);
+  updateOrderStatus(order.id, 'ready');
+  updateOrderStatus(order.id, 'completed');
+  assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);
+  assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
+});
