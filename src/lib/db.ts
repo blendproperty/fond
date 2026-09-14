@@ -17,6 +17,7 @@ export function getDb(): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA busy_timeout = 5000');
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -82,6 +83,12 @@ export function getDb(): DatabaseSync {
   for (const [column, sql] of migrations) {
     if (!existingColumns.has(column)) db.exec(sql);
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS order_submissions (submission_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, order_id TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS order_events (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, from_status TEXT, to_status TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS order_events_order ON order_events(order_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS orders_new_reference_unique ON orders(reference) WHERE length(reference) > 11;
+  `);
   instance = db;
   return db;
 }

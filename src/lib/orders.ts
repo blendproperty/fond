@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
 import { getAvailableMenu } from './menu-store';
@@ -19,7 +19,7 @@ export type OrderRecord = {
   reference: string;
   customerName: string;
   note: string | null;
-  lines: CartLine[];
+  lines: (CartLine & { name?: string; unitPriceCents?: number; subtotalCents?: number })[];
   collectionTime: string;
   totalCents: number;
   status: OrderStatus;
@@ -82,7 +82,10 @@ function fromRow(row: OrderRow): OrderRecord {
   };
 }
 
+export class SubmissionConflictError extends Error {}
+
 export function createOrder(input: {
+  submissionKey?: string;
   customerName: string;
   note?: string | null;
   lines: CartLine[];
@@ -94,6 +97,26 @@ export function createOrder(input: {
   building?: string | null;
   whatsappOptIn?: boolean;
 }): OrderRecord {
+  const db = getDb();
+  const key = input.submissionKey;
+  if (key !== undefined && !/^[0-9a-f-]{36}$/i.test(key)) throw new Error('Provide a valid submission key.');
+  const fingerprint = createHash('sha256').update(JSON.stringify({
+    name: input.customerName, note: input.note ?? null, lines: input.lines,
+    time: input.collectionTime, source: input.source, fulfillment: input.fulfillment ?? 'collection',
+    phone: input.contactNumber ?? null, company: input.company ?? null, building: input.building ?? null,
+    optIn: input.whatsappOptIn ?? false,
+  })).digest('hex');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+  if (key) {
+    const prior = db.prepare('SELECT * FROM order_submissions WHERE submission_key = ?').get(key) as {fingerprint: string; order_id: string} | undefined;
+    if (prior) {
+      if (prior.fingerprint !== fingerprint) throw new SubmissionConflictError('This submission key was already used for a different order.');
+      const existing = fromRow(db.prepare('SELECT * FROM orders WHERE id = ?').get(prior.order_id) as OrderRow);
+      db.exec('COMMIT');
+      return existing;
+    }
+  }
   const customerName = input.customerName.trim();
   if (!customerName || customerName.length > 100) throw new Error('Enter a name for this order.');
   const collectionTime = input.collectionTime.trim();
@@ -120,10 +143,10 @@ export function createOrder(input: {
   const status: OrderStatus = input.source === 'staff' ? 'accepted' : 'received';
   const record: OrderRecord = {
     id: randomUUID(),
-    reference: `FOND-${randomUUID().slice(0, 6).toUpperCase()}`,
+    reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
     customerName,
     note,
-    lines: input.lines,
+    lines: priced.map(line => ({id: line.id, quantity: line.quantity, name: line.name, unitPriceCents: line.price, subtotalCents: line.subtotal})),
     collectionTime,
     totalCents,
     status,
@@ -159,7 +182,11 @@ export function createOrder(input: {
       record.building,
       record.whatsappOptIn ? 1 : 0,
     );
+  if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
+  db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), record.id, null, status, input.source === 'staff' ? 'shared-staff-tablet' : 'customer', now);
+  db.exec('COMMIT');
   return record;
+  } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
 
 export function getOrderByReference(reference: string): OrderRecord | null {
@@ -200,15 +227,25 @@ export function searchOrders(filters: { status?: OrderStatus; fulfillment?: Fulf
 
 export class OrderTransitionError extends Error {}
 
-export function updateOrderStatus(id: string, nextStatus: OrderStatus): OrderRecord {
+export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedStatus?: OrderStatus): OrderRecord {
   const db = getDb();
+  db.exec('BEGIN IMMEDIATE');
+  try {
   const row = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id) as OrderRow | undefined;
   if (!row) throw new OrderTransitionError('Order not found.');
   const current = fromRow(row);
+  if (expectedStatus && current.status !== expectedStatus) throw new OrderTransitionError('Order changed on another device. Refresh and try again.');
   if (!VALID_TRANSITIONS[current.status].includes(nextStatus)) {
     throw new OrderTransitionError(`Cannot move an order from ${current.status} to ${nextStatus}.`);
   }
   const updatedAt = new Date().toISOString();
   db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
+  db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, 'shared-staff-tablet', updatedAt);
+  db.exec('COMMIT');
   return { ...current, status: nextStatus, updatedAt };
+  } catch (error) { db.exec('ROLLBACK'); throw error; }
+}
+
+export function getOrderEvents(id: string) {
+  return getDb().prepare('SELECT from_status, to_status, actor, created_at FROM order_events WHERE order_id = ? ORDER BY rowid').all(id);
 }

@@ -22,7 +22,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ code: 'INVALID_STATUS', message: 'Provide a valid status.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
   try {
-    const order = updateOrderStatus(id, body.status as OrderStatus);
+    const order = updateOrderStatus(id, body.status as OrderStatus, body.expectedStatus as OrderStatus | undefined);
     // Best-effort WhatsApp notification — never blocks or fails the status
     // update itself; see src/lib/whatsapp.ts for what's still needed before
     // this actually sends anything (a Meta WhatsApp Business API key).
