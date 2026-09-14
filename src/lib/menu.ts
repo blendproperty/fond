@@ -1,8 +1,11 @@
 // FOND Midrand menu — transcribed from FOND Midrand_Main Menu_V4.pdf and
 // FOND Midrand_Tapas Menu_V3.pdf (uploaded 2026-09-14). Prices are Rand,
-// stored here in integer cents. This is the real menu, not a placeholder —
-// keep it in sync by hand until/unless a Yoco catalogue sync is revisited
-// (see PROJECT_CONTEXT.md; that integration is currently not planned).
+// stored here in integer cents. As of 2026-09-14 (later) this array is only
+// the SEED data: the live, editable menu lives in the menu_items SQLite
+// table (see src/lib/menu-store.ts) and is seeded from SEED_MENU below the
+// first time the database is empty. Admins edit prices/availability/specials
+// through /admin from then on - this file is not read again at runtime by
+// the app itself, only by the one-time seed and by tests.
 export type Category =
   | 'All-Day Breakfast'
   | 'The Grill'
@@ -26,12 +29,16 @@ export type Meal = {
   name: string;
   description: string;
   category: Category;
-  price: number; // cents
+  price: number; // cents — the effective/current price (special price when one is active)
   diet?: Diet[];
   symbol: string;
+  available?: boolean;
+  isSpecial?: boolean;
+  specialLabel?: string | null;
+  basePrice?: number; // present when isSpecial and different from price
 };
 
-export const menu: Meal[] = [
+export const SEED_MENU: Meal[] = [
   // ---- All-Day Breakfast ----
   { id: 'smashed-avo', name: 'Smashed Avo', description: 'Smashed avo on sourdough with carrot crisps, pickled red onion, Parmesan, smoked feta whip and salsa verde. Vegan option: swap cheeses for smoky hummus (+0).', category: 'All-Day Breakfast', price: 12000, diet: ['vegetarian'], symbol: '🥑' },
   { id: 'brekkie-bun', name: 'Brekkie Bun', description: 'Toasted brioche bun with crispy bacon, a fried egg topped with chilli crisp, fresh tomato, lettuce and American mayonnaise. Vegan option: tofu scramble and grilled aubergine (+12).', category: 'All-Day Breakfast', price: 9500, symbol: '🥪' },
@@ -229,11 +236,16 @@ export const money = (cents: number) => new Intl.NumberFormat('en-ZA', { style: 
 
 export type CartLine = { id: string; quantity: number };
 
-export function quoteCart(lines: CartLine[]) {
+// Pricing is always quoted against a caller-supplied menu, never trusted
+// from the client (2026-09-14 admin/CRM addition: the live menu now lives
+// in SQLite and prices can change at any time, so the server must always
+// look prices up fresh rather than trusting anything in the request body).
+// Defaults to SEED_MENU only for tests/tools that don't have a live DB.
+export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
   if (!Array.isArray(lines) || !lines.length || lines.length > 40) throw new Error('Choose at least one item.');
   const seen = new Set<string>();
   return lines.map((line) => {
-    const meal = menu.find((m) => m.id === line.id);
+    const meal = sourceMenu.find((m) => m.id === line.id && m.available !== false);
     if (!meal || seen.has(line.id) || !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 20) {
       throw new Error('Your basket has an invalid item or quantity.');
     }

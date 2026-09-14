@@ -8,10 +8,11 @@ let getOrderByReference: typeof import('../src/lib/orders').getOrderByReference;
 let listActiveOrders: typeof import('../src/lib/orders').listActiveOrders;
 let updateOrderStatus: typeof import('../src/lib/orders').updateOrderStatus;
 let OrderTransitionError: typeof import('../src/lib/orders').OrderTransitionError;
+let searchOrders: typeof import('../src/lib/orders').searchOrders;
 
 before(async () => {
   ({ resetDbForTests } = await import('../src/lib/db'));
-  ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, OrderTransitionError } = await import('../src/lib/orders'));
+  ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, OrderTransitionError, searchOrders } = await import('../src/lib/orders'));
 });
 
 beforeEach(() => resetDbForTests());
@@ -52,4 +53,38 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   updateOrderStatus(order.id, 'completed');
   assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);
   assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
+});
+
+test('defaults to collection, and delivery requires a contact number and building', () => {
+  const collection = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  assert.equal(collection.fulfillment, 'collection');
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery' }));
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', contactNumber: '0821234567' }));
+  const delivery = createOrder({
+    customerName: 'Jane',
+    lines,
+    collectionTime: 'ASAP',
+    source: 'customer',
+    fulfillment: 'delivery',
+    contactNumber: '0821234567',
+    company: 'Blend Property',
+    building: 'OnPoint 2nd floor',
+    whatsappOptIn: true,
+  });
+  assert.equal(delivery.fulfillment, 'delivery');
+  assert.equal(delivery.building, 'OnPoint 2nd floor');
+  assert.equal(delivery.whatsappOptIn, true);
+});
+
+test('whatsapp opt-in is ignored without a contact number', () => {
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', whatsappOptIn: true });
+  assert.equal(order.whatsappOptIn, false);
+});
+
+test('orders can be searched by status, fulfillment and free text', () => {
+  createOrder({ customerName: 'Alice', lines, collectionTime: 'ASAP', source: 'customer' });
+  createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', contactNumber: '0821234567', building: 'OnPoint' });
+  assert.equal(searchOrders({ fulfillment: 'delivery' }).length, 1);
+  assert.equal(searchOrders({ query: 'Alice' }).length, 1);
+  assert.equal(searchOrders({}).length, 2);
 });
