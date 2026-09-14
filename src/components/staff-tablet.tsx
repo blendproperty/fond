@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Check, ChefHat, Clock3, Lock, LogOut, Plus, Minus, X, ShoppingBag } from 'lucide-react';
-import { categories, menu, money, quoteCart, type CartLine, type Category } from '@/lib/menu';
+import { Check, ChefHat, Clock3, Lock, LogOut, Plus, Minus, Truck, X, ShoppingBag } from 'lucide-react';
+import { categories, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
 
 type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
 type StaffOrder = {
@@ -15,6 +15,10 @@ type StaffOrder = {
   status: OrderStatus;
   source: 'customer' | 'staff';
   createdAt: string;
+  fulfillment: 'collection' | 'delivery';
+  contactNumber: string | null;
+  company: string | null;
+  building: string | null;
 };
 
 const NEXT_STEP: Partial<Record<OrderStatus, { label: string; next: OrderStatus }>> = {
@@ -36,7 +40,12 @@ export function StaffTablet() {
   const [code, setCode] = useState('');
   const [loginError, setLoginError] = useState('');
   const [orders, setOrders] = useState<StaffOrder[]>([]);
+  const [menu, setMenu] = useState<Meal[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
+  }, []);
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/staff/orders', { cache: 'no-store' });
@@ -129,7 +138,11 @@ export function StaffTablet() {
                       <strong>{order.customerName}</strong>
                       <span className="staff-ref">{order.reference}</span>
                     </div>
-                    <p className="staff-meta"><Clock3 size={14} /> {order.collectionTime} · {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</p>
+                    {order.fulfillment === 'delivery' ? (
+                      <p className="staff-meta staff-delivery"><Truck size={14} /> Deliver to {order.building}{order.company ? ` · ${order.company}` : ''} · {order.contactNumber} · {timeAgo(order.createdAt)}</p>
+                    ) : (
+                      <p className="staff-meta"><Clock3 size={14} /> {order.collectionTime} · {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</p>
+                    )}
                     <ul className="staff-lines">
                       {order.lines.map((line) => {
                         const item = menu.find((m) => m.id === line.id);
@@ -150,12 +163,12 @@ export function StaffTablet() {
           </section>
         ))}
       </div>
-      {manualOpen && <ManualOrderPanel onClose={() => setManualOpen(false)} onCreated={refresh} />}
+      {manualOpen && <ManualOrderPanel menu={menu} onClose={() => setManualOpen(false)} onCreated={refresh} />}
     </div>
   );
 }
 
-function ManualOrderPanel({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose: () => void; onCreated: () => void }) {
   const [category, setCategory] = useState<Category>(categories[0]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -164,7 +177,7 @@ function ManualOrderPanel({ onClose, onCreated }: { onClose: () => void; onCreat
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const total = useMemo(() => cart.reduce((n, l) => n + (menu.find((m) => m.id === l.id)?.price ?? 0) * l.quantity, 0), [cart]);
+  const total = useMemo(() => cart.reduce((n, l) => n + (menu.find((m) => m.id === l.id)?.price ?? 0) * l.quantity, 0), [cart, menu]);
 
   function change(id: string, delta: number) {
     setCart((current) => {
@@ -177,7 +190,7 @@ function ManualOrderPanel({ onClose, onCreated }: { onClose: () => void; onCreat
   async function submit() {
     setError('');
     try {
-      quoteCart(cart);
+      quoteCart(cart, menu);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Add at least one item.');
       return;

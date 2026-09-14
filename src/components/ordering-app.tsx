@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Utensils, X, Download, Search } from 'lucide-react';
-import { menu, money, quoteCart, categories, type CartLine, type Category } from '@/lib/menu';
+import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
+import { money, quoteCart, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
-type Confirmation = { reference: string; total: number; collection: string };
+type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
 type TrackedOrder = { reference: string; status: string; totalCents: number; collectionTime: string };
+type Fulfillment = 'collection' | 'delivery';
 
 const STATUS_LABEL: Record<string, string> = {
   received: 'Received — waiting for FOND to accept',
@@ -16,11 +17,17 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function OrderingApp() {
+  const [menu, setMenu] = useState<Meal[]>([]);
   const [category, setCategory] = useState<Category>(categories[0]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [panel, setPanel] = useState<'basket' | 'track' | null>(null);
+  const [fulfillment, setFulfillment] = useState<Fulfillment>('collection');
   const [collection, setCollection] = useState('As soon as possible');
   const [customerName, setCustomerName] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [company, setCompany] = useState('');
+  const [building, setBuilding] = useState('');
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [note, setNote] = useState('');
   const [placedReferences, setPlacedReferences] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -31,6 +38,10 @@ export function OrderingApp() {
   const [trackInput, setTrackInput] = useState('');
   const [tracked, setTracked] = useState<TrackedOrder | null>(null);
   const [trackError, setTrackError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -73,8 +84,12 @@ export function OrderingApp() {
     setError('');
     try {
       if (offline) throw new Error('Reconnect before continuing.');
-      quoteCart(cart);
+      quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
+      if (fulfillment === 'delivery') {
+        if (!contactNumber.trim()) throw new Error('Enter a contact number so the runner can reach you.');
+        if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Please check your basket.');
       return;
@@ -84,11 +99,21 @@ export function OrderingApp() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lines: cart, collectionTime: collection, customerName, note }),
+        body: JSON.stringify({
+          lines: cart,
+          collectionTime: collection,
+          customerName,
+          note,
+          fulfillment,
+          contactNumber: contactNumber || null,
+          company: company || null,
+          building: building || null,
+          whatsappOptIn,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
-      setConfirmation({ reference: data.reference, total: data.totalCents, collection });
+      setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment });
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
       setNote('');
@@ -115,7 +140,7 @@ export function OrderingApp() {
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><div className="tabs scroll" role="tablist" aria-label="Menu category">{categories.map((c) => <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div></div>
-        <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{m.diet && <span className="meal-tag">{m.diet.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p><div className="meal-bottom"><strong>{money(m.price)}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1)}><Plus size={18} /> Add{cart.find((l) => l.id === m.id) ? ` (${cart.find((l) => l.id === m.id)!.quantity})` : ''}</button></div></div></article>)}</div>
+        <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p><div className="meal-bottom"><strong>{money(m.price)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1)}><Plus size={18} /> Add{cart.find((l) => l.id === m.id) ? ` (${cart.find((l) => l.id === m.id)!.quantity})` : ''}</button></div></div></article>)}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
       <section className="install"><div><h3>A little FOND on your phone.</h3><p>Add this to your home screen for easy access.</p></div>{install ? <button className="outline" onClick={async () => { await install.prompt(); await install.userChoice; setInstall(null); }}><Download size={17} /> Install FOND</button> : <p className="install-help">In your browser menu, choose &ldquo;Add to Home Screen&rdquo;<br />or &ldquo;Install app&rdquo;, if available.</p>}</section>
     </main>
@@ -131,10 +156,21 @@ export function OrderingApp() {
           {trackError && <p role="alert">{trackError}</p>}
           {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)}</p></div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Please pay at the counter on collection — this app doesn&rsquo;t take payment. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p><button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Please pay at the counter on collection — this app doesn&rsquo;t take payment. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p><button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {cart.map((l) => { const m = menu.find((m) => m.id === l.id)!; return <div className="cart-line" key={l.id}><span className="cart-art" aria-hidden="true">{m.symbol}</span><div><h3>{m.name}</h3><p>{money(m.price)}</p><div className="quantity"><button aria-label={`Remove one ${m.name}`} onClick={() => change(m.id, -1)}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${m.name}`} onClick={() => change(m.id, 1)}><Plus size={14} /></button></div></div><strong>{money(m.price * l.quantity)}</strong></div>; })}
+          <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
+            <button role="tab" aria-selected={fulfillment === 'collection'} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
+            <button role="tab" aria-selected={fulfillment === 'delivery'} onClick={() => setFulfillment('delivery')}><Truck size={16} /> Delivery</button>
+          </div>
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
-          <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}><option>As soon as possible</option><option>Breakfast collection</option><option>Lunch collection</option><option>After-work collection</option></select></label>
+          {fulfillment === 'collection' ? (
+            <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}><option>As soon as possible</option><option>Breakfast collection</option><option>Lunch collection</option><option>After-work collection</option></select></label>
+          ) : <>
+            <label className="field">Contact number<input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For the delivery runner to reach you" inputMode="tel" /></label>
+            <label className="field">Company (optional)<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Blend Property" /></label>
+            <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
+            <label className="field-check"><input type="checkbox" checked={whatsappOptIn} onChange={(e) => setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()} /> WhatsApp me when my order is accepted and ready</label>
+          </>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
           {error && <p role="alert">{error}</p>}
