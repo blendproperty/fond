@@ -25,5 +25,4 @@ jobs:
             docker compose up -d --build
             sleep 5
             docker compose ps
-            curl -sf http://127.0.0.1:3000/api/health --unix-socket /dev/null 2>/dev/null || true
             docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health
