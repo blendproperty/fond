@@ -11,25 +11,40 @@ import { listOrderRequests, recordOrderRequest } from '@/lib/order-requests';
 // only living in client memory, so real demand isn't lost - but the
 // response is unchanged and still fails closed.
 export async function POST(request: Request) {
+  // The fail-closed 503 below is unconditional - anonymous or signed in,
+  // valid basket or not, nothing is ever accepted as a real order here.
+  // Sign-in only controls the *bonus* behaviour: durably recording the
+  // request so it isn't lost. An anonymous or malformed request still gets
+  // the plain original contract (no basket validation attempted, nothing
+  // stored) so this stays backward compatible with a client that never
+  // signs in - see tests/... and e2e/ordering.spec.ts.
   const store = await cookies();
   const user = resolveSession(store.get(SESSION_COOKIE)?.value);
-  if (!user) {
-    return NextResponse.json({ code: 'AUTH_REQUIRED', message: 'Sign in to preview an order.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
-  }
 
-  const body = await request.json().catch(() => null);
-  if (!body || !Array.isArray(body.lines) || typeof body.collectionTime !== 'string') {
-    return NextResponse.json({ code: 'INVALID_INPUT', message: 'A basket and collection time are required.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
-  }
-
-  try {
-    recordOrderRequest(user.id, body.lines, body.collectionTime);
-  } catch (error) {
-    return NextResponse.json({ code: 'INVALID_BASKET', message: error instanceof Error ? error.message : 'Invalid basket.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+  let saved = false;
+  if (user) {
+    const body = await request.json().catch(() => null);
+    if (body && Array.isArray(body.lines) && typeof body.collectionTime === 'string') {
+      try {
+        recordOrderRequest(user.id, body.lines, body.collectionTime);
+        saved = true;
+      } catch {
+        // Invalid basket from a signed-in user: fall through to the same
+        // fail-closed response everyone else gets. This endpoint's only
+        // job is to never claim a real order happened, not to validate
+        // baskets - src/lib/menu.ts's quoteCart already does that
+        // client-side for the demo preview.
+      }
+    }
   }
 
   return NextResponse.json(
-    { code: 'ORDERING_NOT_ENABLED', message: 'Live ordering is not enabled. No payment or kitchen order has been created. Your request has been saved.' },
+    {
+      code: 'ORDERING_NOT_ENABLED',
+      message: saved
+        ? 'Live ordering is not enabled. No payment or kitchen order has been created. Your request has been saved.'
+        : 'Live ordering is not enabled. No payment or kitchen order has been created.',
+    },
     { status: 503, headers: { 'Cache-Control': 'no-store' } },
   );
 }
