@@ -1,6 +1,15 @@
 # FOND ordering PWA
 
 
+
+## 2026-09-14 - production promotion verified
+
+Implementation: reliability changes remain those in commit 2e447d9. Merge: PR #5 merged to main as a6cbefc2cbb1ff001abbb21e62481989e6128bfa before this deployment follow-up. Testing: GitHub Verify FOND run 34851759231 succeeded on the merge revision. Deployment/configuration: Deploy FOND run 34851926106 succeeded (39 seconds); no additional configuration changes made in this follow-up. Evidence: https://github.com/blendproperty/fond/actions/runs/34851759231 and https://github.com/blendproperty/fond/actions/runs/34851926106.
+
+Live verification: HTTPS home, /staff, /admin, /api/menu and /api/health returned 200. Health returned status=ok, mode=ordering, liveOrdering=true, payments=in-person; unauthenticated /api/staff/orders returned 401. Browser rendered the FOND home and menu navigation. These are read-only smoke checks, not a live completed order, notification, backup/restore or real-device UAT. All operational gates in the preceding checkpoint remain open except merge, CI and deployment, now verified above.
+
+Commit/push: this documentation-only evidence update is committed to main with CI skipped to avoid a redundant application deployment; remote PROJECT_CONTEXT.md presence checked after push. Production application revision remains a6cbefc.
+
 ## 2026-09-14 - reliable order lifecycle review branch (current checkpoint)
 
 This checkpoint supersedes obsolete preview/Yoco descriptions below. Baseline verified against GitHub origin/main a57649e. Current model is guest PWA ordering into FOND's own staff tablet, manual POS capture if needed, payment in person, and no Yoco integration. Admin currently provides menu/specials and order history, not a complete CRM. Individual staff accounts are not implemented.
