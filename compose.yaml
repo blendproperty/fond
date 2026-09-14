@@ -5,6 +5,8 @@ services:
     init: true
     environment:
       NODE_ENV: production
+    volumes:
+      - fond-data:/app/data
     expose:
       - '3000'
     networks:
@@ -25,3 +27,5 @@ networks:
   proxy:
     external: true
     name: '${TRAEFIK_NETWORK:?Set existing Traefik network}'
+volumes:
+  fond-data:

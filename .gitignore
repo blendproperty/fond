@@ -6,3 +6,4 @@ playwright-report/
 test-results/
 graphify-out/
 *.tsbuildinfo
+/data/
