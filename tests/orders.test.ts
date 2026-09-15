@@ -10,9 +10,10 @@ let updateOrderStatus: typeof import('../src/lib/orders').updateOrderStatus;
 let recordPosEntry: typeof import('../src/lib/orders').recordPosEntry;
 let OrderTransitionError: typeof import('../src/lib/orders').OrderTransitionError;
 let searchOrders: typeof import('../src/lib/orders').searchOrders;
+let getDb: typeof import('../src/lib/db').getDb;
 
 before(async () => {
-  ({ resetDbForTests } = await import('../src/lib/db'));
+  ({ resetDbForTests, getDb } = await import('../src/lib/db'));
   ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, recordPosEntry, OrderTransitionError, searchOrders } = await import('../src/lib/orders'));
 });
 
@@ -58,6 +59,23 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   updateOrderStatus(order.id, 'completed');
   assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);
   assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
+});
+
+test('staff can track Yoco entry, preparation and fulfilment without losing the active order', () => {
+  const order = createOrder({customerName:'Jane',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  updateOrderStatus(order.id,'accepted');
+  recordPosEntry(order.id,'YOCO-TEST','fixture');
+  assert.equal(updateOrderStatus(order.id,'preparing').status,'preparing');
+  assert.equal(listActiveOrders()[0].status,'preparing');
+  assert.equal(updateOrderStatus(order.id,'ready').status,'ready');
+  assert.equal(updateOrderStatus(order.id,'completed').status,'completed');
+});
+
+test('pending Yoco checkout cannot be accepted before signed payment is recorded', () => {
+  const order=createOrder({customerName:'Jane',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  getDb().prepare("INSERT INTO yoco_checkouts (order_id,checkout_id,redirect_url,status,updated_at) VALUES (?,NULL,NULL,'pending',?)").run(order.id,new Date().toISOString());
+  assert.throws(()=>updateOrderStatus(order.id,'accepted'),/Await signed Yoco payment confirmation/);
+  assert.equal(getOrderByReference(order.reference)?.status,'received');
 });
 
 test('defaults to collection, and delivery requires a contact number and building', () => {

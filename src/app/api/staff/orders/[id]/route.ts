@@ -6,7 +6,7 @@ import { OrderTransitionError, updateOrderStatus, type OrderStatus } from '@/lib
 import { deliverOrderEmail } from '@/lib/email';
 
 
-const VALID_STATUSES: OrderStatus[] = ['received', 'accepted', 'ready', 'completed', 'cancelled'];
+const VALID_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const store = await cookies();
   if (!isValidStaffToken(store.get(STAFF_COOKIE)?.value)) {

@@ -14,7 +14,7 @@ import { getAvailableMenu } from './menu-store';
 // trail, with an optional expectedStatus guard against a stale tablet
 // racing another device's update.
 
-export type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
 
@@ -45,10 +45,11 @@ export type OrderRecord = {
   posReference: string | null;
 };
 
-const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'ready'];
+const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready'];
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   received: ['accepted', 'cancelled'],
-  accepted: ['ready', 'cancelled'],
+  accepted: ['preparing', 'ready', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
   ready: ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
@@ -330,7 +331,12 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
     if (!VALID_TRANSITIONS[current.status].includes(nextStatus)) {
       throw new OrderTransitionError(`Cannot move an order from ${current.status} to ${nextStatus}.`);
     }
-    if (nextStatus === 'ready' && current.posRequired && !current.posRecordedAt) throw new OrderTransitionError('Record the Yoco order entry before marking this order ready.');
+    if (['preparing', 'ready'].includes(nextStatus) && current.posRequired && !current.posRecordedAt) throw new OrderTransitionError('Record the Yoco order entry before preparing this order.');
+    if (nextStatus === 'accepted' && current.status === 'received') {
+      const checkout = db.prepare('SELECT status FROM yoco_checkouts WHERE order_id = ?').get(id) as {status:string}|undefined;
+      const paid = db.prepare("SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ? AND method = 'yoco'").get(id) as {n:number};
+      if (checkout && ['creating','pending'].includes(checkout.status) && paid.n < current.totalCents) throw new OrderTransitionError('Await signed Yoco payment confirmation before accepting this order.');
+    }
     const updatedAt = new Date().toISOString();
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, actor, updatedAt);

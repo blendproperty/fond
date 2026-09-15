@@ -12,7 +12,8 @@ export function onlinePaymentsConfigured(){
 }
 export function paymentStatus(orderId:string){
   const paid=(getDb().prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id=?').get(orderId) as {n:number}).n;
-  return {paidCents:paid,checkout:getDb().prepare('SELECT status FROM yoco_checkouts WHERE order_id=?').get(orderId)?.status??null};
+  const checkout=getDb().prepare('SELECT status,updated_at FROM yoco_checkouts WHERE order_id=?').get(orderId) as {status:string;updated_at:string}|undefined;
+  return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
 export async function createCheckout(reference:string){
   if(!settings().onlinePaymentsEnabled||!onlinePaymentsConfigured())throw new Error('Online payment is not available. Please pay at FOND.');

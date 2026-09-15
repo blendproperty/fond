@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Check, ChefHat, Clock3, Lock, LogOut, Plus, Minus, Truck, X, ShoppingBag } from 'lucide-react';
+import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
+import { QUEUE_LANES, queueLane, laneTiming } from '@/lib/staff-queue';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
-type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
+type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 type StaffOrder = {
-  payment?: {paidCents:number;checkout:string|null};
+  payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
   id: string;
   reference: string;
   customerName: string;
@@ -18,6 +19,7 @@ type StaffOrder = {
   status: OrderStatus;
   source: 'customer' | 'staff';
   createdAt: string;
+  updatedAt: string;
   fulfillment: 'collection' | 'delivery';
   contactNumber: string | null;
   company: string | null;
@@ -25,12 +27,6 @@ type StaffOrder = {
   posRequired: boolean;
   posRecordedAt: string | null;
   posReference: string | null;
-};
-
-const NEXT_STEP: Partial<Record<OrderStatus, { label: string; next: OrderStatus }>> = {
-  received: { label: 'Accept', next: 'accepted' },
-  accepted: { label: 'Mark ready', next: 'ready' },
-  ready: { label: 'Complete', next: 'completed' },
 };
 
 function timeAgo(iso: string): string {
@@ -53,12 +49,37 @@ export function StaffTablet() {
   const [queueError, setQueueError] = useState('');
   const seenOrders = useRef<Set<string> | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioRef = useRef<AudioContext | null>(null);
+  const queueRef = useRef<HTMLDivElement>(null);
+  const [now, setNow] = useState(Date.now());
+  const [preparationMinutes, setPreparationMinutes] = useState(20);
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
+    fetch('/api/store').then(r=>r.json()).then(data=>setPreparationMinutes(Math.max(1,Number(data.settings?.preparationMinutes)||20))).catch(()=>{});
+    const timer=setInterval(()=>setNow(Date.now()),1000);
+    return ()=>clearInterval(timer);
   }, []);
+
+  function playOrderSound() {
+    const context=audioRef.current;
+    if (!context || context.state!=='running') return;
+    [0,0.22].forEach((offset,index)=>{
+      const oscillator=context.createOscillator(),gain=context.createGain(),start=context.currentTime+offset;
+      oscillator.type='sine';oscillator.frequency.value=index?660:880;
+      gain.gain.setValueAtTime(0.0001,start);gain.gain.exponentialRampToValueAtTime(0.09,start+0.025);gain.gain.exponentialRampToValueAtTime(0.0001,start+0.18);
+      oscillator.connect(gain).connect(context.destination);oscillator.start(start);oscillator.stop(start+0.19);
+    });
+  }
+
+  async function toggleSound() {
+    if (soundEnabled) {setSoundEnabled(false);await audioRef.current?.close();audioRef.current=null;return;}
+    try {audioRef.current=new AudioContext();await audioRef.current.resume();setSoundEnabled(true);playOrderSound();}
+    catch {setQueueError('This browser could not enable order sounds.');}
+  }
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/staff/orders', { cache: 'no-store' });
@@ -71,12 +92,14 @@ export function StaffTablet() {
     setLocked(false);
     const data = await res.json();
     const current: StaffOrder[] = data.orders ?? [];
-    if (seenOrders.current && notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      current.filter(o => o.status === 'received' && !seenOrders.current!.has(o.id)).forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.reference}` }));
+    const incoming=seenOrders.current ? current.filter(o=>o.status==='received'&&!seenOrders.current!.has(o.id)) : [];
+    if (incoming.length && soundEnabled) playOrderSound();
+    if (incoming.length && notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      incoming.forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.reference}` }));
     }
     seenOrders.current = new Set(current.map(o => o.id));
     setOrders(current);
-  }, [notificationsEnabled]);
+  }, [notificationsEnabled,soundEnabled]);
 
   async function enableNotifications() {
     if (typeof Notification === 'undefined') { setQueueError('This device does not support browser notifications.'); return; }
@@ -130,12 +153,6 @@ export function StaffTablet() {
     setLocked(true);
   }
 
-  const columns: { title: string; status: OrderStatus }[] = [
-    { title: 'New', status: 'received' },
-    { title: 'Preparing', status: 'accepted' },
-    { title: 'Ready for collection', status: 'ready' },
-  ];
-
   if (checking) return null;
 
   if (locked) {
@@ -167,25 +184,29 @@ export function StaffTablet() {
         </div>
         <div className="staff-header-actions">
           <button className="quiet" onClick={enableNotifications}>{notificationsEnabled ? 'Notifications on' : 'Enable order alerts'}</button>
+          <button className="quiet staff-sound-button" onClick={() => void toggleSound()} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {soundEnabled ? 'Sound on' : 'Enable sound'}</button>
           <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
-      <div className="staff-columns">
-        {columns.map((col) => (
-          <section className="staff-column" key={col.status} aria-label={col.title}>
-            <h2>{col.title} <span>{orders.filter((o) => o.status === col.status).length}</span></h2>
-            {orders.filter((o) => o.status === col.status).length === 0 && <p className="staff-empty">Nothing here.</p>}
+      <div className="staff-queue-controls"><span>Slide to see all six stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
+      <div className="staff-columns" ref={queueRef}>
+        {QUEUE_LANES.map((col) => (
+          <section className="staff-column" data-lane={col.key} key={col.key} aria-label={col.title}>
+            <h2>{col.title} <span>{orders.filter((o) => queueLane(o) === col.key).length}</span></h2>
+            {orders.filter((o) => queueLane(o) === col.key).length === 0 && <p className="staff-empty">Nothing here.</p>}
             {orders
-              .filter((o) => o.status === col.status)
+              .filter((o) => queueLane(o) === col.key)
               .map((order) => {
-                const step = NEXT_STEP[order.status];
+                const timing = laneTiming(order, now, preparationMinutes);
+                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
                 return (
-                  <article className="staff-card" key={order.id}>
+                  <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
                       <strong>{order.customerName}</strong>
                       <span className="staff-ref">{order.reference}</span>
                     </div>
+                    <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     {order.fulfillment === 'delivery' ? (
                       <p className="staff-meta staff-delivery"><Truck size={14} /> Deliver to {order.building}{order.company ? ` · ${order.company}` : ''} · {order.contactNumber} · {timeAgo(order.createdAt)}</p>
                     ) : (
@@ -205,7 +226,8 @@ export function StaffTablet() {
                       <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid" : order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment pending — check before taking payment" : `Due ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
                       <div className="staff-card-actions">
                         {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && posOrderId !== order.id && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
-                        {step && !(order.status === 'accepted' && order.posRequired && !order.posRecordedAt) && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
+                        {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
+                        {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>
                       </div>
                     </div>
