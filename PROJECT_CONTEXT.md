@@ -1,5 +1,11 @@
 # FOND ordering PWA
 
+## 2026-09-15 - navigation/install release live
+
+Commit/push: 3e923938af231514a4fa3617193dcb216a1db6bb pushed directly to main; no PR merge. Verify FOND #73 succeeded (1m46s job), https://github.com/blendproperty/fond/actions/runs/34947022470. Deploy FOND #27 succeeded (36s job), https://github.com/blendproperty/fond/actions/runs/34947195716. No environment/configuration changes.
+
+Live verification: loaded public production app, observed prominent installation panel above menu and category arrows, clicked Next categories and observed Previous become enabled, opened Install FOND and confirmed iPhone/Android/desktop guidance, then dismissed it. Local build and 28 desktop/mobile browser checks passed, screenshots inspected. No orders or OS installations performed; native OS install and real-device UAT remain open. Provider and recovery gates unchanged. This documentation follow-up skips CI; production application stays at 3e92393.
+
 ## 2026-09-15 - category navigation and prominent installation
 
 Implementation: visible previous/next controls scroll the horizontal menu categories with proper disabled edge states; touch scrolling remains native. Arrow keys/Home/End navigate categories and bring selections into view. Installation is moved above the menu into a high-contrast panel with phone/desktop icons and a full-width mobile CTA. Supported browser prompts are invoked directly; otherwise a dismissible device-instructions dialog explains iOS/Android/desktop installation. Installed standalone sessions show an installed state. Promotion popups are deferred while install instructions are open. Browser-specific support checked against MDN's Making PWAs installable guide; actual OS installation is not claimed.
