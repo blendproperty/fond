@@ -1,5 +1,15 @@
 # FOND ordering PWA
 
+## 2026-09-15 - replace basic report with business intelligence dashboard
+
+User correction: the Reports list was not the requested Power BI-style experience. Traced the basic report to cc59e08; the preceding admin release retained it. It ranked available zero-sales menu items as slow movers, even with no completed history. That categorisation was misleading and is removed, including from the compatibility endpoint.
+
+Implementation: responsive native FOND business dashboard, not Microsoft Power BI embedding. Added authenticated overview API, 7/30/90-day/custom date and fulfilment filters, equal-length previous-period comparison, four KPI cards, daily trend, fulfilment doughnut, category bars with item drilldown, order-status bars, hourly demand, searchable/sortable item detail and CSV. Empty states explicitly use real data only. Aggregation uses Johannesburg order-placement dates and completed orders for sales/units; all order statuses are shown separately. Stored purchased line values are used; legacy lines without snapshots are flagged, never reconstructed using current prices. Categories reflect the current catalogue and removed items are retained as uncategorised. No Yoco catalogue/sales feed or payment proof is claimed. No schema migration or production business-data change.
+
+Testing: TypeScript/Next production build, 40 unit tests and 20 Playwright desktop/mobile tests passed. New calculation tests cover date boundaries, previous period, fulfilment filtering, historical prices, legacy missing snapshots and empty ranks; new browser tests cover empty/populated views, search, authentication and mobile overflow. Desktop populated and mobile/empty screenshots generated for visual QA. Synthetic data is local only.
+
+Commit/push and deployment: pending promotion in this checkpoint; record actual GitHub CI, deployment and live read-only verification below after success. Prior provider configuration and restaurant UAT gates remain unchanged. This dashboard does not generate fake sales or propose discounts without evidence.
+
 ## 2026-09-15 - admin release deployment and live verification confirmed
 
 Implementation/push: 7afa7e035d819a45d6dbe20e40cc5191f64a8c7e promoted directly to origin/main from feature/complete-admin. No separate PR merge. GitHub Verify FOND #70 succeeded in 1m39s: https://github.com/blendproperty/fond/actions/runs/34944302084. Deploy FOND #24 succeeded for the same revision in 47s: https://github.com/blendproperty/fond/actions/runs/34944442146. Its workflow includes the pre-replacement SQLite backup and serialized deployment. Provider configuration was not changed.

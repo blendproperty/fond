@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
 
+import { ReportsDashboard } from './reports-dashboard';
 import { CustomersPanel,MarketingPanel,FinancePanel,SettingsPanel } from './management-panels';
 
 type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
@@ -111,7 +112,7 @@ export function AdminPanel() {
         </header>
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
-        {tab === 'reports' && <ReportsAdmin />}
+        {tab === 'reports' && <ReportsDashboard />}
         {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel/>}
       </div>
     </div>
@@ -399,83 +400,6 @@ function OrdersAdmin() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-type RankedItem = { item: Meal; quantitySold: number };
-
-function ReportsAdmin() {
-  const [top, setTop] = useState<RankedItem[]>([]);
-  const [slow, setSlow] = useState<RankedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    const res = await fetch('/api/admin/reports/top-items', { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    setTop(data.top ?? []);
-    setSlow(data.slow ?? []);
-  }, []);
-
-  useEffect(() => { refresh().finally(() => setLoading(false)); }, [refresh]);
-
-  async function patchItem(id: string, body: Record<string, unknown>) {
-    setBusyId(id);
-    await fetch(`/api/admin/menu/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    await refresh();
-    setBusyId(null);
-  }
-
-  function discount(item: Meal) {
-    const input = prompt(`Discounted price for "${item.name}" (currently ${money(item.basePrice ?? item.price)}), in Rand:`, ((item.basePrice ?? item.price) * 0.85 / 100).toFixed(2));
-    if (input == null) return;
-    const priceCents = Math.round(parseFloat(input) * 100);
-    if (!Number.isFinite(priceCents) || priceCents < 0) return;
-    patchItem(item.id, { isSpecial: true, specialPrice: priceCents, specialLabel: item.specialLabel || 'Discounted' });
-  }
-
-  function showcase(item: Meal) {
-    patchItem(item.id, { isSpecial: true, specialPrice: null, specialLabel: 'Featured' });
-  }
-
-  if (loading) return <p className="staff-empty">Loading report…</p>;
-
-  return (
-    <div className="admin-reports">
-      <section className="admin-report-block">
-        <h2><TrendingUp size={18} /> Top 10 movers</h2>
-        {top.length === 0 ? <p className="staff-empty">No sales recorded yet.</p> : (
-          <div className="admin-report-list">
-            {top.map(({ item, quantitySold }) => (
-              <div className="admin-report-row" key={item.id}>
-                <span className="admin-row-symbol">{item.symbol}</span>
-                <div className="admin-row-name"><strong>{item.name}</strong><span>{item.category}</span></div>
-                <strong className="admin-report-qty">{quantitySold} sold</strong>
-                <button className="quiet" disabled={busyId === item.id} onClick={() => showcase(item)}><Sparkles size={14} /> Showcase</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      <section className="admin-report-block">
-        <h2><TrendingDown size={18} /> Slow movers (on menu)</h2>
-        {slow.length === 0 ? <p className="staff-empty">Nothing to show.</p> : (
-          <div className="admin-report-list">
-            {slow.map(({ item, quantitySold }) => (
-              <div className="admin-report-row" key={item.id}>
-                <span className="admin-row-symbol">{item.symbol}</span>
-                <div className="admin-row-name"><strong>{item.name}</strong><span>{item.category}</span></div>
-                <strong className="admin-report-qty">{quantitySold} sold</strong>
-                <button className="quiet" disabled={busyId === item.id} onClick={() => discount(item)}><Wallet size={14} /> Discount</button>
-                <button className="quiet" disabled={busyId === item.id} onClick={() => showcase(item)}><Sparkles size={14} /> Showcase</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      <p className="small">Counts include completed orders only; they are not proof of payment. Revenue per item isn&rsquo;t tracked yet — only units sold.</p>
     </div>
   );
 }

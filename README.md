@@ -16,7 +16,7 @@ All seven navigation sections have working screens:
 - Orders: search/filter, purchased line details and status history.
 - Customers: profiles, phone matching, order import, notes, archive and explicit marketing consent evidence; consented-contact CSV. Search/export is limited to 500 matching profiles; linked history to 200 orders. Profiles are not verified customer identities.
 - Marketing & CMS: draft/preview/publish, previous-publication restore, announcement and scheduled promotions; notification log/retry. Item discounts live in Menu. External marketing distribution uses the consented export with an approved provider.
-- Reports: completed-order item quantities, top/slow movers and special actions.
+- Reports: BI-style dashboard with date/fulfilment filters, prior-period KPIs, daily order-value trends, fulfilment mix, category drilldown, hourly demand, status breakdown, item rankings and CSV. Completed order value is not proof of payment; no Yoco sales feed is implied. Zero-sales items are not ranked as slow movers.
 - Finance: receipts, externally issued refund records, duplicate/overpayment guards, balances, checkout references and CSV. This is an operational ledger, not bank settlement, tax invoicing or automatic refund initiation.
 - Settings: ordering/fulfilment, Johannesburg hours, capacity, preparation estimate, contact, collection preferences, providers and named team accounts. Managers have admin access; staff use the tablet. Named sessions expire after 12 hours and are revoked on account edits/logout. Shared codes remain during transition.
 
