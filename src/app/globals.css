@@ -139,6 +139,23 @@ footer span:last-child{margin-left:auto}
 .staff-lock-card p{color:var(--slate);font-size:13px;margin-bottom:20px}
 .staff-lock-card input{width:100%;padding:16px;font-size:20px;text-align:center;letter-spacing:4px;border:1px solid var(--line);border-radius:8px;margin-bottom:14px}
 .staff-error{color:var(--oxblood);font-size:12px;margin-bottom:12px}
+.admin-login{background:radial-gradient(circle at 18% 16%,#17433f 0,transparent 35%),radial-gradient(circle at 85% 85%,#153b38 0,transparent 34%),var(--ink);padding:32px 20px;min-height:100dvh}
+.admin-login-card{width:min(100%,460px);padding:34px 40px 30px;background:var(--paper);border:1px solid rgba(255,255,255,.5);border-radius:22px;box-shadow:0 28px 80px rgba(1,22,20,.3);color:var(--ink);text-align:left}
+.admin-login-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:38px}
+.admin-login-wordmark{font-size:30px;font-weight:800;letter-spacing:-2px;line-height:1}.admin-login-wordmark span{color:var(--oxblood)}
+.admin-login-badge{padding:8px 10px;border:1px solid #dce9e6;border-radius:6px;color:#49615e;font-size:10px;letter-spacing:1.7px;font-weight:800;white-space:nowrap}
+.admin-login-icon{width:48px;height:48px;display:grid;place-items:center;background:#edf4f1;border-radius:12px;color:var(--oxblood);margin-bottom:22px}
+.admin-login-kicker{color:#59716d;font-size:10px;font-weight:800;letter-spacing:2px;margin:0 0 10px}
+.admin-login-card h1{color:var(--ink);font-size:34px;line-height:1.12;letter-spacing:-1.4px;margin:0 0 8px}
+.admin-login-intro{font-size:14px;color:#536764;line-height:1.55;margin:0 0 26px}
+.admin-login-mode{display:flex;align-items:center;gap:10px;width:100%;padding:14px 16px;background:var(--mist);border:1px solid #dfe8e5;border-radius:10px;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:20px}
+.admin-login-mode input{width:16px;height:16px;flex:0 0 16px;accent-color:var(--oxblood);margin:0;letter-spacing:normal}
+.admin-login-field{display:grid;gap:8px;color:#24403d;font-size:12px;font-weight:700;margin:0 0 16px}
+.admin-login-field input{width:100%;height:48px;padding:12px 14px;border:1px solid #c7d6d2;border-radius:9px;background:white;color:var(--ink);text-align:left;letter-spacing:normal;font-size:15px;outline:none}
+.admin-login-field input::placeholder{color:#889996}.admin-login-field input:focus{border-color:#357f73;box-shadow:0 0 0 3px #357f7324}
+.admin-login-submit{width:100%;min-height:48px;margin-top:4px;font-size:14px;border-radius:9px}
+.admin-login-foot{text-align:center;font-size:11px;color:#738884;margin:18px 0 0}
+@media(max-width:520px){.admin-login{padding:20px 14px}.admin-login-card{padding:28px 24px;border-radius:18px}.admin-login-top{margin-bottom:30px}.admin-login-card h1{font-size:30px}}
 .staff-app{min-height:100vh;background:var(--mist);padding:24px}
 .staff-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
 .staff-header h1{font-size:26px;color:var(--ink)}
