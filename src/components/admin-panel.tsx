@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { BarChart3, Lock, LogOut, Megaphone, Pencil, Plus, RefreshCw, Save, Settings, Sparkles, Trash2, UtensilsCrossed, Users, Wallet } from 'lucide-react';
-import { money, categories, type Category, type Meal } from '@/lib/menu';
+import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
+import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
 
 type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
 
@@ -10,7 +10,7 @@ const NAV: { key: AdminSection; label: string; icon: typeof UtensilsCrossed; rea
   { key: 'orders', label: 'Orders', icon: BarChart3, ready: true },
   { key: 'customers', label: 'Customers', icon: Users, ready: false },
   { key: 'marketing', label: 'Marketing & CMS', icon: Megaphone, ready: false },
-  { key: 'reports', label: 'Reports', icon: BarChart3, ready: false },
+  { key: 'reports', label: 'Reports', icon: BarChart3, ready: true },
   { key: 'finance', label: 'Finance', icon: Wallet, ready: false },
   { key: 'settings', label: 'Settings', icon: Settings, ready: false },
 ];
@@ -103,7 +103,8 @@ export function AdminPanel() {
         </header>
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
-        {(tab === 'customers' || tab === 'marketing' || tab === 'reports' || tab === 'finance' || tab === 'settings') && <ComingSoon section={NAV.find((n) => n.key === tab)?.label ?? ''} />}
+        {tab === 'reports' && <ReportsAdmin />}
+        {(tab === 'customers' || tab === 'marketing' || tab === 'finance' || tab === 'settings') && <ComingSoon section={NAV.find((n) => n.key === tab)?.label ?? ''} />}
       </div>
     </div>
   );
@@ -118,6 +119,8 @@ function ComingSoon({ section }: { section: string }) {
   );
 }
 
+type ViewMode = 'list' | 'card' | 'compact';
+
 function MenuAdmin() {
   const [items, setItems] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +128,11 @@ function MenuAdmin() {
   const [adding, setAdding] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', category: categories[0] as Category, price: '', description: '' });
   const [addError, setAddError] = useState('');
+  const [view, setView] = useState<ViewMode>('list');
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
+  const [availabilityFilter, setAvailabilityFilter] = useState<'' | 'available' | 'unavailable'>('');
+  const [specialsOnly, setSpecialsOnly] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/admin/menu', { cache: 'no-store' });
@@ -173,11 +181,39 @@ function MenuAdmin() {
 
   if (loading) return <p className="staff-empty">Loading menu…</p>;
 
+  const filtered = items.filter((m) => {
+    if (search.trim() && !m.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    if (categoryFilter && m.category !== categoryFilter) return false;
+    if (availabilityFilter === 'available' && m.available === false) return false;
+    if (availabilityFilter === 'unavailable' && m.available !== false) return false;
+    if (specialsOnly && !m.isSpecial) return false;
+    return true;
+  });
+  const visibleCategories = categoryFilter ? [categoryFilter] : categories;
+
   return (
     <div>
       <div className="admin-toolbar">
         <button className="primary" onClick={() => setAdding((v) => !v)}><Plus size={16} /> {adding ? 'Cancel' : 'Add item / special'}</button>
         <button className="quiet" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
+        <div className="admin-view-switch" role="tablist" aria-label="Menu view">
+          <button role="tab" aria-selected={view === 'list'} onClick={() => setView('list')} aria-label="List view"><List size={16} /></button>
+          <button role="tab" aria-selected={view === 'card'} onClick={() => setView('card')} aria-label="Card view"><Grid2x2 size={16} /></button>
+          <button role="tab" aria-selected={view === 'compact'} onClick={() => setView('compact')} aria-label="Compact view"><Rows3 size={16} /></button>
+        </div>
+      </div>
+      <div className="admin-filters">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search menu items…" />
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Category | '')}>
+          <option value="">All categories</option>
+          {categories.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <select value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value as '' | 'available' | 'unavailable')}>
+          <option value="">Available &amp; hidden</option>
+          <option value="available">On menu only</option>
+          <option value="unavailable">Hidden only</option>
+        </select>
+        <label className="field-check"><input type="checkbox" checked={specialsOnly} onChange={(e) => setSpecialsOnly(e.target.checked)} /> Specials only</label>
       </div>
       {adding && (
         <div className="admin-add-card">
@@ -189,15 +225,18 @@ function MenuAdmin() {
           <button className="primary" onClick={addItem}><Save size={16} /> Add to menu</button>
         </div>
       )}
-      {categories.map((cat) => {
-        const catItems = items.filter((m) => m.category === cat);
+      {filtered.length === 0 && <p className="staff-empty">No items match those filters.</p>}
+      {visibleCategories.map((cat) => {
+        const catItems = filtered.filter((m) => m.category === cat);
         if (!catItems.length) return null;
         return (
           <section key={cat} className="admin-category">
             <h2>{cat}</h2>
-            {catItems.map((item) => (
-              <MenuRow key={item.id} item={item} saving={savingId === item.id} onPatch={(body) => patch(item.id, body)} onRemove={() => remove(item.id)} />
-            ))}
+            <div className={`admin-item-list admin-item-list-${view}`}>
+              {catItems.map((item) => (
+                <MenuRow key={item.id} item={item} view={view} saving={savingId === item.id} onPatch={(body) => patch(item.id, body)} onRemove={() => remove(item.id)} />
+              ))}
+            </div>
           </section>
         );
       })}
@@ -207,7 +246,7 @@ function MenuAdmin() {
 
 const DIET_OPTIONS: Array<'vegan' | 'vegetarian' | 'gluten-free'> = ['vegan', 'vegetarian', 'gluten-free'];
 
-function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: boolean; onPatch: (body: Record<string, unknown>) => void; onRemove: () => void }) {
+function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: ViewMode; saving: boolean; onPatch: (body: Record<string, unknown>) => void; onRemove: () => void }) {
   const [editing, setEditing] = useState(false);
   const [price, setPrice] = useState((item.basePrice ?? item.price) / 100 + '');
   const [specialPrice, setSpecialPrice] = useState(item.isSpecial && item.basePrice ? (item.price / 100 + '') : '');
@@ -217,6 +256,10 @@ function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: bool
   const [category, setCategory] = useState<Category>(item.category);
   const [symbol, setSymbol] = useState(item.symbol);
   const [diet, setDiet] = useState<string[]>(item.diet ?? []);
+  const [newModName, setNewModName] = useState('');
+  const [newModPrice, setNewModPrice] = useState('');
+  const [modBusy, setModBusy] = useState(false);
+  const [modError, setModError] = useState('');
 
   function toggleDiet(d: string) {
     const next = diet.includes(d) ? diet.filter((x) => x !== d) : [...diet, d];
@@ -224,13 +267,35 @@ function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: bool
     onPatch({ diet: next });
   }
 
+  async function addModifier() {
+    setModError('');
+    const priceCents = Math.round(parseFloat(newModPrice || '0') * 100);
+    if (!newModName.trim() || !Number.isFinite(priceCents)) { setModError('Enter a modifier name and price.'); return; }
+    setModBusy(true);
+    const res = await fetch(`/api/admin/menu/${item.id}/modifiers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newModName.trim(), price: priceCents }) });
+    setModBusy(false);
+    if (!res.ok) { const data = await res.json().catch(() => null); setModError(data?.message ?? 'Could not add that modifier.'); return; }
+    const data = await res.json();
+    onPatch({ modifiers: data.item.modifiers });
+    setNewModName(''); setNewModPrice('');
+  }
+
+  async function removeModifier(modifierId: string) {
+    setModBusy(true);
+    const res = await fetch(`/api/admin/menu/${item.id}/modifiers/${modifierId}`, { method: 'DELETE' });
+    setModBusy(false);
+    if (!res.ok) return;
+    const data = await res.json();
+    onPatch({ modifiers: data.item.modifiers });
+  }
+
   return (
-    <div className={`admin-row${item.available === false ? ' admin-row-off' : ''}`}>
+    <div className={`admin-row admin-row-${view}${item.available === false ? ' admin-row-off' : ''}`}>
       <div className="admin-row-main">
         <span className="admin-row-symbol">{item.symbol}</span>
         <div className="admin-row-name">
           <strong>{item.name}</strong>
-          <span>{item.description}</span>
+          {view !== 'compact' && <span>{item.description}</span>}
         </div>
         <label className="admin-price">R<input value={price} onChange={(e) => setPrice(e.target.value)} onBlur={() => onPatch({ price: Math.round(parseFloat(price || '0') * 100) })} inputMode="decimal" /></label>
         <label className="field-check"><input type="checkbox" checked={item.available !== false} onChange={(e) => onPatch({ available: e.target.checked })} /> On menu</label>
@@ -247,6 +312,23 @@ function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: bool
             {DIET_OPTIONS.map((d) => (
               <label className="field-check" key={d}><input type="checkbox" checked={diet.includes(d)} onChange={() => toggleDiet(d)} /> {d}</label>
             ))}
+          </div>
+          <div className="admin-modifiers">
+            <h4>Modifiers (add this / remove this)</h4>
+            {(item.modifiers ?? []).length === 0 && <p className="small">No modifiers yet — e.g. &ldquo;Extra cheese&rdquo; at +R15 or &ldquo;No onion&rdquo; at R0.</p>}
+            {(item.modifiers ?? []).map((mod: Modifier) => (
+              <div className="admin-modifier-row" key={mod.id}>
+                <span>{mod.name}</span>
+                <span>{mod.price > 0 ? '+' : ''}{money(mod.price)}</span>
+                <button className="icon-button" aria-label={`Remove ${mod.name}`} disabled={modBusy} onClick={() => removeModifier(mod.id)}><Minus size={14} /></button>
+              </div>
+            ))}
+            <div className="admin-modifier-add">
+              <input value={newModName} onChange={(e) => setNewModName(e.target.value)} placeholder="e.g. Extra cheese" />
+              <input value={newModPrice} onChange={(e) => setNewModPrice(e.target.value)} placeholder="15.00 (or -15.00, or 0)" inputMode="decimal" style={{ maxWidth: 130 }} />
+              <button className="quiet" disabled={modBusy} onClick={addModifier}><Plus size={14} /> Add</button>
+            </div>
+            {modError && <p role="alert">{modError}</p>}
           </div>
         </div>
       )}
@@ -315,6 +397,83 @@ function OrdersAdmin() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+type RankedItem = { item: Meal; quantitySold: number };
+
+function ReportsAdmin() {
+  const [top, setTop] = useState<RankedItem[]>([]);
+  const [slow, setSlow] = useState<RankedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const res = await fetch('/api/admin/reports/top-items', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    setTop(data.top ?? []);
+    setSlow(data.slow ?? []);
+  }, []);
+
+  useEffect(() => { refresh().finally(() => setLoading(false)); }, [refresh]);
+
+  async function patchItem(id: string, body: Record<string, unknown>) {
+    setBusyId(id);
+    await fetch(`/api/admin/menu/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await refresh();
+    setBusyId(null);
+  }
+
+  function discount(item: Meal) {
+    const input = prompt(`Discounted price for "${item.name}" (currently ${money(item.basePrice ?? item.price)}), in Rand:`, ((item.basePrice ?? item.price) * 0.85 / 100).toFixed(2));
+    if (input == null) return;
+    const priceCents = Math.round(parseFloat(input) * 100);
+    if (!Number.isFinite(priceCents) || priceCents < 0) return;
+    patchItem(item.id, { isSpecial: true, specialPrice: priceCents, specialLabel: item.specialLabel || 'Discounted' });
+  }
+
+  function showcase(item: Meal) {
+    patchItem(item.id, { isSpecial: true, specialPrice: null, specialLabel: 'Featured' });
+  }
+
+  if (loading) return <p className="staff-empty">Loading report…</p>;
+
+  return (
+    <div className="admin-reports">
+      <section className="admin-report-block">
+        <h2><TrendingUp size={18} /> Top 10 movers</h2>
+        {top.length === 0 ? <p className="staff-empty">No sales recorded yet.</p> : (
+          <div className="admin-report-list">
+            {top.map(({ item, quantitySold }) => (
+              <div className="admin-report-row" key={item.id}>
+                <span className="admin-row-symbol">{item.symbol}</span>
+                <div className="admin-row-name"><strong>{item.name}</strong><span>{item.category}</span></div>
+                <strong className="admin-report-qty">{quantitySold} sold</strong>
+                <button className="quiet" disabled={busyId === item.id} onClick={() => showcase(item)}><Sparkles size={14} /> Showcase</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <section className="admin-report-block">
+        <h2><TrendingDown size={18} /> Slow movers (on menu)</h2>
+        {slow.length === 0 ? <p className="staff-empty">Nothing to show.</p> : (
+          <div className="admin-report-list">
+            {slow.map(({ item, quantitySold }) => (
+              <div className="admin-report-row" key={item.id}>
+                <span className="admin-row-symbol">{item.symbol}</span>
+                <div className="admin-row-name"><strong>{item.name}</strong><span>{item.category}</span></div>
+                <strong className="admin-report-qty">{quantitySold} sold</strong>
+                <button className="quiet" disabled={busyId === item.id} onClick={() => discount(item)}><Wallet size={14} /> Discount</button>
+                <button className="quiet" disabled={busyId === item.id} onClick={() => showcase(item)}><Sparkles size={14} /> Showcase</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <p className="small">Sales counts include all accepted/completed orders (cancelled orders excluded). Revenue per item isn&rsquo;t tracked yet — only units sold.</p>
     </div>
   );
 }

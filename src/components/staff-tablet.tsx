@@ -1,9 +1,7 @@
 'use client';
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Check, ChefHat, Clock3, Lock, LogOut, Plus, Minus, Truck, X, ShoppingBag } from 'lucide-react';
 import { categories, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
-
-import { submissionKey, clearSubmission } from '@/lib/submission';
 
 type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
 type StaffOrder = {
@@ -11,7 +9,7 @@ type StaffOrder = {
   reference: string;
   customerName: string;
   note: string | null;
-  lines: (CartLine & {name?: string})[];
+  lines: CartLine[];
   collectionTime: string;
   totalCents: number;
   status: OrderStatus;
@@ -44,7 +42,6 @@ export function StaffTablet() {
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [menu, setMenu] = useState<Meal[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
-  const [queueError, setQueueError] = useState('');
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
@@ -56,16 +53,14 @@ export function StaffTablet() {
       setLocked(true);
       return;
     }
-    if (!res.ok) throw new Error('Queue unavailable');
-    setQueueError('');
     setLocked(false);
     const data = await res.json();
     setOrders(data.orders ?? []);
   }, []);
 
   useEffect(() => {
-    refresh().catch(() => setQueueError('Cannot reach FOND. The queue may be out of date.')).finally(() => setChecking(false));
-    const interval = setInterval(() => {refresh().catch(() => setQueueError('Connection lost. The queue may be out of date.'));}, 5000);
+    refresh().finally(() => setChecking(false));
+    const interval = setInterval(refresh, 5000);
     return () => clearInterval(interval);
   }, [refresh]);
 
@@ -83,14 +78,9 @@ export function StaffTablet() {
   }
 
   async function setStatus(id: string, status: OrderStatus) {
-    setQueueError('');
-    try {
-      const expectedStatus = orders.find(o => o.id === id)?.status;
-      const res = await fetch(`/api/staff/orders/${id}`, {method:'PATCH', headers:{'Content-Type':'application/json'},body:JSON.stringify({status, expectedStatus})});
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not update this order.');
-      await refresh();
-    } catch (error) { setQueueError(error instanceof Error ? error.message : 'Connection lost. Refresh before trying again.'); }
+    setOrders((current) => current.map((o) => (o.id === id ? { ...o, status } : o)));
+    await fetch(`/api/staff/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    refresh();
   }
 
   async function logout() {
@@ -126,7 +116,7 @@ export function StaffTablet() {
       <header className="staff-header">
         <div>
           <p className="eyebrow">FOND · FACILITY TABLET</p>
-          <h1>Order queue</h1>{queueError && <p role="alert">{queueError}</p>}
+          <h1>Order queue</h1>
         </div>
         <div className="staff-header-actions">
           <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
@@ -156,7 +146,8 @@ export function StaffTablet() {
                     <ul className="staff-lines">
                       {order.lines.map((line) => {
                         const item = menu.find((m) => m.id === line.id);
-                        return <li key={line.id}>{line.quantity}× {line.name ?? item?.name ?? line.id}</li>;
+                        const mods = (line.modifierIds ?? []).map((mid) => item?.modifiers?.find((m) => m.id === mid)?.name).filter(Boolean);
+                        return <li key={`${line.id}::${(line.modifierIds ?? []).join(',')}`}>{line.quantity}× {item?.name ?? line.id}{mods.length > 0 && <span className="staff-line-mods"> ({mods.join(', ')})</span>}</li>;
                       })}
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
@@ -186,7 +177,6 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const sending = useRef(false);
 
   const total = useMemo(() => cart.reduce((n, l) => n + (menu.find((m) => m.id === l.id)?.price ?? 0) * l.quantity, 0), [cart, menu]);
 
@@ -199,7 +189,6 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   }
 
   async function submit() {
-    if (sending.current) return;
     setError('');
     try {
       quoteCart(cart, menu);
@@ -211,20 +200,18 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
       setError('Enter a name or table/desk for this order.');
       return;
     }
-    sending.current = true;
     setSubmitting(true);
-    try {
-      const payload = JSON.stringify({ customerName, collectionTime, note, lines: cart });
-      const key = await submissionKey(payload);
-      const res = await fetch('/api/staff/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not add that order.');
-      clearSubmission(key);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Connection lost. Retry the same order safely.');
+    const res = await fetch('/api/staff/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerName, collectionTime, note, lines: cart }),
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.message ?? 'Could not add that order.');
       return;
-    } finally { sending.current = false; setSubmitting(false); }
-
+    }
     onCreated();
     onClose();
   }

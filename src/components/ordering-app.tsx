@@ -1,9 +1,7 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
-import { money, quoteCart, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
-
-import { submissionKey, clearSubmission } from '@/lib/submission';
+import { money, quoteCart, lineKey, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
@@ -22,6 +20,7 @@ export function OrderingApp() {
   const [menu, setMenu] = useState<Meal[]>([]);
   const [category, setCategory] = useState<Category>(categories[0]);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
   const [panel, setPanel] = useState<'basket' | 'track' | null>(null);
   const [fulfillment, setFulfillment] = useState<Fulfillment>('collection');
   const [collection, setCollection] = useState('As soon as possible');
@@ -35,7 +34,6 @@ export function OrderingApp() {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const sending = useRef(false);
   const [install, setInstall] = useState<InstallEvent | null>(null);
   const [offline, setOffline] = useState(false);
   const [trackInput, setTrackInput] = useState('');
@@ -72,19 +70,42 @@ export function OrderingApp() {
   }, [panel]);
 
   const count = cart.reduce((n, l) => n + l.quantity, 0);
-  const total = cart.reduce((n, l) => n + (menu.find((m) => m.id === l.id)?.price ?? 0) * l.quantity, 0);
+  // Safe pricing for live UI totals: quoteCart throws on an empty or
+  // momentarily-invalid basket (e.g. mid-edit), so wrap it rather than
+  // reimplement modifier pricing here.
+  function priceCart(lines: CartLine[]) {
+    if (!lines.length) return [];
+    try { return quoteCart(lines, menu); } catch { return []; }
+  }
+  const pricedCart = priceCart(cart);
+  const total = pricedCart.reduce((n, l) => n + l.subtotal, 0);
 
-  function change(id: string, delta: number) {
-    setConfirmation(null); setError('');
-    setCart((current) => {
-      const qty = current.find((l) => l.id === id)?.quantity ?? 0;
-      const next = Math.max(0, Math.min(20, qty + delta));
-      return [...current.filter((l) => l.id !== id), ...(next ? [{ id, quantity: next }] : [])];
+  function toggleModifier(mealId: string, modifierId: string) {
+    setPendingMods((current) => {
+      const selected = current[mealId] ?? [];
+      const next = selected.includes(modifierId) ? selected.filter((id) => id !== modifierId) : [...selected, modifierId];
+      return { ...current, [mealId]: next };
     });
   }
 
+  function change(id: string, delta: number, modifierIds?: string[]) {
+    setConfirmation(null); setError('');
+    setCart((current) => {
+      const key = lineKey({ id, quantity: 1, modifierIds });
+      const existing = current.find((l) => lineKey(l) === key);
+      const qty = existing?.quantity ?? 0;
+      const next = Math.max(0, Math.min(20, qty + delta));
+      const rest = current.filter((l) => lineKey(l) !== key);
+      return [...rest, ...(next ? [{ id, quantity: next, modifierIds: modifierIds?.length ? modifierIds : undefined }] : [])];
+    });
+  }
+
+  function lineQuantity(mealId: string, modifierIds?: string[]) {
+    const key = lineKey({ id: mealId, quantity: 1, modifierIds });
+    return cart.find((l) => lineKey(l) === key)?.quantity ?? 0;
+  }
+
   async function placeOrder() {
-    if (sending.current) return;
     setError('');
     try {
       if (offline) throw new Error('Reconnect before continuing.');
@@ -98,15 +119,25 @@ export function OrderingApp() {
       setError(e instanceof Error ? e.message : 'Please check your basket.');
       return;
     }
-    sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({ lines: cart, collectionTime: collection, customerName, note, fulfillment, contactNumber: contactNumber || null, company: company || null, building: building || null, whatsappOptIn });
-      const key = await submissionKey(payload);
-      const res = await fetch('/api/orders', {method:'POST', headers:{'Content-Type':'application/json','Idempotency-Key':key}, body:payload});
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lines: cart,
+          collectionTime: collection,
+          customerName,
+          note,
+          fulfillment,
+          contactNumber: contactNumber || null,
+          company: company || null,
+          building: building || null,
+          whatsappOptIn,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
-      clearSubmission(key);
       setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment });
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
@@ -114,7 +145,6 @@ export function OrderingApp() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place that order. Please try again.');
     } finally {
-      sending.current = false;
       setSubmitting(false);
     }
   }
@@ -135,7 +165,9 @@ export function OrderingApp() {
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><div className="tabs scroll" role="tablist" aria-label="Menu category">{categories.map((c) => <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div></div>
-        <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p><div className="meal-bottom"><strong>{money(m.price)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1)}><Plus size={18} /> Add{cart.find((l) => l.id === m.id) ? ` (${cart.find((l) => l.id === m.id)!.quantity})` : ''}</button></div></div></article>)}</div>
+        <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
+          {!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
+          <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> Add{qty ? ` (${qty})` : ''}</button></div></div></article>; })}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
       <section className="install"><div><h3>A little FOND on your phone.</h3><p>Add this to your home screen for easy access.</p></div>{install ? <button className="outline" onClick={async () => { await install.prompt(); await install.userChoice; setInstall(null); }}><Download size={17} /> Install FOND</button> : <p className="install-help">In your browser menu, choose &ldquo;Add to Home Screen&rdquo;<br />or &ldquo;Install app&rdquo;, if available.</p>}</section>
     </main>
@@ -152,7 +184,7 @@ export function OrderingApp() {
           {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)}</p></div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
         </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Please pay at the counter on collection — this app doesn&rsquo;t take payment. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p><button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
-          {cart.map((l) => { const m = menu.find((m) => m.id === l.id)!; return <div className="cart-line" key={l.id}><span className="cart-art" aria-hidden="true">{m.symbol}</span><div><h3>{m.name}</h3><p>{money(m.price)}</p><div className="quantity"><button aria-label={`Remove one ${m.name}`} onClick={() => change(m.id, -1)}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${m.name}`} onClick={() => change(m.id, 1)}><Plus size={14} /></button></div></div><strong>{money(m.price * l.quantity)}</strong></div>; })}
+          {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
             <button role="tab" aria-selected={fulfillment === 'collection'} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
             <button role="tab" aria-selected={fulfillment === 'delivery'} onClick={() => setFulfillment('delivery')}><Truck size={16} /> Delivery</button>
