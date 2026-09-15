@@ -166,7 +166,7 @@ export function createOrder(input: {
     if (note && note.length > 300) throw new Error('Note is too long.');
     const fulfillment: FulfillmentType = input.fulfillment === 'delivery' ? 'delivery' : 'collection';
     const contactNumber = input.contactNumber?.trim() || null;
-    if (input.source === 'customer' && !contactNumber) throw new Error('Enter a contact number so FOND can reach you about your order.');
+    if (!contactNumber) throw new Error('Enter a contact number so FOND can reach you about your order.');
     if (contactNumber && (contactNumber.length > 30 || !/^\+?[0-9][0-9 ()-]*$/.test(contactNumber) || contactNumber.replace(/\D/g, '').length < 6 || contactNumber.replace(/\D/g, '').length > 15)) throw new Error('Enter a valid contact number.');
     const company = input.company?.trim() || null;
     const building = input.building?.trim() || null;

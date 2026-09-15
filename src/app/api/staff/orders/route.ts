@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const order = createOrder({
       submissionKey,
       customerName: body.customerName,
+      contactNumber: typeof body.contactNumber === 'string' ? body.contactNumber : null,
       note: typeof body.note === 'string' ? body.note : null,
       lines: body.lines,
       collectionTime: body.collectionTime,

@@ -225,6 +225,7 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
   const [customerName, setCustomerName] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
   const [collectionTime, setCollectionTime] = useState('As soon as possible');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
@@ -265,10 +266,14 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
       setError('Enter a name or table/desk for this order.');
       return;
     }
+    if (!contactNumber.trim()) {
+      setError('Enter a contact number for this order.');
+      return;
+    }
     sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({ customerName, collectionTime, note, lines: cart });
+      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart });
       const key = await submissionKey(payload);
       const res = await fetch('/api/staff/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -332,6 +337,7 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
             </div>
           )}
           <label className="field">Name / table / desk<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Table 4, or Jane (OnPoint 2nd floor)" /></label>
+          <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Customer's phone number" /></label>
           <label className="field">Collection time
             <select value={collectionTime} onChange={(e) => setCollectionTime(e.target.value)}>
               <option>As soon as possible</option>

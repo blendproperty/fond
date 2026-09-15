@@ -6,7 +6,7 @@ import { createOrder,recordPosEntry,updateOrderStatus } from '../src/lib/orders'
 import { analytics } from '../src/lib/analytics';
 process.env.FOND_DB_PATH=':memory:';
 beforeEach(()=>resetDbForTests());
-function fixture(created:string,complete=true){const o=createOrder({submissionKey:randomUUID(),customerName:'Analytics fixture',collectionTime:'ASAP',source:'staff',lines:[{id:'espresso-single',quantity:2}]});if(complete){recordPosEntry(o.id,'YOCO-TEST','fixture');updateOrderStatus(o.id,'ready');updateOrderStatus(o.id,'completed');}getDb().prepare('UPDATE orders SET created_at=? WHERE id=?').run(created,o.id);return o;}
+function fixture(created:string,complete=true){const o=createOrder({submissionKey:randomUUID(),customerName:'Analytics fixture',contactNumber:'0821234567',collectionTime:'ASAP',source:'staff',lines:[{id:'espresso-single',quantity:2}]});if(complete){recordPosEntry(o.id,'YOCO-TEST','fixture');updateOrderStatus(o.id,'ready');updateOrderStatus(o.id,'completed');}getDb().prepare('UPDATE orders SET created_at=? WHERE id=?').run(created,o.id);return o;}
 test('analytics uses Johannesburg boundaries and completed snapshot values, not present-day prices',()=>{
  const prior=fixture('2026-09-13T23:00:00Z'),current=fixture('2026-09-14T22:30:00Z');fixture('2026-09-15T10:00:00Z',false);
  getDb().prepare("UPDATE menu_items SET price_cents=99900 WHERE id='espresso-single'").run();

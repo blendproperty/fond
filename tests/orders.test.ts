@@ -24,7 +24,8 @@ test('customer orders start at received; staff orders start at accepted', () => 
   const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(customer.status, 'received');
   assert.match(customer.reference, /^FOND-/);
-  const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff' });
+  assert.throws(() => createOrder({ customerName: 'Table 5', lines, collectionTime: 'ASAP', source: 'staff' }), /contact number/);
+  const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff', contactNumber: '0821234567' });
   assert.equal(staff.status, 'accepted');
 });
 

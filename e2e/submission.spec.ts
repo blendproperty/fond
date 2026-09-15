@@ -30,6 +30,7 @@ test('staff manual intake sends an idempotency key',async({page})=>{
  await page.getByRole('dialog').getByLabel('No pickled red onion').check();
  await page.getByRole('button',{name:/Smashed Avo/}).click();
  await page.getByLabel('Name / table / desk').fill('Manual browser test');
+ await page.getByRole('dialog').getByLabel('Contact number').fill('0821234567');
  const responsePromise=page.waitForResponse(r=>r.url().endsWith('/api/staff/orders')&&r.request().method()==='POST');
  await page.getByRole('dialog').getByRole('button',{name:'Add to queue'}).click();
  const response=await responsePromise;expect(response.status()).toBe(201);
