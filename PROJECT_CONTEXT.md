@@ -1,5 +1,14 @@
 # FOND ordering PWA
 
+## 2026-09-15 - promotions deployed and live checked
+
+Commit/push: 2c0ffcd935f4c43084db82bec9629d033ab8e8fb pushed directly to main; no PR merge. Verify FOND #72 succeeded (verify job 1m48s): https://github.com/blendproperty/fond/actions/runs/34946403923. Deploy FOND #26 succeeded (deploy job 37s) for the same revision: https://github.com/blendproperty/fond/actions/runs/34946578237. No provider or environment configuration changes.
+
+Live verification: refreshed the authenticated production admin, opened Marketing & CMS, confirmed App promotions and all three display options via an unsaved new editor, then removed that unsaved row. No draft/publication or image upload was saved in production. Public /api/health reports ok; /api/store still has zero published promotions and onlinePayments false. Customer popup/image interactions were exercised locally on desktop/mobile, not as a real published production campaign. The production feature is deployed; a first approved real promotion/image remains an operator publishing step. Existing restaurant-device, provider and recovery UAT gates remain open as documented below.
+
+This documentation-only follow-up skips CI; the deployed application remains 2c0ffcd. Canonical project context and operating instructions accompany the implementation on main.
+
+
 ## 2026-09-15 - customer app promotion formats
 
 Implementation: Marketing & CMS now offers text banners, image cards with editable text overlays, and dismissible native-dialog popups. Includes raster image upload, button label/category selection, active dates, matching card previews and a working popup preview. Existing draft/publish/restore remains the publication boundary. The customer app refreshes published store content every 60 seconds; only server-selected active promotions appear. At most one popup per browser session (first active popup in list), delayed until outside basket/tracking/confirmation. Close, Escape and backdrop dismissal supported. Browser session storage may persist when browsers restore tabs; without storage, suppression lasts the page lifetime.
