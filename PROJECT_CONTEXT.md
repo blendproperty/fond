@@ -2,6 +2,17 @@
 
 
 
+
+## 2026-09-15 - repair browser submission regression after modifiers
+
+Diagnosis: current remote ee2ecfb restored server reliability and passes all 26 unit tests, but Verify FOND run 34939419750 (attempt 2, job 104289455894) failed both customer browser scenarios. Reproduced locally: both customer and manual staff clients omitted the required Idempotency-Key after the modifiers UI replacement. Staff queue handling had also reverted to optimistic updates. Skipped Deploy FOND jobs were the intended CI gate, not separate deploy failures.
+
+Implementation: restored client submission-key reuse/clear behavior and synchronous double-submit guards on both ordering screens; restored server-confirmed staff transitions, expectedStatus and visible queue errors. Preserved modifier selection, reports and filtering. Added desktop/mobile regression coverage for a lost successful HTTP response followed by an unchanged retry, and manual staff order submission.
+
+Testing: current remote baseline reproduced 2 failures/8 passes; repaired code passed TypeScript, 26 unit tests, Next production build and 14 Playwright tests. Docker fond:ci-repair built successfully (manifest list 329096b319e3311528a50caebb9b20248146019911325257f2e512ae1e930fca). No environment-specific Playwright executablePath was added. No production customer order or notification sent.
+
+Commit/push: repair and context are committed together and promoted from fresh origin/main using normal Git, not whole-file API replacement from a stale checkout. CI and deployment evidence will be recorded after the run. Merge/promotion: direct main fast-forward intended for this regression repair under existing deployment authorization. Configuration: unchanged. Live functional verification: pending; staff/UAT, provider notification, backup/restore and expanded management dashboard gates remain open. This repair does not implement the previously requested full management dashboard.
+
 ## 2026-09-15 — menu modifiers, top/slow-movers report, menu filtering + view switcher
 
 Implementation (three commits, `cc59e08`, `4efaef3`, `12187bd`, all pushed directly to `main` via the GitHub MCP file-write path since this sandbox's local git still has no push credentials for this repo): built on top of the admin/CRM backend and left-nav shell from the previous milestone.

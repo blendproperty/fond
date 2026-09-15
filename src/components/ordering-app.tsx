@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
 import { money, quoteCart, lineKey, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
+
+import { submissionKey, clearSubmission } from '@/lib/submission';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
@@ -34,6 +36,7 @@ export function OrderingApp() {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const sending = useRef(false);
   const [install, setInstall] = useState<InstallEvent | null>(null);
   const [offline, setOffline] = useState(false);
   const [trackInput, setTrackInput] = useState('');
@@ -106,6 +109,7 @@ export function OrderingApp() {
   }
 
   async function placeOrder() {
+    if (sending.current) return;
     setError('');
     try {
       if (offline) throw new Error('Reconnect before continuing.');
@@ -119,25 +123,15 @@ export function OrderingApp() {
       setError(e instanceof Error ? e.message : 'Please check your basket.');
       return;
     }
+    sending.current = true;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lines: cart,
-          collectionTime: collection,
-          customerName,
-          note,
-          fulfillment,
-          contactNumber: contactNumber || null,
-          company: company || null,
-          building: building || null,
-          whatsappOptIn,
-        }),
-      });
+      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn});
+      const key = await submissionKey(payload);
+      const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
+      clearSubmission(key);
       setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment });
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
@@ -145,6 +139,7 @@ export function OrderingApp() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place that order. Please try again.');
     } finally {
+      sending.current = false;
       setSubmitting(false);
     }
   }
