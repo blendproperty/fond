@@ -1,5 +1,13 @@
 # FOND ordering PWA
 
+## 2026-09-15 - BI-style reports promoted and live-verified
+
+Commit/push: 19939ec2c33d6c2278d92da7fb2c3abc92707a52 promoted directly to main, no PR merge. Verify FOND #71 succeeded (verify job 1m44s): https://github.com/blendproperty/fond/actions/runs/34945435351. Deploy FOND #25 succeeded in 53s for the same revision: https://github.com/blendproperty/fond/actions/runs/34945600017. No provider/configuration changes.
+
+Live verification: refreshed the existing authenticated admin browser and opened Reports. Business overview, presets/custom dates, fulfilment filter, four zero KPI cards, chart panels, searchable item detail and source notes loaded. Production contains no completed orders in the selected period; no false slow-mover rows or fabricated data appear. Anonymous overview API returned 401. Desktop populated/empty and mobile populated screenshots were inspected locally; 40 unit and 20 browser checks passed before promotion. No production records or payments were created for testing.
+
+PROJECT_CONTEXT.md and README.md are on main. This documentation-only follow-up skips CI; deployed application remains 19939ec. Previous Yoco/WhatsApp configuration, restaurant UAT and offsite recovery gates remain unchanged. Native dashboard styling is inspired by BI tools; Microsoft Power BI is not embedded and no Yoco sales feed is connected.
+
 ## 2026-09-15 - replace basic report with business intelligence dashboard
 
 User correction: the Reports list was not the requested Power BI-style experience. Traced the basic report to cc59e08; the preceding admin release retained it. It ranked available zero-sales menu items as slow movers, even with no completed history. That categorisation was misleading and is removed, including from the compatibility endpoint.
