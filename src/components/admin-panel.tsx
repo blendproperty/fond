@@ -74,17 +74,20 @@ export function AdminPanel() {
 
   if (locked) {
     return (
-      <div className="staff-lock">
-        <form onSubmit={submitCode} className="staff-lock-card">
-          <Lock size={28} />
-          <h1>FOND admin</h1>
-          <p>Enter the admin access code to manage the menu and view orders.</p>
-          <label className="field-check"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');}}/> Sign in with a named account</label>
-          {named && <label className="field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label>}
-          <input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Admin code" aria-label="Admin access code" />
-          {named && <label className="field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="Required after 2FA enrollment"/></label>}
+      <div className="staff-lock admin-login">
+        <form onSubmit={submitCode} className="admin-login-card">
+          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">ADMIN PORTAL</span></div>
+          <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
+          <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
+          <h1>Welcome back.</h1>
+          <p className="admin-login-intro">Sign in to manage your menu, orders and business.</p>
+          <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
+          {named && <label className="admin-login-field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" placeholder="Your username"/></label>}
+          <label className="admin-login-field">{named?'Password':'Admin access code'}<input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} autoComplete={named?'current-password':'off'} placeholder={named?'Enter your password':'Enter your admin code'} aria-label={named?'Password':'Admin access code'} /></label>
+          {named && <label className="admin-login-field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="After 2FA enrollment"/></label>}
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
-          <button className="primary full" type="submit">Unlock</button>
+          <button className="primary full admin-login-submit" type="submit">Unlock</button>
+          <p className="admin-login-foot">Private access for the FOND team.</p>
         </form>
       </div>
     );
