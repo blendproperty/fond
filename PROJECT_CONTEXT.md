@@ -3,6 +3,12 @@
 
 
 
+## 2026-09-15 - repair promotion confirmed
+
+Implementation/push: e334e2a885f36b74d75c09fe22aeb652dcb46750 pushed to main from a clean checkout based on ee2ecfb. No separate PR merge. GitHub Verify FOND #69 succeeded: https://github.com/blendproperty/fond/actions/runs/34941661855. Deploy FOND #23 succeeded for that same revision in 44 seconds: https://github.com/blendproperty/fond/actions/runs/34941863657. No deployment configuration change.
+
+Live verification after deployment: HTTPS home, /admin, /api/menu and /api/health returned 200; DB-backed health reported ordering mode, liveOrdering=true and in-person payments. Unauthenticated /api/staff/orders returned 401. No live order, WhatsApp delivery or restaurant staff UAT performed. Earlier operational/management-dashboard gates remain. This evidence-only follow-up is pushed with CI skipped to avoid another application deployment; deployed app revision stays e334e2a. Canonical context presence on origin/main verified after push.
+
 ## 2026-09-15 - repair browser submission regression after modifiers
 
 Diagnosis: current remote ee2ecfb restored server reliability and passes all 26 unit tests, but Verify FOND run 34939419750 (attempt 2, job 104289455894) failed both customer browser scenarios. Reproduced locally: both customer and manual staff clients omitted the required Idempotency-Key after the modifiers UI replacement. Staff queue handling had also reverted to optimistic updates. Skipped Deploy FOND jobs were the intended CI gate, not separate deploy failures.
