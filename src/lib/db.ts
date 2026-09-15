@@ -48,6 +48,19 @@ export function getDb(): DatabaseSync {
       building TEXT,
       whatsapp_opt_in INTEGER NOT NULL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS order_submissions (
+      submission_key TEXT PRIMARY KEY,
+      fingerprint TEXT NOT NULL,
+      order_id TEXT NOT NULL REFERENCES orders(id)
+    );
+    CREATE TABLE IF NOT EXISTS order_events (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES orders(id),
+      from_status TEXT,
+      to_status TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS menu_items (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

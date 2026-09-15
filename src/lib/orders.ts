@@ -9,17 +9,25 @@ import { getAvailableMenu } from './menu-store';
 // person by staff, independent of this app (existing card machine or cash);
 // this system's job is only to track what was ordered and its kitchen
 // status, not to process payment.
+//
+// Reliability (2026-09-14): order submission is idempotent via an optional
+// submissionKey (so a retried network request doesn't create a duplicate
+// order), and every status change is recorded in order_events for an audit
+// trail, with an optional expectedStatus guard against a stale tablet
+// racing another device's update.
 
 export type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
+
+export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number };
 
 export type OrderRecord = {
   id: string;
   reference: string;
   customerName: string;
   note: string | null;
-  lines: (CartLine & { name?: string; unitPriceCents?: number; subtotalCents?: number })[];
+  lines: PricedLine[];
   collectionTime: string;
   totalCents: number;
   status: OrderStatus;
@@ -67,7 +75,7 @@ function fromRow(row: OrderRow): OrderRecord {
     reference: row.reference,
     customerName: row.customer_name,
     note: row.note,
-    lines: JSON.parse(row.lines_json) as CartLine[],
+    lines: JSON.parse(row.lines_json) as PricedLine[],
     collectionTime: row.collection_time,
     totalCents: row.total_cents,
     status: row.status as OrderStatus,
@@ -100,71 +108,90 @@ export function createOrder(input: {
   const db = getDb();
   const key = input.submissionKey;
   if (key !== undefined && !/^[0-9a-f-]{36}$/i.test(key)) throw new Error('Provide a valid submission key.');
-  const fingerprint = createHash('sha256').update(JSON.stringify({
-    name: input.customerName, note: input.note ?? null, lines: input.lines,
-    time: input.collectionTime, source: input.source, fulfillment: input.fulfillment ?? 'collection',
-    phone: input.contactNumber ?? null, company: input.company ?? null, building: input.building ?? null,
-    optIn: input.whatsappOptIn ?? false,
-  })).digest('hex');
+  const fingerprint = createHash('sha256')
+    .update(
+      JSON.stringify({
+        name: input.customerName,
+        note: input.note ?? null,
+        lines: input.lines,
+        time: input.collectionTime,
+        source: input.source,
+        fulfillment: input.fulfillment ?? 'collection',
+        phone: input.contactNumber ?? null,
+        company: input.company ?? null,
+        building: input.building ?? null,
+        optIn: input.whatsappOptIn ?? false,
+      }),
+    )
+    .digest('hex');
   db.exec('BEGIN IMMEDIATE');
   try {
-  if (key) {
-    const prior = db.prepare('SELECT * FROM order_submissions WHERE submission_key = ?').get(key) as {fingerprint: string; order_id: string} | undefined;
-    if (prior) {
-      if (prior.fingerprint !== fingerprint) throw new SubmissionConflictError('This submission key was already used for a different order.');
-      const existing = fromRow(db.prepare('SELECT * FROM orders WHERE id = ?').get(prior.order_id) as OrderRow);
-      db.exec('COMMIT');
-      return existing;
+    if (key) {
+      const prior = db.prepare('SELECT * FROM order_submissions WHERE submission_key = ?').get(key) as
+        | { fingerprint: string; order_id: string }
+        | undefined;
+      if (prior) {
+        if (prior.fingerprint !== fingerprint) throw new SubmissionConflictError('This submission key was already used for a different order.');
+        const existing = fromRow(db.prepare('SELECT * FROM orders WHERE id = ?').get(prior.order_id) as OrderRow);
+        db.exec('COMMIT');
+        return existing;
+      }
     }
-  }
-  const customerName = input.customerName.trim();
-  if (!customerName || customerName.length > 100) throw new Error('Enter a name for this order.');
-  const collectionTime = input.collectionTime.trim();
-  if (!collectionTime || collectionTime.length > 100) throw new Error('Choose a collection time.');
-  const note = input.note?.trim() || null;
-  if (note && note.length > 300) throw new Error('Note is too long.');
-  const fulfillment: FulfillmentType = input.fulfillment === 'delivery' ? 'delivery' : 'collection';
-  const contactNumber = input.contactNumber?.trim() || null;
-  const company = input.company?.trim() || null;
-  const building = input.building?.trim() || null;
-  if (fulfillment === 'delivery') {
-    if (!contactNumber || contactNumber.length < 6) throw new Error('Enter a contact number for delivery.');
-    if (!building || building.length < 1) throw new Error('Enter the building/office to deliver to.');
-    if (contactNumber.length > 30) throw new Error('Contact number is too long.');
-    if (building.length > 150) throw new Error('Building/office is too long.');
-    if (company && company.length > 150) throw new Error('Company name is too long.');
-  }
-  const whatsappOptIn = !!input.whatsappOptIn && !!contactNumber;
-  const priced = quoteCart(input.lines, getAvailableMenu()); // throws on unknown/unavailable items or bad quantities, priced against the live admin-editable menu
-  const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
-  const now = new Date().toISOString();
-  // Staff-entered orders are for walk-ins/phone orders already accepted at
-  // the counter, so they start life a step ahead of the customer PWA queue.
-  const status: OrderStatus = input.source === 'staff' ? 'accepted' : 'received';
-  const record: OrderRecord = {
-    id: randomUUID(),
-    reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
-    customerName,
-    note,
-    lines: priced.map(line => ({id: line.id, quantity: line.quantity, name: line.name, unitPriceCents: line.price, subtotalCents: line.subtotal})),
-    collectionTime,
-    totalCents,
-    status,
-    source: input.source,
-    createdAt: now,
-    updatedAt: now,
-    fulfillment,
-    contactNumber,
-    company,
-    building,
-    whatsappOptIn,
-  };
-  getDb()
-    .prepare(
+    const customerName = input.customerName.trim();
+    if (!customerName || customerName.length > 100) throw new Error('Enter a name for this order.');
+    const collectionTime = input.collectionTime.trim();
+    if (!collectionTime || collectionTime.length > 100) throw new Error('Choose a collection time.');
+    const note = input.note?.trim() || null;
+    if (note && note.length > 300) throw new Error('Note is too long.');
+    const fulfillment: FulfillmentType = input.fulfillment === 'delivery' ? 'delivery' : 'collection';
+    const contactNumber = input.contactNumber?.trim() || null;
+    const company = input.company?.trim() || null;
+    const building = input.building?.trim() || null;
+    if (fulfillment === 'delivery') {
+      if (!contactNumber || contactNumber.length < 6) throw new Error('Enter a contact number for delivery.');
+      if (!building || building.length < 1) throw new Error('Enter the building/office to deliver to.');
+      if (contactNumber.length > 30) throw new Error('Contact number is too long.');
+      if (building.length > 150) throw new Error('Building/office is too long.');
+      if (company && company.length > 150) throw new Error('Company name is too long.');
+    }
+    const whatsappOptIn = !!input.whatsappOptIn && !!contactNumber;
+    // throws on unknown/unavailable items, bad quantities or modifiers - priced against the live admin-editable menu
+    const priced = quoteCart(input.lines, getAvailableMenu());
+    const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
+    const now = new Date().toISOString();
+    // Staff-entered orders are for walk-ins/phone orders already accepted at
+    // the counter, so they start life a step ahead of the customer PWA queue.
+    const status: OrderStatus = input.source === 'staff' ? 'accepted' : 'received';
+    const lines: PricedLine[] = priced.map((line) => ({
+      id: line.id,
+      quantity: line.quantity,
+      modifierIds: line.selectedModifiers.map((m) => m.id),
+      name: line.name,
+      unitPriceCents: line.unitPrice,
+      subtotalCents: line.subtotal,
+    }));
+    const record: OrderRecord = {
+      id: randomUUID(),
+      reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
+      customerName,
+      note,
+      lines,
+      collectionTime,
+      totalCents,
+      status,
+      source: input.source,
+      createdAt: now,
+      updatedAt: now,
+      fulfillment,
+      contactNumber,
+      company,
+      building,
+      whatsappOptIn,
+    };
+    db.prepare(
       `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
+    ).run(
       record.id,
       record.reference,
       record.customerName,
@@ -182,11 +209,21 @@ export function createOrder(input: {
       record.building,
       record.whatsappOptIn ? 1 : 0,
     );
-  if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
-  db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), record.id, null, status, input.source === 'staff' ? 'shared-staff-tablet' : 'customer', now);
-  db.exec('COMMIT');
-  return record;
-  } catch (error) { db.exec('ROLLBACK'); throw error; }
+    if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
+    db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(
+      randomUUID(),
+      record.id,
+      null,
+      status,
+      input.source === 'staff' ? 'shared-staff-tablet' : 'customer',
+      now,
+    );
+    db.exec('COMMIT');
+    return record;
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 export function getOrderByReference(reference: string): OrderRecord | null {
@@ -231,19 +268,22 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
   const db = getDb();
   db.exec('BEGIN IMMEDIATE');
   try {
-  const row = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id) as OrderRow | undefined;
-  if (!row) throw new OrderTransitionError('Order not found.');
-  const current = fromRow(row);
-  if (expectedStatus && current.status !== expectedStatus) throw new OrderTransitionError('Order changed on another device. Refresh and try again.');
-  if (!VALID_TRANSITIONS[current.status].includes(nextStatus)) {
-    throw new OrderTransitionError(`Cannot move an order from ${current.status} to ${nextStatus}.`);
+    const row = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id) as OrderRow | undefined;
+    if (!row) throw new OrderTransitionError('Order not found.');
+    const current = fromRow(row);
+    if (expectedStatus && current.status !== expectedStatus) throw new OrderTransitionError('Order changed on another device. Refresh and try again.');
+    if (!VALID_TRANSITIONS[current.status].includes(nextStatus)) {
+      throw new OrderTransitionError(`Cannot move an order from ${current.status} to ${nextStatus}.`);
+    }
+    const updatedAt = new Date().toISOString();
+    db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
+    db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, 'shared-staff-tablet', updatedAt);
+    db.exec('COMMIT');
+    return { ...current, status: nextStatus, updatedAt };
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
   }
-  const updatedAt = new Date().toISOString();
-  db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
-  db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, 'shared-staff-tablet', updatedAt);
-  db.exec('COMMIT');
-  return { ...current, status: nextStatus, updatedAt };
-  } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
 
 export function getOrderEvents(id: string) {
