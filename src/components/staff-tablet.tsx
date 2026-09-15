@@ -140,16 +140,19 @@ export function StaffTablet() {
 
   if (locked) {
     return (
-      <div className="staff-lock">
-        <form onSubmit={submitCode} className="staff-lock-card">
-          <Lock size={28} />
-          <h1>FOND staff tablet</h1>
-          <p>Enter the facility access code to see the order queue.</p>
-          <label className="field-check"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');}}/> Sign in with a named account</label>
-          {named&&<label className="field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label>}
-          <input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Access code" aria-label="Staff access code" />
+      <div className="staff-lock admin-login">
+        <form onSubmit={submitCode} className="admin-login-card staff-login-card">
+          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">STAFF PORTAL</span></div>
+          <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
+          <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
+          <h1>Ready for service.</h1>
+          <p className="admin-login-intro">Sign in to manage today's orders.</p>
+          <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
+          {named&&<label className="admin-login-field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" placeholder="Your username"/></label>}
+          <label className="admin-login-field">{named?'Password':'Staff access code'}<input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} autoComplete={named?'current-password':'off'} placeholder={named?'Enter your password':'Enter the staff code'} aria-label={named?'Password':'Staff access code'} /></label>
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
-          <button className="primary full" type="submit">Unlock</button>
+          <button className="primary full admin-login-submit" type="submit">Open order queue</button>
+          <p className="admin-login-foot">Private access for the FOND team.</p>
         </form>
       </div>
     );
