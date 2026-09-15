@@ -1,5 +1,15 @@
 # FOND ordering PWA
 
+## 2026-09-15 - admin release deployment and live verification confirmed
+
+Implementation/push: 7afa7e035d819a45d6dbe20e40cc5191f64a8c7e promoted directly to origin/main from feature/complete-admin. No separate PR merge. GitHub Verify FOND #70 succeeded in 1m39s: https://github.com/blendproperty/fond/actions/runs/34944302084. Deploy FOND #24 succeeded for the same revision in 47s: https://github.com/blendproperty/fond/actions/runs/34944442146. Its workflow includes the pre-replacement SQLite backup and serialized deployment. Provider configuration was not changed.
+
+Live read-only verification: the existing signed-in Edge admin session was refreshed and all seven navigation labels appeared without Soon. Customers directory, Marketing & CMS draft/publication controls, Finance metrics/ledger/reconciliation and Settings trading/team/provider controls loaded successfully. Existing menu remained available. Settings explicitly reported Yoco and WhatsApp not configured, with both switches off and no named users yet. Public home returned 200; /api/health returned ordering mode, liveOrdering=true and in-person payments; /api/store returned the expected content with onlinePayments=false. Anonymous /api/admin/manage/settings returned 401. These checks verify served screens and read APIs, not real customer transactions or provider delivery.
+
+Local verification remains 37 unit tests, TypeScript/build, 18 browser tests, Docker build and isolated old-image migration/restart/backup-restore integrity checks. No production customer/profile/payment/message mutation was made. Remaining restaurant UAT, live provider activation, actual staff onboarding, approved business content and offsite recovery gates below stay open. The screenshot's four unfinished admin sections are implemented and deployed; this is not a claim that provider/accounting/POS integrations or every enterprise feature exist.
+
+Canonical handover: PROJECT_CONTEXT.md, README.md and OPERATIONS.md are included on main. This evidence-only commit skips CI to avoid a redundant deployment; production application revision remains 7afa7e0. Remote context presence is checked after push.
+
 ## 2026-09-15 - full admin sections and optional hosted Yoco checkout
 
 This checkpoint supersedes earlier descriptions of Customers, Marketing & CMS, Finance and Settings as placeholders. Work starts from freshly verified origin/main 9ff768d on feature/complete-admin. Brett explicitly selected optional Yoco checkout in the release clarification.
