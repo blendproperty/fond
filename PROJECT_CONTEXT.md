@@ -1,5 +1,16 @@
 # FOND ordering PWA
 
+## 2026-09-15 - customer app promotion formats
+
+Implementation: Marketing & CMS now offers text banners, image cards with editable text overlays, and dismissible native-dialog popups. Includes raster image upload, button label/category selection, active dates, matching card previews and a working popup preview. Existing draft/publish/restore remains the publication boundary. The customer app refreshes published store content every 60 seconds; only server-selected active promotions appear. At most one popup per browser session (first active popup in list), delayed until outside basket/tracking/confirmation. Close, Escape and backdrop dismissal supported. Browser session storage may persist when browsers restore tabs; without storage, suppression lasts the page lifetime.
+
+Images: new additive promotion_images SQLite table stores uploaded bytes alongside existing backup data. Authenticated bounded multipart upload accepts JPG/PNG/WebP signatures up to 2 MB, refuses SVG/HTML, caps the library at 200 images, and uses random public image URLs with explicit MIME/nosniff headers. No remote-image URL fetching. Removing an image from a draft does not delete its bytes, preserving publication rollback. No new production credentials or volumes required.
+
+Testing: production build and TypeScript passed, 42 unit tests and 26 Playwright desktop/mobile checks passed. New coverage includes schedule timezone normalization, bad formats/categories/image URLs, anonymous upload denial, raster retrieval, rejected SVG, format editor/image upload/preview, popup dismissal/session suppression, basket deferral and category navigation. Desktop editor and mobile image popup screenshots inspected. Browser test images/copy are isolated fixtures, not production promotions.
+
+Commit/push: pending commit with this checkpoint, starting from verified origin/main 8c0ea82 on feature/complete-admin. Merge: direct main promotion under existing authorization, no PR merge. Deployment/configuration: pending CI-gated deployment. Live production verification: pending; no production promotions uploaded or published. Prior Yoco/WhatsApp credential and real provider UAT gates, restaurant device/order UAT, marketing consent and offsite recovery gates remain unchanged.
+
+
 ## 2026-09-15 - BI-style reports promoted and live-verified
 
 Commit/push: 19939ec2c33d6c2278d92da7fb2c3abc92707a52 promoted directly to main, no PR merge. Verify FOND #71 succeeded (verify job 1m44s): https://github.com/blendproperty/fond/actions/runs/34945435351. Deploy FOND #25 succeeded in 53s for the same revision: https://github.com/blendproperty/fond/actions/runs/34945600017. No provider/configuration changes.

@@ -36,3 +36,10 @@ Local validation created one synthetic order using the previous image, ran VACUU
 ## Restaurant acceptance gates
 
 Approved menu/prices/allergens, delivery/refund policy, actual named operators, real-device installation and staff collection/delivery UAT remain for the restaurant. Credentials and real provider tests remain for enabled payment/notification options. No production test order, real payment or notification was sent during this task. Keep these gates open in PROJECT_CONTEXT.md until evidence closes them.
+
+
+## Customer app promotions
+
+In Marketing & CMS, Add promotion, select Text banner / Image with text overlay / Popup, enter text, optional button category, start/end and Active. Images are required for image cards and optional for popups. Upload JPG, PNG or WebP under 2 MB; use a photo with space for readable overlay text. Preview, then Save draft or Publish to website. Publication does not alter menu prices or send messages. The app checks schedules on load and refreshes content once per minute while open. If overlapping popups are scheduled, the first active popup wins; at most one popup displays per browser session, outside basket/track/confirmation. A restored browser session may retain the dismissal.
+
+Uploaded images are public by link immediately, even before publishing a draft. They reside in promotion_images in SQLite and are included in database backups. Library limit is 200 images; draft removal does not purge assets, because previous publications may reference them. Any manual archival must preserve image IDs in both current draft and published/previous content. No storage/provider secrets are required.

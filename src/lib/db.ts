@@ -105,6 +105,7 @@ export function getDb(): DatabaseSync {
     db.exec(`ALTER TABLE menu_items ADD COLUMN modifiers_json TEXT NOT NULL DEFAULT '[]'`);
   }
   db.exec(`
+    CREATE TABLE IF NOT EXISTS promotion_images (id TEXT PRIMARY KEY,mime TEXT NOT NULL,bytes BLOB NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_members (id TEXT PRIMARY KEY, name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_sessions (token_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL, expires_at TEXT NOT NULL);

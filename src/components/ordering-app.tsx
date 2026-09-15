@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
 import { money, quoteCart, lineKey, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
 
+import {CustomerPromotions} from './promotions';
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
@@ -22,6 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function OrderingApp() {
   const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean}|null>(null);
+  useEffect(()=>{const timer=setInterval(()=>{fetch('/api/store').then(r=>r.json()).then(setStore).catch(()=>{});},60000);return()=>clearInterval(timer);},[]);
   const [payOnline,setPayOnline]=useState(false);
   const [paymentError,setPaymentError]=useState('');
   const [paying,setPaying]=useState(false);
@@ -51,6 +53,7 @@ export function OrderingApp() {
 
   useEffect(() => {
     fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection(data.settings.collectionSlots[0]);if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
+
     const params=new URLSearchParams(location.search);if(params.has('payment')&&params.get('reference')){setPanel('track');setTrackInput(params.get('reference')!);void lookupOrder(params.get('reference')!);}
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
   }, []);
@@ -176,7 +179,7 @@ export function OrderingApp() {
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
       {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
       {store&&!store.open&&<div role="status" className="store-announcement">{store.settings.closedMessage}</div>}
-      {!!store?.content.promotions.length&&<section className="store-promotions">{store.content.promotions.map(p=><article key={p.id}><h3>{p.title}</h3><p>{p.body}</p></article>)}</section>}
+      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><div className="tabs scroll" role="tablist" aria-label="Menu category">{categories.map((c) => <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div></div>
         <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>

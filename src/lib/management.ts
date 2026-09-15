@@ -1,3 +1,4 @@
+import { categories } from './menu';
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 
@@ -51,14 +52,23 @@ export function assertTrading(fulfillment:string,source:string) {
   const count=getDb().prepare("SELECT count(*) AS n FROM orders WHERE status IN ('received','accepted','ready')").get() as {n:number};
   if(count.n>=s.maxActiveOrders)throw new Error('The kitchen is at capacity. Please try again shortly.');
 }
-export const DEFAULT_CONTENT={headline:'Good food. One less thing to think about.',intro:'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.',announcement:'',promotions:[] as {id:string;title:string;body:string;startsAt:string;endsAt:string;active:boolean}[]};
+export type Promotion={id:string;title:string;body:string;startsAt:string;endsAt:string;active:boolean;display?:'banner'|'card'|'popup';imageUrl?:string;buttonLabel?:string;category?:string};
+export const DEFAULT_CONTENT={headline:'Good food. One less thing to think about.',intro:'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.',announcement:'',promotions:[] as Promotion[]};
 export type SiteContent=typeof DEFAULT_CONTENT;
 export function validateContent(input:unknown):SiteContent {
   const c=input as SiteContent;
   if(!c||typeof c.headline!=='string'||!c.headline.trim()||c.headline.length>120||typeof c.intro!=='string'||c.intro.length>600||typeof c.announcement!=='string'||c.announcement.length>250)throw new Error('Check the headline, introduction and announcement lengths.');
   if(!Array.isArray(c.promotions)||c.promotions.length>20)throw new Error('Maximum 20 promotions.');
-  for(const p of c.promotions)if(!p||typeof p.id!=='string'||typeof p.title!=='string'||!p.title.trim()||p.title.length>100||typeof p.body!=='string'||p.body.length>500||typeof p.active!=='boolean'||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||p.startsAt>=p.endsAt)throw new Error('Each promotion needs a title and valid start/end dates.');
-  return c;
+  for(const p of c.promotions)if(!p||typeof p.id!=='string'||typeof p.title!=='string'||!p.title.trim()||p.title.length>100||typeof p.body!=='string'||p.body.length>500||typeof p.active!=='boolean'||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||Date.parse(p.startsAt)>=Date.parse(p.endsAt))throw new Error('Each promotion needs a title and valid start/end dates.');
+  if(new Set(c.promotions.map(p=>p.id)).size!==c.promotions.length)throw new Error('Each promotion must have a unique ID.');
+  for(const p of c.promotions){
+    if(!/^[a-zA-Z0-9_-]{1,80}$/.test(p.id)||p.display&&!['banner','card','popup'].includes(p.display))throw new Error('Choose a valid promotion format.');
+    if(p.imageUrl && (typeof p.imageUrl!=='string'||!/^\/api\/promotion-images\/[a-f0-9-]{36}$/.test(p.imageUrl)))throw new Error('Use an uploaded promotion image.');
+    if(p.display==='card'&&!p.imageUrl)throw new Error('Upload an image for the image card.');
+    if(p.buttonLabel!=null&&(typeof p.buttonLabel!=='string'||p.buttonLabel.length>40))throw new Error('Button text is limited to 40 characters.');
+    if(p.category&&!categories.includes(p.category as typeof categories[number]))throw new Error('Choose an existing menu category.');
+  }
+  return {...c,promotions:c.promotions.map(p=>({...p,startsAt:new Date(p.startsAt).toISOString(),endsAt:new Date(p.endsAt).toISOString()}))};
 }
 export function publicContent() {
   const c=document('content-published',DEFAULT_CONTENT),now=new Date().toISOString();

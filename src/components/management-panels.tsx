@@ -1,5 +1,6 @@
 'use client';
 import { useState,useEffect,useCallback } from 'react';
+import {PromotionEditor,PromotionPreview} from './promotion-editor';
 import { money } from '@/lib/menu';
 import type { Customer } from '@/lib/business-data';
 import type { TradingSettings,SiteContent } from '@/lib/management';
@@ -38,6 +39,7 @@ export function CustomersPanel(){
 }
 
 export function MarketingPanel(){
+  const [uploads,setUploads]=useState(0);const uploading=uploads>0;
   const state=useData('marketing'),[draft,setDraft]=useState<SiteContent|null>(null);
   useEffect(()=>{if(state.data)setDraft(state.data.draft);},[state.data]);
   if(!draft)return <div className="manage-page"><Feedback state={state}/><p>Loading content…</p></div>;
@@ -45,13 +47,11 @@ export function MarketingPanel(){
     <label className="field">Hero headline<input maxLength={120} value={draft.headline} onChange={e=>setDraft({...draft,headline:e.target.value})}/></label>
     <label className="field">Introduction<textarea maxLength={600} value={draft.intro} onChange={e=>setDraft({...draft,intro:e.target.value})}/></label>
     <label className="field">Announcement<input maxLength={250} value={draft.announcement} onChange={e=>setDraft({...draft,announcement:e.target.value})}/></label>
-    <h3>Scheduled promotions</h3><p className="small">Dates and times below use your device timezone. These are website announcements; change item prices in Menu & specials.</p>
-    {draft.promotions.map((p,i)=><div className="manage-promotion" key={p.id}><label className="field">Promotion title<input value={p.title} onChange={e=>setDraft({...draft,promotions:draft.promotions.map((x,j)=>j===i?{...x,title:e.target.value}:x)})}/></label><label className="field">Message<textarea value={p.body} onChange={e=>setDraft({...draft,promotions:draft.promotions.map((x,j)=>j===i?{...x,body:e.target.value}:x)})}/></label>
-      {(['startsAt','endsAt'] as const).map(k=><label className="field" key={k}>{k==='startsAt'?'Starts':'Ends'}<input type="datetime-local" value={new Date(new Date(p[k]).getTime()-new Date(p[k]).getTimezoneOffset()*60000).toISOString().slice(0,16)} onChange={e=>{if(e.target.value)setDraft({...draft,promotions:draft.promotions.map((x,j)=>j===i?{...x,[k]:new Date(e.target.value).toISOString()}:x)});}}/></label>)}
-      <label className="field-check"><input type="checkbox" checked={p.active} onChange={e=>setDraft({...draft,promotions:draft.promotions.map((x,j)=>j===i?{...x,active:e.target.checked}:x)})}/> Active</label><button className="quiet" onClick={()=>setDraft({...draft,promotions:draft.promotions.filter(x=>x.id!==p.id)})}>Remove from draft</button></div>)}
-    <button className="outline" onClick={()=>setDraft({...draft,promotions:[...draft.promotions,{id:crypto.randomUUID(),title:'',body:'',active:true,startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000*7).toISOString()}]})}>Add promotion</button>
-    <div className="manage-actions"><button className="outline" disabled={state.busy} onClick={()=>state.save('marketing',{content:draft})}>Save draft</button><button className="primary" disabled={state.busy} onClick={()=>state.save('marketing',{content:draft,publish:true})}>Publish to website</button><button className="quiet" disabled={state.busy} onClick={()=>state.save('restore-content',{})}>Restore previous publication</button></div>
-    </section><section className="manage-card"><p className="eyebrow">DRAFT PREVIEW</p><h2>{draft.headline}</h2><p>{draft.intro}</p>{draft.announcement&&<p className="notice">{draft.announcement}</p>}{draft.promotions.map(p=><div className="manage-promotion" key={p.id}><strong>{p.title}</strong><p>{p.body}</p><small>{p.active?'Scheduled':'Inactive'}</small></div>)}<h3>Marketing contacts</h3><p>Use the consented-contact export in Customers with your approved messaging provider. Publishing here changes the website; it does not send messages.</p></section></div>
+    <h3>App promotions</h3><p className="small">Choose a text banner, image overlay or popup. Popups appear once per browser session, outside checkout. Dates use your device timezone. Change prices in Menu &amp; specials.</p>
+    {draft.promotions.map((p,i)=><PromotionEditor key={p.id} promotion={p} onUploading={busy=>setUploads(n=>Math.max(0,n+(busy?1:-1)))} onChange={value=>setDraft(current=>current?{...current,promotions:current.promotions.map(x=>x.id===p.id?value:x)}:current)} onRemove={()=>setDraft({...draft,promotions:draft.promotions.filter(x=>x.id!==p.id)})}/>)}
+    <button className="outline" onClick={()=>setDraft({...draft,promotions:[...draft.promotions,{id:crypto.randomUUID(),title:'',body:'',display:'banner',buttonLabel:'View menu',active:true,startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000*7).toISOString()}]})}>Add promotion</button>
+    <div className="manage-actions"><button className="outline" disabled={state.busy||uploading} onClick={()=>state.save('marketing',{content:draft})}>Save draft</button><button className="primary" disabled={state.busy||uploading} onClick={()=>state.save('marketing',{content:draft,publish:true})}>Publish to website</button><button className="quiet" disabled={state.busy||uploading} onClick={()=>state.save('restore-content',{})}>Restore previous publication</button></div>
+    </section><section className="manage-card"><p className="eyebrow">DRAFT PREVIEW</p><h2>{draft.headline}</h2><p>{draft.intro}</p>{draft.announcement&&<p className="notice">{draft.announcement}</p>}{draft.promotions.map(p=><PromotionPreview key={p.id} promotion={p}/>)}<h3>Marketing contacts</h3><p>Use the consented-contact export in Customers with your approved messaging provider. Publishing here changes the website; it does not send messages.</p></section></div>
     <section className="manage-card"><h2>Order notification log</h2><button className="quiet" onClick={state.refresh}>Refresh log</button><p>WhatsApp attempts are processed while the staff tablet is open. Provider acceptance does not prove delivery to the phone.</p>{state.data?.jobs.length?state.data.jobs.map((j:any)=><div className="manage-inline" key={j.id}><span>{j.template} · {j.status} · {j.attempts} attempt(s) {j.last_error&&`· ${j.last_error}`}</span>{['failed','not-configured'].includes(j.status)&&<button className="quiet" onClick={()=>state.save('notification-retry',{id:j.id})}>Retry</button>}</div>):<Empty/>}</section></div>;
 }
 
