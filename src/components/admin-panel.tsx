@@ -1,7 +1,19 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Lock, LogOut, Plus, RefreshCw, Save, Sparkles, Trash2 } from 'lucide-react';
+import { BarChart3, Lock, LogOut, Megaphone, Pencil, Plus, RefreshCw, Save, Settings, Sparkles, Trash2, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal } from '@/lib/menu';
+
+type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
+
+const NAV: { key: AdminSection; label: string; icon: typeof UtensilsCrossed; ready: boolean }[] = [
+  { key: 'menu', label: 'Menu & specials', icon: UtensilsCrossed, ready: true },
+  { key: 'orders', label: 'Orders', icon: BarChart3, ready: true },
+  { key: 'customers', label: 'Customers', icon: Users, ready: false },
+  { key: 'marketing', label: 'Marketing & CMS', icon: Megaphone, ready: false },
+  { key: 'reports', label: 'Reports', icon: BarChart3, ready: false },
+  { key: 'finance', label: 'Finance', icon: Wallet, ready: false },
+  { key: 'settings', label: 'Settings', icon: Settings, ready: false },
+];
 
 type AdminOrder = {
   id: string;
@@ -22,7 +34,7 @@ export function AdminPanel() {
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [tab, setTab] = useState<'menu' | 'orders'>('menu');
+  const [tab, setTab] = useState<AdminSection>('menu');
 
   const check = useCallback(async () => {
     const res = await fetch('/api/admin/menu', { cache: 'no-store' });
@@ -67,21 +79,41 @@ export function AdminPanel() {
   }
 
   return (
-    <div className="staff-app">
-      <header className="staff-header">
-        <div>
-          <p className="eyebrow">FOND · ADMIN</p>
-          <h1>Run the business</h1>
-        </div>
-        <div className="staff-header-actions">
-          <div className="tabs">
-            <button aria-selected={tab === 'menu'} onClick={() => setTab('menu')}>Menu &amp; specials</button>
-            <button aria-selected={tab === 'orders'} onClick={() => setTab('orders')}>Orders</button>
+    <div className="admin-shell">
+      <nav className="admin-nav" aria-label="Admin sections">
+        <div className="admin-nav-brand">fond<span>.</span></div>
+        {NAV.map((n) => {
+          const Icon = n.icon;
+          return (
+            <button key={n.key} className="admin-nav-item" aria-current={tab === n.key} onClick={() => setTab(n.key)}>
+              <Icon size={17} />
+              <span>{n.label}</span>
+              {!n.ready && <em>soon</em>}
+            </button>
+          );
+        })}
+        <button className="admin-nav-item admin-nav-logout" onClick={logout}><LogOut size={17} /> <span>Log out</span></button>
+      </nav>
+      <div className="admin-main">
+        <header className="staff-header">
+          <div>
+            <p className="eyebrow">FOND · ADMIN</p>
+            <h1>{NAV.find((n) => n.key === tab)?.label}</h1>
           </div>
-          <button className="icon-button" aria-label="Log out" onClick={logout}><LogOut size={18} /></button>
-        </div>
-      </header>
-      {tab === 'menu' ? <MenuAdmin /> : <OrdersAdmin />}
+        </header>
+        {tab === 'menu' && <MenuAdmin />}
+        {tab === 'orders' && <OrdersAdmin />}
+        {(tab === 'customers' || tab === 'marketing' || tab === 'reports' || tab === 'finance' || tab === 'settings') && <ComingSoon section={NAV.find((n) => n.key === tab)?.label ?? ''} />}
+      </div>
+    </div>
+  );
+}
+
+function ComingSoon({ section }: { section: string }) {
+  return (
+    <div className="admin-empty">
+      <p>{section} isn&rsquo;t built yet.</p>
+      <p className="small">This is an honest placeholder, not a preview of fake data — ask for this section specifically when you&rsquo;re ready to scope it (it needs some decisions first: roles, data retention, provider choices, etc).</p>
     </div>
   );
 }
@@ -173,10 +205,24 @@ function MenuAdmin() {
   );
 }
 
+const DIET_OPTIONS: Array<'vegan' | 'vegetarian' | 'gluten-free'> = ['vegan', 'vegetarian', 'gluten-free'];
+
 function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: boolean; onPatch: (body: Record<string, unknown>) => void; onRemove: () => void }) {
+  const [editing, setEditing] = useState(false);
   const [price, setPrice] = useState((item.basePrice ?? item.price) / 100 + '');
   const [specialPrice, setSpecialPrice] = useState(item.isSpecial && item.basePrice ? (item.price / 100 + '') : '');
   const [specialLabel, setSpecialLabel] = useState(item.specialLabel ?? '');
+  const [name, setName] = useState(item.name);
+  const [description, setDescription] = useState(item.description);
+  const [category, setCategory] = useState<Category>(item.category);
+  const [symbol, setSymbol] = useState(item.symbol);
+  const [diet, setDiet] = useState<string[]>(item.diet ?? []);
+
+  function toggleDiet(d: string) {
+    const next = diet.includes(d) ? diet.filter((x) => x !== d) : [...diet, d];
+    setDiet(next);
+    onPatch({ diet: next });
+  }
 
   return (
     <div className={`admin-row${item.available === false ? ' admin-row-off' : ''}`}>
@@ -188,8 +234,22 @@ function MenuRow({ item, saving, onPatch, onRemove }: { item: Meal; saving: bool
         </div>
         <label className="admin-price">R<input value={price} onChange={(e) => setPrice(e.target.value)} onBlur={() => onPatch({ price: Math.round(parseFloat(price || '0') * 100) })} inputMode="decimal" /></label>
         <label className="field-check"><input type="checkbox" checked={item.available !== false} onChange={(e) => onPatch({ available: e.target.checked })} /> On menu</label>
+        <button className="icon-button" aria-label={editing ? 'Close edit' : `Edit ${item.name}`} onClick={() => setEditing((v) => !v)}><Pencil size={16} /></button>
         <button className="icon-button" aria-label={`Remove ${item.name}`} onClick={onRemove}><Trash2 size={16} /></button>
       </div>
+      {editing && (
+        <div className="admin-row-edit">
+          <label className="field">Name<input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => onPatch({ name })} /></label>
+          <label className="field">Description<input value={description} onChange={(e) => setDescription(e.target.value)} onBlur={() => onPatch({ description })} /></label>
+          <label className="field">Category<select value={category} onChange={(e) => { const v = e.target.value as Category; setCategory(v); onPatch({ category: v }); }}>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label className="field">Symbol/emoji<input value={symbol} onChange={(e) => setSymbol(e.target.value)} onBlur={() => onPatch({ symbol })} style={{ maxWidth: 80 }} /></label>
+          <div className="field-check-row">
+            {DIET_OPTIONS.map((d) => (
+              <label className="field-check" key={d}><input type="checkbox" checked={diet.includes(d)} onChange={() => toggleDiet(d)} /> {d}</label>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="admin-row-special">
         <label className="field-check"><input type="checkbox" checked={!!item.isSpecial} onChange={(e) => onPatch({ isSpecial: e.target.checked, specialPrice: e.target.checked ? Math.round(parseFloat(specialPrice || price) * 100) : null })} /> <Sparkles size={13} /> Special</label>
         {item.isSpecial && <>
