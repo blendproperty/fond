@@ -24,7 +24,7 @@ test('lost order response can be retried with the same submission key',async({pa
 test('staff manual intake sends an idempotency key',async({page})=>{
  await page.goto('/staff');
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);
- await page.getByRole('button',{name:'Unlock'}).click();
+ await page.getByRole('button',{name:'Open order queue'}).click();
  await page.getByRole('button',{name:'Add order',exact:true}).click();
  await page.getByRole('button',{name:/Smashed Avo/}).click();
  await page.getByLabel('Name / table / desk').fill('Manual browser test');

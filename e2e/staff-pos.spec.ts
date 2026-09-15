@@ -7,7 +7,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   const { reference } = await created.json();
   await page.goto('/staff');
   await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);
-  await page.getByRole('button', { name: 'Unlock' }).click();
+  await page.getByRole('button', { name: 'Open order queue' }).click();
   const card = page.locator('.staff-card').filter({ hasText: reference });
   await expect(card).toBeVisible();
   await card.getByRole('button', { name: 'Accept' }).click();
