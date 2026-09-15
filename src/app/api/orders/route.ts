@@ -1,13 +1,13 @@
 import { paymentStatus } from '@/lib/payments';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE, resolveSession } from '@/lib/auth';
+import { deliverOrderEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 import { SubmissionConflictError, createOrder, getOrderByReference } from '@/lib/orders';
 
-// Real order intake for the customer PWA. Yoco has been dropped entirely
-// (2026-09-14 decision) - this endpoint now genuinely accepts orders into
-// FOND's own queue, which staff work from on the facility tablet (see
-// /staff and src/app/api/staff/orders/route.ts). Payment is not handled
-// here: it happens in person with staff, independent of this app.
+// Customer orders enter FOND's staff queue. Hosted payment is optional.
 export async function POST(request: Request) {
+  const user = resolveSession((await cookies()).get(SESSION_COOKIE)?.value);
   const body = await request.json().catch(() => null);
   if (!body || !Array.isArray(body.lines) || typeof body.collectionTime !== 'string' || typeof body.customerName !== 'string') {
     return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Missing basket, name or collection time.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
@@ -27,7 +27,10 @@ export async function POST(request: Request) {
       company: typeof body.company === 'string' ? body.company : null,
       building: typeof body.building === 'string' ? body.building : null,
       whatsappOptIn: !!body.whatsappOptIn,
+      userId: user?.id,
+      customerEmail: user?.email,
     });
+    if (user?.emailVerified) await deliverOrderEmail(order, 'received').catch(() => false);
     return NextResponse.json(
       {
         reference: order.reference,
@@ -42,8 +45,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Reference lookup so a customer can check their order's status without an
-// account - there is no login on the customer side of this app.
+// Reference lookup also supports guests without an account.
 export async function GET(request: Request) {
   const reference = new URL(request.url).searchParams.get('reference');
   if (!reference) {

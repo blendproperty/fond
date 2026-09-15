@@ -22,6 +22,9 @@ type StaffOrder = {
   contactNumber: string | null;
   company: string | null;
   building: string | null;
+  posRequired: boolean;
+  posRecordedAt: string | null;
+  posReference: string | null;
 };
 
 const NEXT_STEP: Partial<Record<OrderStatus, { label: string; next: OrderStatus }>> = {
@@ -48,6 +51,10 @@ export function StaffTablet() {
   const [menu, setMenu] = useState<Meal[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
   const [queueError, setQueueError] = useState('');
+  const seenOrders = useRef<Set<string> | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [posOrderId, setPosOrderId] = useState<string | null>(null);
+  const [posReference, setPosReference] = useState('');
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
@@ -63,8 +70,30 @@ export function StaffTablet() {
     setQueueError('');
     setLocked(false);
     const data = await res.json();
-    setOrders(data.orders ?? []);
-  }, []);
+    const current: StaffOrder[] = data.orders ?? [];
+    if (seenOrders.current && notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      current.filter(o => o.status === 'received' && !seenOrders.current!.has(o.id)).forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.reference}` }));
+    }
+    seenOrders.current = new Set(current.map(o => o.id));
+    setOrders(current);
+  }, [notificationsEnabled]);
+
+  async function enableNotifications() {
+    if (typeof Notification === 'undefined') { setQueueError('This device does not support browser notifications.'); return; }
+    const permission = await Notification.requestPermission();
+    setNotificationsEnabled(permission === 'granted');
+    if (permission !== 'granted') setQueueError('Allow notifications in this browser to see new orders.');
+  }
+
+  async function recordYoco(id: string) {
+    try {
+      const res = await fetch(`/api/staff/orders/${id}/pos-entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posReference }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not record Yoco entry.');
+      setPosOrderId(null); setPosReference('');
+      await refresh();
+    } catch (error) { setQueueError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
+  }
 
   useEffect(() => {
     refresh().catch(() => setQueueError('Cannot reach FOND. The queue may be out of date.')).finally(() => setChecking(false));
@@ -134,6 +163,7 @@ export function StaffTablet() {
           <h1>Order queue</h1>{queueError && <p role="alert">{queueError}</p>}
         </div>
         <div className="staff-header-actions">
+          <button className="quiet" onClick={enableNotifications}>{notificationsEnabled ? 'Notifications on' : 'Enable order alerts'}</button>
           <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
@@ -166,10 +196,13 @@ export function StaffTablet() {
                       })}
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
+                    {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
+                    {posOrderId === order.id && <form className="staff-pos-form" onSubmit={event => { event.preventDefault(); void recordYoco(order.id); }}><label className="field">Yoco order reference<input autoFocus required maxLength={100} value={posReference} onChange={event => setPosReference(event.target.value)} placeholder="Reference shown in the Yoco system"/></label><p>Confirm only after this order has been added to Yoco for kitchen printing.</p><button className="primary" type="submit">Confirm Yoco entry</button><button className="quiet" type="button" onClick={() => {setPosOrderId(null);setPosReference('');}}>Cancel</button></form>}
                     <div className="staff-card-bottom">
                       <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid" : order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment pending — check before taking payment" : `Due ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
                       <div className="staff-card-actions">
-                        {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
+                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && posOrderId !== order.id && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
+                        {step && !(order.status === 'accepted' && order.posRequired && !order.posRecordedAt) && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>
                       </div>
                     </div>

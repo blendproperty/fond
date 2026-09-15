@@ -1,4 +1,5 @@
 import { teamSession } from './team';
+import {providerSecret} from './provider-secrets';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Lightweight shared-tablet gate, not per-staff-member accounts. FOND's
@@ -13,7 +14,7 @@ export const STAFF_COOKIE = 'fond_staff';
 const PEPPER = 'fond-staff-pepper-v1';
 
 function requiredCode(): string {
-  const code = process.env.FOND_STAFF_CODE;
+  const code = providerSecret('staff-shared-code') ?? process.env.FOND_STAFF_CODE;
   if (!code) throw new Error('FOND_STAFF_CODE is not configured on the server.');
   return code;
 }

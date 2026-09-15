@@ -7,12 +7,13 @@ let createOrder: typeof import('../src/lib/orders').createOrder;
 let getOrderByReference: typeof import('../src/lib/orders').getOrderByReference;
 let listActiveOrders: typeof import('../src/lib/orders').listActiveOrders;
 let updateOrderStatus: typeof import('../src/lib/orders').updateOrderStatus;
+let recordPosEntry: typeof import('../src/lib/orders').recordPosEntry;
 let OrderTransitionError: typeof import('../src/lib/orders').OrderTransitionError;
 let searchOrders: typeof import('../src/lib/orders').searchOrders;
 
 before(async () => {
   ({ resetDbForTests } = await import('../src/lib/db'));
-  ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, OrderTransitionError, searchOrders } = await import('../src/lib/orders'));
+  ({ createOrder, getOrderByReference, listActiveOrders, updateOrderStatus, recordPosEntry, OrderTransitionError, searchOrders } = await import('../src/lib/orders'));
 });
 
 beforeEach(() => resetDbForTests());
@@ -40,6 +41,7 @@ test('an order can be looked up by reference and only active orders are listed',
   assert.equal(getOrderByReference('FOND-NOPE'), null);
   assert.equal(listActiveOrders().length, 1);
   updateOrderStatus(order.id, 'accepted');
+  recordPosEntry(order.id, 'YOCO-TEST', 'fixture');
   updateOrderStatus(order.id, 'ready');
   updateOrderStatus(order.id, 'completed');
   assert.equal(listActiveOrders().length, 0);
@@ -49,6 +51,8 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
   assert.equal(updateOrderStatus(order.id, 'accepted').status, 'accepted');
   assert.throws(() => updateOrderStatus(order.id, 'completed'), OrderTransitionError);
+  assert.throws(() => updateOrderStatus(order.id, 'ready'), /Record the Yoco order entry/);
+  recordPosEntry(order.id, 'YOCO-TEST', 'fixture');
   updateOrderStatus(order.id, 'ready');
   updateOrderStatus(order.id, 'completed');
   assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);

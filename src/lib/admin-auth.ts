@@ -1,4 +1,5 @@
 import { teamSession } from './team';
+import { superAdminTwoFactorActive } from './two-factor';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Separate, stricter gate from the facility staff tablet (src/lib/staff-auth.ts).
@@ -22,6 +23,7 @@ function tokenFor(code: string): string {
 }
 
 export function checkAdminCode(candidate: string): string | null {
+  if (superAdminTwoFactorActive()) return null;
   const code = requiredCode();
   if (candidate !== code) return null;
   return tokenFor(code);
@@ -29,7 +31,8 @@ export function checkAdminCode(candidate: string): string | null {
 
 export function isValidAdminToken(token: string | undefined | null): boolean {
   if (!token) return false;
-  if (token.startsWith('team_')) return teamSession(token)?.role === 'manager';
+  if (token.startsWith('team_')) return ['manager','super-admin'].includes(teamSession(token)?.role??'');
+  if (superAdminTwoFactorActive()) return false;
   let expected: string;
   try {
     expected = tokenFor(requiredCode());
@@ -39,4 +42,10 @@ export function isValidAdminToken(token: string | undefined | null): boolean {
   const a = Buffer.from(token, 'hex');
   const b = Buffer.from(expected, 'hex');
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function adminRole(token:string|undefined|null):'super-admin'|'manager'|null {
+  if(!isValidAdminToken(token))return null;
+  if(token?.startsWith('team_'))return teamSession(token)?.role as 'super-admin'|'manager' ?? null;
+  return 'super-admin';
 }

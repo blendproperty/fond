@@ -37,6 +37,12 @@ export type OrderRecord = {
   company: string | null;
   building: string | null;
   whatsappOptIn: boolean;
+  userId: string | null;
+  customerEmail: string | null;
+  posRequired: boolean;
+  posRecordedAt: string | null;
+  posRecordedBy: string | null;
+  posReference: string | null;
 };
 
 const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'ready'];
@@ -65,6 +71,12 @@ type OrderRow = {
   company: string | null;
   building: string | null;
   whatsapp_opt_in: number;
+  user_id: string | null;
+  customer_email: string | null;
+  pos_required: number;
+  pos_recorded_at: string | null;
+  pos_recorded_by: string | null;
+  pos_reference: string | null;
 };
 
 function fromRow(row: OrderRow): OrderRecord {
@@ -85,6 +97,12 @@ function fromRow(row: OrderRow): OrderRecord {
     company: row.company,
     building: row.building,
     whatsappOptIn: !!row.whatsapp_opt_in,
+    userId: row.user_id,
+    customerEmail: row.customer_email,
+    posRequired: !!row.pos_required,
+    posRecordedAt: row.pos_recorded_at,
+    posRecordedBy: row.pos_recorded_by,
+    posReference: row.pos_reference,
   };
 }
 
@@ -103,6 +121,8 @@ export function createOrder(input: {
   building?: string | null;
   whatsappOptIn?: boolean;
   actor?: string;
+  userId?: string | null;
+  customerEmail?: string | null;
 }): OrderRecord {
   const db = getDb();
   const key = input.submissionKey;
@@ -120,6 +140,7 @@ export function createOrder(input: {
         company: input.company ?? null,
         building: input.building ?? null,
         optIn: input.whatsappOptIn ?? false,
+        userId: input.userId ?? null,
       }),
     )
     .digest('hex');
@@ -188,10 +209,16 @@ export function createOrder(input: {
       company,
       building,
       whatsappOptIn,
+      userId: input.userId ?? null,
+      customerEmail: input.customerEmail ?? null,
+      posRequired: true,
+      posRecordedAt: null,
+      posRecordedBy: null,
+      posReference: null,
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       record.id,
       record.reference,
@@ -209,6 +236,9 @@ export function createOrder(input: {
       record.company,
       record.building,
       record.whatsappOptIn ? 1 : 0,
+      record.userId,
+      record.customerEmail,
+      1,
     );
     if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(
@@ -230,6 +260,29 @@ export function createOrder(input: {
 export function getOrderByReference(reference: string): OrderRecord | null {
   const row = getDb().prepare(`SELECT * FROM orders WHERE reference = ?`).get(reference) as OrderRow | undefined;
   return row ? fromRow(row) : null;
+}
+
+export function listCustomerOrders(userId: string): OrderRecord[] {
+  return (getDb().prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').all(userId) as OrderRow[]).map(fromRow);
+}
+
+export function recordPosEntry(id: string, posReference: string, actor: string): OrderRecord {
+  const db = getDb();
+  const reference = posReference.trim();
+  if (!reference || reference.length > 100) throw new OrderTransitionError('Enter the Yoco order reference.');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const row = db.prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
+    if (!row) throw new OrderTransitionError('Order not found.');
+    const order = fromRow(row);
+    if (order.status !== 'accepted') throw new OrderTransitionError('Accept the order before recording it in Yoco.');
+    if (order.posRecordedAt) throw new OrderTransitionError('Yoco entry was already recorded.');
+    const now = new Date().toISOString();
+    db.prepare('UPDATE orders SET pos_recorded_at = ?, pos_recorded_by = ?, pos_reference = ?, updated_at = ? WHERE id = ?').run(now, actor, reference, now, id);
+    db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, order.status, 'pos-recorded', actor, now);
+    db.exec('COMMIT');
+    return { ...order, posRecordedAt: now, posRecordedBy: actor, posReference: reference, updatedAt: now };
+  } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
 
 export function listActiveOrders(): OrderRecord[] {
@@ -276,6 +329,7 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
     if (!VALID_TRANSITIONS[current.status].includes(nextStatus)) {
       throw new OrderTransitionError(`Cannot move an order from ${current.status} to ${nextStatus}.`);
     }
+    if (nextStatus === 'ready' && current.posRequired && !current.posRecordedAt) throw new OrderTransitionError('Record the Yoco order entry before marking this order ready.');
     const updatedAt = new Date().toISOString();
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, actor, updatedAt);

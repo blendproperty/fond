@@ -1,4 +1,8 @@
-// WhatsApp order-status notifications (2026-09-14 later addition).
+import { document } from './management';
+import { providerSecret } from './provider-secrets';
+
+// Transactional WhatsApp notifications use Twilio ContentSid templates when
+// the merchant has registered a WhatsApp sender and approved the templates.
 //
 // What this needs to actually send a message, none of which this session
 // can create on Brett's behalf (real business/API credentials):
@@ -28,13 +32,42 @@ export type WhatsAppNotification = {
   reference: string;
 };
 
+export type TwilioConfig = { accountSid: string; sender: string; acceptedContentSid: string; readyContentSid: string };
+export const EMPTY_TWILIO: TwilioConfig = { accountSid: '', sender: '', acceptedContentSid: '', readyContentSid: '' };
+export const twilioConfig = () => document('twilio-config', EMPTY_TWILIO);
+export function validateTwilioConfig(input: unknown): TwilioConfig {
+  const value = input as TwilioConfig;
+  if (!value || !/^AC[a-f0-9]{32}$/i.test(value.accountSid) || !/^\+[1-9]\d{7,14}$/.test(value.sender) || !/^HX[a-f0-9]{32}$/i.test(value.acceptedContentSid) || !/^HX[a-f0-9]{32}$/i.test(value.readyContentSid)) throw new Error('Enter the Twilio Account SID, registered WhatsApp sender and two approved Content SIDs.');
+  return value;
+}
+export function twilioConfigured() {
+  try { const value = validateTwilioConfig(twilioConfig()); return !!value && !!providerSecret('twilio-auth-token'); }
+  catch { return false; }
+}
+
 function isConfigured(): boolean {
-  return !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
+  return twilioConfigured() || !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
 }
 
 export async function sendWhatsAppNotification(notification: WhatsAppNotification): Promise<{ sent: boolean; reason?: string }> {
   if (!isConfigured()) {
     return { sent: false, reason: 'NOT_CONFIGURED' };
+  }
+  if (twilioConfigured()) {
+    const config = twilioConfig(), token = providerSecret('twilio-auth-token')!;
+    const body = new URLSearchParams({
+      From: `whatsapp:${config.sender}`, To: `whatsapp:${notification.toE164}`,
+      ContentSid: notification.templateName === 'order_accepted' ? config.acceptedContentSid : config.readyContentSid,
+      ContentVariables: JSON.stringify({ '1': notification.customerName, '2': notification.reference }),
+    });
+    try {
+      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`, {
+        method: 'POST', signal: AbortSignal.timeout(10000),
+        headers: { Authorization: `Basic ${Buffer.from(`${config.accountSid}:${token}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      return response.ok ? { sent: true } : { sent: false, reason: `TWILIO_HTTP_${response.status}` };
+    } catch { return { sent: false, reason: 'NETWORK_ERROR' }; }
   }
   const token = process.env.FOND_WHATSAPP_TOKEN!;
   const phoneNumberId = process.env.FOND_WHATSAPP_PHONE_NUMBER_ID!;
