@@ -1,5 +1,11 @@
 # FOND ordering PWA
 
+## 2026-09-15 - category navigation and prominent installation
+
+Implementation: visible previous/next controls scroll the horizontal menu categories with proper disabled edge states; touch scrolling remains native. Arrow keys/Home/End navigate categories and bring selections into view. Installation is moved above the menu into a high-contrast panel with phone/desktop icons and a full-width mobile CTA. Supported browser prompts are invoked directly; otherwise a dismissible device-instructions dialog explains iOS/Android/desktop installation. Installed standalone sessions show an installed state. Promotion popups are deferred while install instructions are open. Browser-specific support checked against MDN's Making PWAs installable guide; actual OS installation is not claimed.
+
+Validation: production build/TypeScript and all 28 Playwright desktop/mobile tests passed. New tests verify horizontal movement, keyboard end-category selection, installation guide and no horizontal page overflow. Existing ordering test now scopes its hero assertion to heading level 1 because installation adds a second Good food heading. Desktop/mobile screenshots inspected. Commit/push and direct-main promotion pending with this checkpoint; deployment and live verification pending. No schema/provider/configuration changes. Existing provider/device/real install and recovery UAT gates remain open.
+
 ## 2026-09-15 - promotions deployed and live checked
 
 Commit/push: 2c0ffcd935f4c43084db82bec9629d033ab8e8fb pushed directly to main; no PR merge. Verify FOND #72 succeeded (verify job 1m48s): https://github.com/blendproperty/fond/actions/runs/34946403923. Deploy FOND #26 succeeded (deploy job 37s) for the same revision: https://github.com/blendproperty/fond/actions/runs/34946578237. No provider or environment configuration changes.

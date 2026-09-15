@@ -3,12 +3,14 @@ import { useEffect, useState, useRef } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
 import { money, quoteCart, lineKey, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
 
+import {CategoryNavigation} from './category-navigation';
+import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
-type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
 type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; reference: string; status: string; totalCents: number; collectionTime: string };
 type Fulfillment = 'collection' | 'delivery';
@@ -24,6 +26,7 @@ const STATUS_LABEL: Record<string, string> = {
 export function OrderingApp() {
   const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean}|null>(null);
   useEffect(()=>{const timer=setInterval(()=>{fetch('/api/store').then(r=>r.json()).then(setStore).catch(()=>{});},60000);return()=>clearInterval(timer);},[]);
+  const [installHelp,setInstallHelp]=useState(false);
   const [payOnline,setPayOnline]=useState(false);
   const [paymentError,setPaymentError]=useState('');
   const [paying,setPaying]=useState(false);
@@ -45,7 +48,7 @@ export function OrderingApp() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const sending = useRef(false);
-  const [install, setInstall] = useState<InstallEvent | null>(null);
+
   const [offline, setOffline] = useState(false);
   const [trackInput, setTrackInput] = useState('');
   const [tracked, setTracked] = useState<TrackedOrder | null>(null);
@@ -60,10 +63,10 @@ export function OrderingApp() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    const capture = (event: Event) => { event.preventDefault(); setInstall(event as InstallEvent); };
+
     const connectivity = () => setOffline(!navigator.onLine);
-    window.addEventListener('beforeinstallprompt', capture); window.addEventListener('online', connectivity); window.addEventListener('offline', connectivity); connectivity();
-    return () => { window.removeEventListener('beforeinstallprompt', capture); window.removeEventListener('online', connectivity); window.removeEventListener('offline', connectivity); };
+    window.addEventListener('online', connectivity); window.addEventListener('offline', connectivity); connectivity();
+    return () => { window.removeEventListener('online', connectivity); window.removeEventListener('offline', connectivity); };
   }, []);
 
   useEffect(() => {
@@ -179,14 +182,15 @@ export function OrderingApp() {
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
       {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
       {store&&!store.open&&<div role="status" className="store-announcement">{store.settings.closedMessage}</div>}
-      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
+      <InstallApp onHelpChange={setInstallHelp}/>
+      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
-        <div className="menu-toolbar"><div className="tabs scroll" role="tablist" aria-label="Menu category">{categories.map((c) => <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div></div>
+        <div className="menu-toolbar"><CategoryNavigation value={category} onChange={setCategory}/></div>
         <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
           {!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
           <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> Add{qty ? ` (${qty})` : ''}</button></div></div></article>; })}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
-      <section className="install"><div><h3>A little FOND on your phone.</h3><p>Add this to your home screen for easy access.</p></div>{install ? <button className="outline" onClick={async () => { await install.prompt(); await install.userChoice; setInstall(null); }}><Download size={17} /> Install FOND</button> : <p className="install-help">In your browser menu, choose &ldquo;Add to Home Screen&rdquo;<br />or &ldquo;Install app&rdquo;, if available.</p>}</section>
+
     </main>
     <footer><a className="wordmark" href="/">fond.</a><span>Good food. Everyday.</span><span>Midpoint Hub</span>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
