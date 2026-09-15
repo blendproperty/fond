@@ -7,6 +7,7 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 
 type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'cancelled';
 type StaffOrder = {
+  payment?: {paidCents:number;checkout:string|null};
   id: string;
   reference: string;
   customerName: string;
@@ -40,6 +41,8 @@ export function StaffTablet() {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
+  const [named,setNamed]=useState(false);
+  const [username,setUsername]=useState('');
   const [loginError, setLoginError] = useState('');
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [menu, setMenu] = useState<Meal[]>([]);
@@ -72,7 +75,7 @@ export function StaffTablet() {
   async function submitCode(e: React.FormEvent) {
     e.preventDefault();
     setLoginError('');
-    const res = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+    const res = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code} : {code}) });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       setLoginError(data?.message ?? 'Incorrect code.');
@@ -113,7 +116,9 @@ export function StaffTablet() {
           <Lock size={28} />
           <h1>FOND staff tablet</h1>
           <p>Enter the facility access code to see the order queue.</p>
-          <input autoFocus inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Access code" aria-label="Staff access code" />
+          <label className="field-check"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');}}/> Sign in with a named account</label>
+          {named&&<label className="field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label>}
+          <input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Access code" aria-label="Staff access code" />
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full" type="submit">Unlock</button>
         </form>
@@ -162,7 +167,7 @@ export function StaffTablet() {
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
                     <div className="staff-card-bottom">
-                      <strong>{money(order.totalCents)}</strong>
+                      <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid" : order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment pending — check before taking payment" : `Due ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
                       <div className="staff-card-actions">
                         {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>

@@ -3,19 +3,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
 
+import { CustomersPanel,MarketingPanel,FinancePanel,SettingsPanel } from './management-panels';
+
 type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
 
 const NAV: { key: AdminSection; label: string; icon: typeof UtensilsCrossed; ready: boolean }[] = [
   { key: 'menu', label: 'Menu & specials', icon: UtensilsCrossed, ready: true },
   { key: 'orders', label: 'Orders', icon: BarChart3, ready: true },
-  { key: 'customers', label: 'Customers', icon: Users, ready: false },
-  { key: 'marketing', label: 'Marketing & CMS', icon: Megaphone, ready: false },
+  { key: 'customers', label: 'Customers', icon: Users, ready: true },
+  { key: 'marketing', label: 'Marketing & CMS', icon: Megaphone, ready: true },
   { key: 'reports', label: 'Reports', icon: BarChart3, ready: true },
-  { key: 'finance', label: 'Finance', icon: Wallet, ready: false },
-  { key: 'settings', label: 'Settings', icon: Settings, ready: false },
+  { key: 'finance', label: 'Finance', icon: Wallet, ready: true },
+  { key: 'settings', label: 'Settings', icon: Settings, ready: true },
 ];
 
 type AdminOrder = {
+  lines: {id:string;name?:string;quantity:number;modifiers?:{name:string}[]}[];
+  note:string|null;
   id: string;
   reference: string;
   customerName: string;
@@ -33,6 +37,8 @@ export function AdminPanel() {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
+  const [named,setNamed]=useState(false);
+  const [username,setUsername]=useState('');
   const [loginError, setLoginError] = useState('');
   const [tab, setTab] = useState<AdminSection>('menu');
 
@@ -46,7 +52,7 @@ export function AdminPanel() {
   async function submitCode(e: React.FormEvent) {
     e.preventDefault();
     setLoginError('');
-    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code} : {code}) });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       setLoginError(data?.message ?? 'Incorrect code.');
@@ -70,7 +76,9 @@ export function AdminPanel() {
           <Lock size={28} />
           <h1>FOND admin</h1>
           <p>Enter the admin access code to manage the menu and view orders.</p>
-          <input autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Admin code" aria-label="Admin access code" />
+          <label className="field-check"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');}}/> Sign in with a named account</label>
+          {named && <label className="field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label>}
+          <input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Admin code" aria-label="Admin access code" />
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full" type="submit">Unlock</button>
         </form>
@@ -85,10 +93,10 @@ export function AdminPanel() {
         {NAV.map((n) => {
           const Icon = n.icon;
           return (
-            <button key={n.key} className="admin-nav-item" aria-current={tab === n.key} onClick={() => setTab(n.key)}>
+            <button key={n.key} aria-label={n.label} title={n.label} className="admin-nav-item" aria-current={tab === n.key} onClick={() => setTab(n.key)}>
               <Icon size={17} />
               <span>{n.label}</span>
-              {!n.ready && <em>soon</em>}
+
             </button>
           );
         })}
@@ -104,17 +112,8 @@ export function AdminPanel() {
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
         {tab === 'reports' && <ReportsAdmin />}
-        {(tab === 'customers' || tab === 'marketing' || tab === 'finance' || tab === 'settings') && <ComingSoon section={NAV.find((n) => n.key === tab)?.label ?? ''} />}
+        {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel/>}
       </div>
-    </div>
-  );
-}
-
-function ComingSoon({ section }: { section: string }) {
-  return (
-    <div className="admin-empty">
-      <p>{section} isn&rsquo;t built yet.</p>
-      <p className="small">This is an honest placeholder, not a preview of fake data — ask for this section specifically when you&rsquo;re ready to scope it (it needs some decisions first: roles, data retention, provider choices, etc).</p>
     </div>
   );
 }
@@ -144,17 +143,13 @@ function MenuAdmin() {
   useEffect(() => { refresh().finally(() => setLoading(false)); }, [refresh]);
 
   async function patch(id: string, body: Record<string, unknown>) {
-    setSavingId(id);
-    setItems((current) => current.map((m) => (m.id === id ? { ...m, ...(body as Partial<Meal>) } : m)));
-    await fetch(`/api/admin/menu/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    await refresh();
-    setSavingId(null);
+    setSavingId(id);setAddError('');
+    try{const res=await fetch(`/api/admin/menu/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw new Error(data.message??'Could not save item.');await refresh();}catch(e){setAddError((e as Error).message);}finally{setSavingId(null);}
   }
 
   async function remove(id: string) {
     if (!confirm('Remove this item from the menu?')) return;
-    await fetch(`/api/admin/menu/${id}`, { method: 'DELETE' });
-    refresh();
+    try { const res=await fetch(`/api/admin/menu/${id}`, { method: 'DELETE' });if(!res.ok)throw new Error('Could not remove the item.');await refresh(); } catch(e){setAddError((e as Error).message);}
   }
 
   async function addItem() {
@@ -193,6 +188,7 @@ function MenuAdmin() {
 
   return (
     <div>
+      {addError && !adding && <p role="alert">{addError}</p>}
       <div className="admin-toolbar">
         <button className="primary" onClick={() => setAdding((v) => !v)}><Plus size={16} /> {adding ? 'Cancel' : 'Add item / special'}</button>
         <button className="quiet" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
@@ -345,6 +341,10 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
 }
 
 function OrdersAdmin() {
+  const [history,setHistory]=useState<Record<string,{to_status:string;actor:string;created_at:string}[]>>({});
+  const [historyError,setHistoryError]=useState('');
+  async function loadHistory(id:string){try{const r=await fetch('/api/admin/manage/history?id='+id);if(!r.ok)throw new Error('Could not load history.');setHistory(h=>({...h,[id]:[]}));const d=await r.json();setHistory(h=>({...h,[id]:d.events}));}catch(e){setHistoryError((e as Error).message);}}
+
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [status, setStatus] = useState('');
   const [fulfillment, setFulfillment] = useState('');
@@ -385,6 +385,7 @@ function OrdersAdmin() {
       </div>
       {loading ? <p className="staff-empty">Loading orders…</p> : orders.length === 0 ? <p className="staff-empty">No orders match.</p> : (
         <div className="admin-orders-table">
+          {historyError&&<p role="alert">{historyError}</p>}
           {orders.map((o) => (
             <div className="admin-order-row" key={o.id}>
               <span className="staff-ref">{o.reference}</span>
@@ -393,6 +394,7 @@ function OrdersAdmin() {
               <span className={`admin-status admin-status-${o.status}`}>{o.status}</span>
               <strong>{money(o.totalCents)}</strong>
               <span className="admin-order-time">{new Date(o.createdAt).toLocaleString('en-ZA')}</span>
+              <details className="admin-order-details" onToggle={e=>{if(e.currentTarget.open&&!history[o.id])void loadHistory(o.id);}}><summary>Order details &amp; history</summary><p>{o.contactNumber} {o.company} {o.note}</p>{o.lines.map((l,i)=><p key={i}>{l.quantity} × {l.name??l.id}{l.modifiers?.length?' · '+l.modifiers.map(m=>m.name).join(', '):''}</p>)}{history[o.id]?.map((e,i)=><p key={i}>{e.to_status} · {e.actor} · {new Date(e.created_at).toLocaleString()}</p>)}</details>
             </div>
           ))}
         </div>
@@ -473,7 +475,7 @@ function ReportsAdmin() {
           </div>
         )}
       </section>
-      <p className="small">Sales counts include all accepted/completed orders (cancelled orders excluded). Revenue per item isn&rsquo;t tracked yet — only units sold.</p>
+      <p className="small">Counts include completed orders only; they are not proof of payment. Revenue per item isn&rsquo;t tracked yet — only units sold.</p>
     </div>
   );
 }

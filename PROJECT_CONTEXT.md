@@ -1,5 +1,23 @@
 # FOND ordering PWA
 
+## 2026-09-15 - full admin sections and optional hosted Yoco checkout
+
+This checkpoint supersedes earlier descriptions of Customers, Marketing & CMS, Finance and Settings as placeholders. Work starts from freshly verified origin/main 9ff768d on feature/complete-admin. Brett explicitly selected optional Yoco checkout in the release clarification.
+
+Implementation: all seven navigation sections are functional. Added customer profiles/search/import/phone history/archive/consent export; CMS draft/preview/publish/restore and scheduled promotions; receipt/refund ledger, balance guards, CSV and checkout reconciliation references; trading controls/hours/capacity/contact/collection preferences; named staff/manager roles with hashed passwords, expiring/revocable sessions and login throttling. Order details/status history UI, purchased modifier snapshots, mobile navigation labels and visible menu-save errors are included. Reports count completed orders. Existing order idempotency and status concurrency logic remain intact.
+
+Optional hosted Yoco checkout is server-side and fail-closed unless enabled/configured. Trusted order totals, stable provider idempotency keys, redirect allowlisting, raw signed webhook verification, three-minute replay window, amount/currency/mode validation and payment/refund deduplication feed the ledger and staff payment indicators. Sandbox keys require an explicit isolated-staging flag. No browser return can mark an order paid. Uncertain checkouts require reconciliation in Yoco before a second receipt; no unsupported fetch/expire endpoint was invented. No Counter/printer integration. Payment/notification provider credentials were not added to production.
+
+Transactional WhatsApp is a durable queue tied to accepted/ready transitions and driven by staff polling, with bounded retries, visible missing configuration and ambiguous-send states. Marketing messages are not sent by this app; consented contacts can be exported for an approved provider. Finance is an operational gross ledger, not bank settlement/tax invoicing or an automatic refund-issuance service. Search/export limits and operating procedures are documented in README.md and OPERATIONS.md.
+
+Testing: 37 unit tests, TypeScript and Next production build passed; 18 Playwright desktop/mobile tests passed, including new customer, CMS publish, finance receipt, named-role and anonymous-denial flows. Desktop/mobile screenshot inspection completed for Settings. Yoco tests use fixtures/mocked checkout calls, not real provider sandbox transactions. Docker image built; isolated migration test used the previous production image with one synthetic order, VACUUM INTO backup, new-image additive schema migration, restart and separate restored-backup container. Order count stayed one; integrity_check returned ok. No production order/payment/notification was created.
+
+Deployment changes: serialized CI-gated deployment builds then backs up the running SQLite database before container replacement. Backup failure stops promotion. Local migration/restore proof is not an offsite production recovery drill.
+
+Commit/push: implementation and this context are being committed together; promotion is a direct main fast-forward under existing deployment authorization. Merge: no separate PR merge. Deployment/live verification: pending GitHub CI and deployment; record actual results after they finish. No complete-production-readiness claim yet.
+
+Remaining external/operational gates: merchant/domain approval and configured Yoco credentials plus genuine sandbox/live payment/refund verification; configured WhatsApp templates/credentials and real delivery verification; restaurant-approved trading/delivery/refund rules and menu/allergens; actual named operators and real-device/staff UAT; offsite backup/retention and recovery drill. Shared codes remain during transition. CMS publication does not send campaigns. Customer phone matches are not verified identities. Historical snapshots/audit records cannot be reconstructed. No Asana scope.
+
 
 
 

@@ -1,0 +1,72 @@
+import { randomUUID } from 'node:crypto';
+import { getDb } from './db';
+
+export function document<T>(key:string, fallback:T):T {
+  const row=getDb().prepare('SELECT value FROM app_documents WHERE key=?').get(key) as {value:string}|undefined;
+  return row ? JSON.parse(row.value) : fallback;
+}
+export function audit(actor:string,action:string,target:string) {
+  getDb().prepare('INSERT INTO admin_events VALUES (?,?,?,?,?)').run(randomUUID(),actor,action,target,new Date().toISOString());
+}
+export function saveDocument(key:string,value:unknown,actor:string) {
+  getDb().prepare('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at').run(key,JSON.stringify(value),new Date().toISOString());
+  audit(actor,'save',key);
+}
+export const DEFAULT_SETTINGS = {
+  orderingEnabled:true, collectionEnabled:true, deliveryEnabled:true,
+  enforceHours:false, openingTime:'07:00', closingTime:'17:00', openDays:[1,2,3,4,5],
+  maxActiveOrders:100, preparationMinutes:20, deliveryArea:'Midpoint Hub',
+  collectionSlots:['As soon as possible','Breakfast collection','Lunch collection','After-work collection'],
+  closedMessage:'Online ordering is currently closed. Please contact FOND.',
+  contactPhone:'', whatsappEnabled:false, onlinePaymentsEnabled:false,
+};
+export type TradingSettings=typeof DEFAULT_SETTINGS;
+export const settings=()=>document('trading',DEFAULT_SETTINGS);
+export function validateSettings(input:unknown):TradingSettings {
+  const s=input as TradingSettings;
+  if(!s || typeof s!=='object')throw new Error('Provide trading settings.');
+  for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','onlinePaymentsEnabled'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
+  for(const k of ['openingTime','closingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
+  if(s.openingTime>=s.closingTime)throw new Error('Closing time must be after opening time. Overnight trading is not supported.');
+  if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');
+  if(!Number.isInteger(s.maxActiveOrders)||s.maxActiveOrders<1||s.maxActiveOrders>1000||!Number.isInteger(s.preparationMinutes)||s.preparationMinutes<1||s.preparationMinutes>240)throw new Error('Check capacity and preparation time.');
+  for(const k of ['deliveryArea','closedMessage','contactPhone'] as const)if(typeof s[k]!=='string'||s[k].length>250)throw new Error('Invalid contact or display text.');
+  if(!Array.isArray(s.collectionSlots)||!s.collectionSlots.length||s.collectionSlots.length>12||s.collectionSlots.some(t=>typeof t!=='string'||!t.trim()||t.length>80))throw new Error('Provide 1–12 collection options.');
+  return {...DEFAULT_SETTINGS,...s};
+}
+export function orderingAvailable(s=settings(),now=new Date()) {
+  if(!s.orderingEnabled)return false;
+  if(!s.enforceHours)return true;
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Johannesburg',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now);
+  const part=(k:string)=>parts.find(p=>p.type===k)?.value??'';
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(part('weekday'));
+  const time=`${part('hour')}:${part('minute')}`;
+  return s.openDays.includes(day)&&time>=s.openingTime&&time<s.closingTime;
+}
+export function assertTrading(fulfillment:string,source:string) {
+  const s=settings();
+  if(!orderingAvailable(s))throw new Error(s.closedMessage);
+  if(fulfillment==='delivery'&&!s.deliveryEnabled)throw new Error('Delivery is unavailable. Please choose collection.');
+  if(fulfillment==='collection'&&!s.collectionEnabled)throw new Error('Collection is unavailable.');
+  const count=getDb().prepare("SELECT count(*) AS n FROM orders WHERE status IN ('received','accepted','ready')").get() as {n:number};
+  if(count.n>=s.maxActiveOrders)throw new Error('The kitchen is at capacity. Please try again shortly.');
+}
+export const DEFAULT_CONTENT={headline:'Good food. One less thing to think about.',intro:'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.',announcement:'',promotions:[] as {id:string;title:string;body:string;startsAt:string;endsAt:string;active:boolean}[]};
+export type SiteContent=typeof DEFAULT_CONTENT;
+export function validateContent(input:unknown):SiteContent {
+  const c=input as SiteContent;
+  if(!c||typeof c.headline!=='string'||!c.headline.trim()||c.headline.length>120||typeof c.intro!=='string'||c.intro.length>600||typeof c.announcement!=='string'||c.announcement.length>250)throw new Error('Check the headline, introduction and announcement lengths.');
+  if(!Array.isArray(c.promotions)||c.promotions.length>20)throw new Error('Maximum 20 promotions.');
+  for(const p of c.promotions)if(!p||typeof p.id!=='string'||typeof p.title!=='string'||!p.title.trim()||p.title.length>100||typeof p.body!=='string'||p.body.length>500||typeof p.active!=='boolean'||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||p.startsAt>=p.endsAt)throw new Error('Each promotion needs a title and valid start/end dates.');
+  return c;
+}
+export function publicContent() {
+  const c=document('content-published',DEFAULT_CONTENT),now=new Date().toISOString();
+  return {...c,promotions:c.promotions.filter(p=>p.active&&p.startsAt<=now&&p.endsAt>now)};
+}
+export function normalizePhone(value:string) {
+  let p=value.replace(/[\s()-]/g,'');
+  if(/^0\d{9}$/.test(p))p='+27'+p.slice(1);
+  if(!/^\+\d{8,15}$/.test(p))throw new Error('Use a valid phone number, for example +27 followed by the number.');
+  return p;
+}

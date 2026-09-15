@@ -1,3 +1,4 @@
+import { paymentStatus } from '@/lib/payments';
 import { NextResponse } from 'next/server';
 import { SubmissionConflictError, createOrder, getOrderByReference } from '@/lib/orders';
 
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ code: 'NOT_FOUND', message: 'No order found with that reference.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }
   return NextResponse.json(
-    { reference: order.reference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime },
+    { reference: order.reference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime, payment:paymentStatus(order.id) },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

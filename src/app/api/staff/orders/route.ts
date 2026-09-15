@@ -1,3 +1,7 @@
+import { paymentStatus } from '@/lib/payments';
+import { after } from 'next/server';
+import { processNotifications } from '@/lib/notifications';
+import { teamSession } from '@/lib/team';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
@@ -12,7 +16,8 @@ export async function GET() {
   if (!(await requireStaff())) {
     return NextResponse.json({ code: 'STAFF_AUTH_REQUIRED', message: 'Enter the staff access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
-  return NextResponse.json({ orders: listActiveOrders() }, { headers: { 'Cache-Control': 'no-store' } });
+  after(processNotifications);
+  return NextResponse.json({ orders: listActiveOrders().map(o=>({...o,payment:paymentStatus(o.id)})) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // Manual order entry from the facility tablet - walk-ins and phone orders
@@ -36,6 +41,7 @@ export async function POST(request: Request) {
       lines: body.lines,
       collectionTime: body.collectionTime,
       source: 'staff',
+      actor: teamSession((await cookies()).get(STAFF_COOKIE)?.value) ? 'team:'+teamSession((await cookies()).get(STAFF_COOKIE)?.value)!.id : 'shared-staff-tablet',
     });
     return NextResponse.json({ order }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {

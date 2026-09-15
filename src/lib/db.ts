@@ -104,6 +104,19 @@ export function getDb(): DatabaseSync {
   if (!existingMenuColumns.has('modifiers_json')) {
     db.exec(`ALTER TABLE menu_items ADD COLUMN modifiers_json TEXT NOT NULL DEFAULT '[]'`);
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS team_members (id TEXT PRIMARY KEY, name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS team_sessions (token_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL, expires_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE, email TEXT, company TEXT, notes TEXT NOT NULL DEFAULT '', marketing_consent INTEGER NOT NULL DEFAULT 0, consent_note TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS admin_events (id TEXT PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS payment_records (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, amount_cents INTEGER NOT NULL, method TEXT NOT NULL, reference TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE UNIQUE INDEX IF NOT EXISTS payment_reference ON payment_records(reference);
+    CREATE TABLE IF NOT EXISTS yoco_checkouts (order_id TEXT PRIMARY KEY, checkout_id TEXT UNIQUE, redirect_url TEXT, status TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS webhook_receipts (id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS notification_jobs (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, template TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, next_at INTEGER NOT NULL, updated_at TEXT NOT NULL, UNIQUE(order_id, template));
+  `);
   instance = db;
   return db;
 }

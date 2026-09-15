@@ -5,9 +5,11 @@ import { money, quoteCart, lineKey, categories, type CartLine, type Category, ty
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
+import type { TradingSettings,SiteContent } from '@/lib/management';
+
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
-type TrackedOrder = { reference: string; status: string; totalCents: number; collectionTime: string };
+type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; reference: string; status: string; totalCents: number; collectionTime: string };
 type Fulfillment = 'collection' | 'delivery';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -19,6 +21,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function OrderingApp() {
+  const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean}|null>(null);
+  const [payOnline,setPayOnline]=useState(false);
+  const [paymentError,setPaymentError]=useState('');
+  const [paying,setPaying]=useState(false);
   const [menu, setMenu] = useState<Meal[]>([]);
   const [category, setCategory] = useState<Category>(categories[0]);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -44,6 +50,8 @@ export function OrderingApp() {
   const [trackError, setTrackError] = useState('');
 
   useEffect(() => {
+    fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection(data.settings.collectionSlots[0]);if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
+    const params=new URLSearchParams(location.search);if(params.has('payment')&&params.get('reference')){setPanel('track');setTrackInput(params.get('reference')!);void lookupOrder(params.get('reference')!);}
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
   }, []);
 
@@ -112,6 +120,7 @@ export function OrderingApp() {
     if (sending.current) return;
     setError('');
     try {
+      if (store && !store.open) throw new Error(store.settings.closedMessage);
       if (offline) throw new Error('Reconnect before continuing.');
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
@@ -136,12 +145,19 @@ export function OrderingApp() {
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
       setNote('');
+      if(payOnline)await pay(data.reference);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not place that order. Please try again.');
     } finally {
       sending.current = false;
       setSubmitting(false);
     }
+  }
+
+  async function pay(reference:string) {
+    if(paying)return;
+    setPaying(true);setPaymentError('');
+    try{const r=await fetch('/api/payments/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference})});const d=await r.json();if(!r.ok)throw new Error(d.message);location.assign(d.redirectUrl);}catch(e){setPaymentError((e as Error).message);}finally{setPaying(false);}
   }
 
   async function lookupOrder(reference: string) {
@@ -156,8 +172,11 @@ export function OrderingApp() {
   return <>
     <header className="header"><a href="/" className="wordmark" aria-label="FOND home">fond<span>.</span></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Collect from FOND</small></div></div><nav><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
     <main id="main">
-      <section className="hero"><img className="hero-bg" src="/images/fond-hero.jpg" alt="The FOND Eatery entrance at Midpoint Hub" loading="eager" /><div className="hero-copy"><p className="eyebrow"><span />YOUR EVERYDAY FOOD STOP</p><h1>Good food.<br />One less thing<br /><em>to think about.</em></h1><p className="intro">From your first meeting to your last set.<br />Fresh breakfast, proper lunch and a little lift.<br />Made for your day at Midpoint.</p><a className="primary hero-cta" href="#menu">Find your favourite <ArrowRight size={18} /></a><div className="hero-foot"><Leaf size={16} /> Freshly made <span>·</span><ShoppingBag size={16} /> Order ahead, pay on collection</div></div><span className="hero-photo-caption">FOND · MIDPOINT HUB</span></section>
+      <section className="hero"><img className="hero-bg" src="/images/fond-hero.jpg" alt="The FOND Eatery entrance at Midpoint Hub" loading="eager" /><div className="hero-copy"><p className="eyebrow"><span />YOUR EVERYDAY FOOD STOP</p><h1>{store?.content.headline??<>Good food.<br/>One less thing<br/><em>to think about.</em></>}</h1><p className="intro">{store?.content.intro??'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.'}</p><a className="primary hero-cta" href="#menu">Find your favourite <ArrowRight size={18} /></a><div className="hero-foot"><Leaf size={16} /> Freshly made <span>·</span><ShoppingBag size={16} /> Order ahead, pay on collection</div></div><span className="hero-photo-caption">FOND · MIDPOINT HUB</span></section>
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
+      {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
+      {store&&!store.open&&<div role="status" className="store-announcement">{store.settings.closedMessage}</div>}
+      {!!store?.content.promotions.length&&<section className="store-promotions">{store.content.promotions.map(p=><article key={p.id}><h3>{p.title}</h3><p>{p.body}</p></article>)}</section>}
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><div className="tabs scroll" role="tablist" aria-label="Menu category">{categories.map((c) => <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div></div>
         <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
@@ -166,7 +185,7 @@ export function OrderingApp() {
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
       <section className="install"><div><h3>A little FOND on your phone.</h3><p>Add this to your home screen for easy access.</p></div>{install ? <button className="outline" onClick={async () => { await install.prompt(); await install.userChoice; setInstall(null); }}><Download size={17} /> Install FOND</button> : <p className="install-help">In your browser menu, choose &ldquo;Add to Home Screen&rdquo;<br />or &ldquo;Install app&rdquo;, if available.</p>}</section>
     </main>
-    <footer><a className="wordmark" href="/">fond.</a><span>Good food. Everyday.</span><span>Midpoint Hub</span></footer>
+    <footer><a className="wordmark" href="/">fond.</a><span>Good food. Everyday.</span><span>Midpoint Hub</span>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
     <button className="mobile-basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
     {panel && <div className="overlay" onClick={() => setPanel(null)}><section className="drawer" role="dialog" aria-modal="true" aria-label={panel === 'basket' ? 'Your basket' : 'Track your order'} onClick={(e) => e.stopPropagation()}>
@@ -176,28 +195,31 @@ export function OrderingApp() {
           <label className="field">Order reference<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-XXXXXX" /></label>
           <button className="primary full" onClick={() => lookupOrder(trackInput)}><Search size={18} /> Check status</button>
           {trackError && <p role="alert">{trackError}</p>}
-          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)}</p></div>}
+          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)}</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?"Payment recorded":"Payment not yet confirmed"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Please pay at the counter on collection — this app doesn&rsquo;t take payment. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p><button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Pay at FOND, or use online checkout when available. Online payments are confirmed after verification. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p>{store?.onlinePayments&&<button className="primary" disabled={paying} onClick={()=>pay(confirmation.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
-            <button role="tab" aria-selected={fulfillment === 'collection'} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
-            <button role="tab" aria-selected={fulfillment === 'delivery'} onClick={() => setFulfillment('delivery')}><Truck size={16} /> Delivery</button>
+            <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
+            <button role="tab" aria-selected={fulfillment === 'delivery'} disabled={store?.settings.deliveryEnabled===false} onClick={() => setFulfillment('delivery')}><Truck size={16} /> Delivery</button>
           </div>
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
           {fulfillment === 'collection' ? (
-            <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}><option>As soon as possible</option><option>Breakfast collection</option><option>Lunch collection</option><option>After-work collection</option></select></label>
+            <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}>{(store?.settings.collectionSlots??['As soon as possible','Breakfast collection','Lunch collection','After-work collection']).map(t=><option key={t}>{t}</option>)}</select></label>
           ) : <>
             <label className="field">Contact number<input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For the delivery runner to reach you" inputMode="tel" /></label>
             <label className="field">Company (optional)<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Blend Property" /></label>
             <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
             <label className="field-check"><input type="checkbox" checked={whatsappOptIn} onChange={(e) => setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()} /> WhatsApp me when my order is accepted and ready</label>
           </>}
+          {fulfillment==='collection'&&<label className="field">Contact number (optional)<input value={contactNumber} onChange={e=>setContactNumber(e.target.value)} inputMode="tel"/></label>}
+          {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
+          {store?.onlinePayments&&<label className="field-check"><input type="checkbox" checked={payOnline} onChange={e=>setPayOnline(e.target.checked)}/> Pay online with Yoco after placing my order</label>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
           {error && <p role="alert">{error}</p>}
-          <button className="primary full" disabled={offline || submitting} onClick={placeOrder}>{submitting ? 'Sending…' : 'Send order to FOND'} <ArrowRight size={18} /></button>
-          <p className="small center">No payment required now. Please pay at the counter on collection.</p>
+          <button className="primary full" disabled={offline || submitting || store?.open===false} onClick={placeOrder}>{submitting ? 'Sending…' : 'Send order to FOND'} <ArrowRight size={18} /></button>
+          <p className="small center">Pay at FOND, or choose online payment when available.</p>
         </> : <div className="empty"><ShoppingBag /><h3>A little something good?</h3><p>Your basket is waiting for its first favourite.</p><button className="primary" onClick={() => setPanel(null)}>Explore the menu <ArrowRight size={18} /></button></div>}
       </div>
     </section></div>}

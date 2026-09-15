@@ -194,7 +194,7 @@ export function removeModifier(itemId: string, modifierId: string): Meal {
 // so per-item revenue isn't reconstructable from lines_json alone.
 export function getItemSalesStats(): Map<string, number> {
   const db = getDb();
-  const rows = db.prepare(`SELECT lines_json FROM orders WHERE status != 'cancelled'`).all() as { lines_json: string }[];
+  const rows = db.prepare(`SELECT lines_json FROM orders WHERE status = 'completed'`).all() as { lines_json: string }[];
   const stats = new Map<string, number>();
   for (const row of rows) {
     let lines: { id: string; quantity: number }[];

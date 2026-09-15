@@ -1,3 +1,4 @@
+import { teamSession } from './team';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Lightweight shared-tablet gate, not per-staff-member accounts. FOND's
@@ -29,6 +30,7 @@ export function checkStaffCode(candidate: string): string | null {
 
 export function isValidStaffToken(token: string | undefined | null): boolean {
   if (!token) return false;
+  if (token.startsWith('team_')) return !!teamSession(token);
   let expected: string;
   try {
     expected = tokenFor(requiredCode());

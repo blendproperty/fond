@@ -260,6 +260,7 @@ export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
       throw new Error('Your basket has an invalid item or quantity.');
     }
     const modifierIds = line.modifierIds ?? [];
+    if (!Array.isArray(modifierIds) || new Set(modifierIds).size !== modifierIds.length || modifierIds.length>30) throw new Error('Invalid modifier selection.');
     const selectedModifiers = modifierIds.map((mid) => {
       const mod = meal.modifiers?.find((m) => m.id === mid);
       if (!mod) throw new Error('Your basket has an invalid modifier selection.');
@@ -267,6 +268,7 @@ export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
     });
     seen.add(key);
     const unitPrice = meal.price + selectedModifiers.reduce((sum, m) => sum + m.price, 0);
+    if (!Number.isSafeInteger(unitPrice) || unitPrice<0) throw new Error('Invalid item total.');
     return { ...meal, quantity: line.quantity, selectedModifiers, unitPrice, subtotal: unitPrice * line.quantity };
   });
 }

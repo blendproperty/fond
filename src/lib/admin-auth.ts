@@ -1,3 +1,4 @@
+import { teamSession } from './team';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Separate, stricter gate from the facility staff tablet (src/lib/staff-auth.ts).
@@ -28,6 +29,7 @@ export function checkAdminCode(candidate: string): string | null {
 
 export function isValidAdminToken(token: string | undefined | null): boolean {
   if (!token) return false;
+  if (token.startsWith('team_')) return teamSession(token)?.role === 'manager';
   let expected: string;
   try {
     expected = tokenFor(requiredCode());

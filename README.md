@@ -1,25 +1,31 @@
 # FOND Midpoint ordering
 
-Next.js / TypeScript PWA with a SQLite order store, facility staff tablet and menu administration. Runs in Docker behind Traefik on Hostinger VPS.
+Next.js / TypeScript PWA with SQLite, Docker and Traefik on Hostinger VPS.
 
-## Current operating model
+## Operating model
 
-Customer PWA -> FOND staff tablet -> accept -> ready -> completed. Staff may capture orders into their existing restaurant POS manually. Payment happens in person. Yoco integration was dropped by business decision on 14 September 2026.
+Customer PWA -> FOND staff tablet -> accept -> ready -> completed. Restaurant POS capture remains manual. Guest ordering remains available. Offline mode never queues orders.
 
-The menu is database-backed and editable at `/admin`; `/staff` handles the active queue and manual orders. These areas currently use separate shared access codes, not named staff accounts or a complete CRM. Customer ordering is guest-based. PWA offline fallback never queues orders.
+Payment at FOND remains the default. Optional hosted Yoco checkout was requested on 15 September 2026 and is implemented behind server configuration plus the Settings switch. Browser redirects never mark orders paid: verified matching webhooks update the ledger. This does not inject orders into Yoco Counter or trigger a printer.
 
-## Development and verification
+## Administration
 
-Use Node 24. Run `npm ci`, then `npm run dev`. Run `npm run typecheck`, `npm test`, and `npm run build`. For `npm run test:e2e`, install Playwright Chromium and set test-only `FOND_STAFF_CODE`, `FOND_ADMIN_CODE`, and `FOND_DB_PATH=:memory:`. Never run these order-creation tests against production.
+All seven navigation sections have working screens:
 
-## Order reliability
+- Menu & specials: catalogue, availability, pricing, modifiers, filtering and views.
+- Orders: search/filter, purchased line details and status history.
+- Customers: profiles, phone matching, order import, notes, archive and explicit marketing consent evidence; consented-contact CSV. Search/export is limited to 500 matching profiles; linked history to 200 orders. Profiles are not verified customer identities.
+- Marketing & CMS: draft/preview/publish, previous-publication restore, announcement and scheduled promotions; notification log/retry. Item discounts live in Menu. External marketing distribution uses the consented export with an approved provider.
+- Reports: completed-order item quantities, top/slow movers and special actions.
+- Finance: receipts, externally issued refund records, duplicate/overpayment guards, balances, checkout references and CSV. This is an operational ledger, not bank settlement, tax invoicing or automatic refund initiation.
+- Settings: ordering/fulfilment, Johannesburg hours, capacity, preparation estimate, contact, collection preferences, providers and named team accounts. Managers have admin access; staff use the tablet. Named sessions expire after 12 hours and are revoked on account edits/logout. Shared codes remain during transition.
 
-Order POST endpoints require a UUID `Idempotency-Key`. An unchanged retry returns the existing order; reusing a key with different data returns 409. The browser retains retry keys in session storage until success. Purchased item names and prices are snapshotted for new orders. Status updates and their audit events commit atomically. Staff history is available at `/api/staff/orders/:id/history`; actor identity is the shared tablet, not a named person. Legacy orders retain their original references and lack reconstructed snapshots/history.
+## Verification
 
-## Deployment
+Node 24. Run npm ci, npm run typecheck, npm test and npm run build. Install Playwright Chromium; set test-only FOND_STAFF_CODE, FOND_ADMIN_CODE and FOND_DB_PATH=:memory: before npm run test:e2e. Never point order-creating tests at production. Yoco fixture tests are not real provider sandbox certification.
 
-Use `.env.example` and the confirmed VPS hostname/Traefik settings. Mount the SQLite data directory persistently and back it up before promotion. The proposed deployment workflow waits for successful Verify FOND CI on main and deploys that exact revision only if it is still main's head. Feature branches do not deploy. `/api/health` checks database access; it is not an end-to-end order or notification test.
+## Deployment and reliability
 
-## Remaining gates
+Order idempotency, retry keys, purchased snapshots and audited status transitions remain intact. Deployment waits for successful main CI, checks the exact SHA, builds, backs up SQLite in the persistent volume, then replaces the container. Concurrent deployments are serialized. On-volume backups do not replace offsite disaster recovery.
 
-Individual staff roles, rate limiting/abuse controls, ordering hours/capacity, durable notification retries, backup/restore verification, approved delivery/payment operating rules and staff/real-device UAT remain. WhatsApp is optional and currently best-effort; provider delivery is not verified. See `PROJECT_CONTEXT.md` for dated implementation and promotion evidence.
+See OPERATIONS.md for provider setup and operating limits, and PROJECT_CONTEXT.md for dated test/promotion evidence.

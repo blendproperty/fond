@@ -6,6 +6,9 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: fond-production
+  cancel-in-progress: false
 jobs:
   deploy:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
@@ -27,7 +30,9 @@ jobs:
             test "$(git rev-parse origin/main)" = "$VERIFIED_SHA" || exit 0
             git checkout main
             git reset --hard "$VERIFIED_SHA"
-            docker compose up -d --build
+            docker compose build
+            docker compose exec -T fond node -e 'const {DatabaseSync}=require("node:sqlite");const fs=require("node:fs");fs.mkdirSync("/app/data/backups",{recursive:true});const db=new DatabaseSync(process.env.FOND_DB_PATH);db.prepare("VACUUM INTO ?").run("/app/data/backups/pre-deploy-"+Date.now()+".sqlite");db.close();'
+            docker compose up -d
             sleep 5
             docker compose ps
             docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health

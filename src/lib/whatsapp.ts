@@ -34,7 +34,6 @@ function isConfigured(): boolean {
 
 export async function sendWhatsAppNotification(notification: WhatsAppNotification): Promise<{ sent: boolean; reason?: string }> {
   if (!isConfigured()) {
-    console.info(`[whatsapp] not configured — would have sent "${notification.templateName}" to ${notification.toE164} for ${notification.reference}`);
     return { sent: false, reason: 'NOT_CONFIGURED' };
   }
   const token = process.env.FOND_WHATSAPP_TOKEN!;
@@ -42,6 +41,7 @@ export async function sendWhatsAppNotification(notification: WhatsAppNotificatio
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
       method: 'POST',
+      signal: AbortSignal.timeout(10000),
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
@@ -60,13 +60,10 @@ export async function sendWhatsAppNotification(notification: WhatsAppNotificatio
       }),
     });
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      console.error(`[whatsapp] send failed (${res.status}): ${body}`);
       return { sent: false, reason: `HTTP_${res.status}` };
     }
     return { sent: true };
   } catch (error) {
-    console.error('[whatsapp] send threw', error);
     return { sent: false, reason: 'NETWORK_ERROR' };
   }
 }

@@ -1,14 +1,12 @@
+import { enqueueNotification } from './notifications';
+import { assertTrading } from './management';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
 import { getAvailableMenu } from './menu-store';
 
-// Real orders. Yoco is not involved anywhere in this file (that integration
-// was dropped 2026-09-14) - an order created here is a real request from a
-// customer or typed in by staff at the facility tablet. Payment is taken in
-// person by staff, independent of this app (existing card machine or cash);
-// this system's job is only to track what was ordered and its kitchen
-// status, not to process payment.
+// Orders track kitchen fulfilment. Optional hosted payment is managed separately
+// in payments.ts; neither payment mode changes the staff acceptance workflow.
 //
 // Reliability (2026-09-14): order submission is idempotent via an optional
 // submissionKey (so a retried network request doesn't create a duplicate
@@ -20,7 +18,7 @@ export type OrderStatus = 'received' | 'accepted' | 'ready' | 'completed' | 'can
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
 
-export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number };
+export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number; modifiers?: {id:string;name:string;price:number}[] };
 
 export type OrderRecord = {
   id: string;
@@ -104,6 +102,7 @@ export function createOrder(input: {
   company?: string | null;
   building?: string | null;
   whatsappOptIn?: boolean;
+  actor?: string;
 }): OrderRecord {
   const db = getDb();
   const key = input.submissionKey;
@@ -137,6 +136,7 @@ export function createOrder(input: {
         return existing;
       }
     }
+    assertTrading(input.fulfillment ?? 'collection', input.source);
     const customerName = input.customerName.trim();
     if (!customerName || customerName.length > 100) throw new Error('Enter a name for this order.');
     const collectionTime = input.collectionTime.trim();
@@ -166,6 +166,7 @@ export function createOrder(input: {
       id: line.id,
       quantity: line.quantity,
       modifierIds: line.selectedModifiers.map((m) => m.id),
+      modifiers: line.selectedModifiers.map(m => ({id:m.id,name:m.name,price:m.price})),
       name: line.name,
       unitPriceCents: line.unitPrice,
       subtotalCents: line.subtotal,
@@ -215,7 +216,7 @@ export function createOrder(input: {
       record.id,
       null,
       status,
-      input.source === 'staff' ? 'shared-staff-tablet' : 'customer',
+      input.source === 'staff' ? (input.actor ?? 'shared-staff-tablet') : 'customer',
       now,
     );
     db.exec('COMMIT');
@@ -264,7 +265,7 @@ export function searchOrders(filters: { status?: OrderStatus; fulfillment?: Fulf
 
 export class OrderTransitionError extends Error {}
 
-export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedStatus?: OrderStatus): OrderRecord {
+export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedStatus?: OrderStatus, actor = 'shared-staff-tablet'): OrderRecord {
   const db = getDb();
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -277,7 +278,8 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
     }
     const updatedAt = new Date().toISOString();
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
-    db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, 'shared-staff-tablet', updatedAt);
+    db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, actor, updatedAt);
+    enqueueNotification(id,nextStatus);
     db.exec('COMMIT');
     return { ...current, status: nextStatus, updatedAt };
   } catch (error) {
