@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
 import { OrderTransitionError, updateOrderStatus, type OrderStatus } from '@/lib/orders';
+import { deliverOrderEmail } from '@/lib/email';
 
 
 const VALID_STATUSES: OrderStatus[] = ['received', 'accepted', 'ready', 'completed', 'cancelled'];
@@ -18,6 +19,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
   try {
     const order = updateOrderStatus(id, body.status as OrderStatus, body.expectedStatus as OrderStatus | undefined, teamSession(store.get(STAFF_COOKIE)?.value) ? 'team:'+teamSession(store.get(STAFF_COOKIE)?.value)!.id : 'shared-staff-tablet');
+    if (['accepted', 'ready', 'completed'].includes(order.status)) await deliverOrderEmail(order, order.status as 'accepted' | 'ready' | 'completed').catch(() => false);
     return NextResponse.json({ order }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const message = error instanceof OrderTransitionError ? error.message : 'Could not update that order.';

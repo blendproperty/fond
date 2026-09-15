@@ -40,6 +40,7 @@ export function AdminPanel() {
   const [code, setCode] = useState('');
   const [named,setNamed]=useState(false);
   const [username,setUsername]=useState('');
+  const [twoFactorCode,setTwoFactorCode]=useState('');
   const [loginError, setLoginError] = useState('');
   const [tab, setTab] = useState<AdminSection>('menu');
 
@@ -53,13 +54,14 @@ export function AdminPanel() {
   async function submitCode(e: React.FormEvent) {
     e.preventDefault();
     setLoginError('');
-    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code} : {code}) });
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code,twoFactorCode} : {code}) });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       setLoginError(data?.message ?? 'Incorrect code.');
       return;
     }
     setCode('');
+    setTwoFactorCode('');
     setLocked(false);
   }
 
@@ -80,6 +82,7 @@ export function AdminPanel() {
           <label className="field-check"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');}}/> Sign in with a named account</label>
           {named && <label className="field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label>}
           <input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Admin code" aria-label="Admin access code" />
+          {named && <label className="field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="Required after 2FA enrollment"/></label>}
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full" type="submit">Unlock</button>
         </form>

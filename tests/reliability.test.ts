@@ -2,7 +2,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { getDb, resetDbForTests } from '../src/lib/db';
-import { createOrder, getOrderByReference, getOrderEvents, updateOrderStatus, SubmissionConflictError } from '../src/lib/orders';
+import { createOrder, getOrderByReference, getOrderEvents, recordPosEntry, updateOrderStatus, SubmissionConflictError } from '../src/lib/orders';
 import { updateMenuItem, deleteMenuItem } from '../src/lib/menu-store';
 process.env.FOND_DB_PATH = ':memory:';
 beforeEach(resetDbForTests);
@@ -23,11 +23,12 @@ test('snapshots survive menu deletion and references have full UUID entropy',()=
 test('status audit is atomic and stale tablet transitions are rejected',()=>{
  const order=createOrder(input());updateOrderStatus(order.id,'accepted','received');
  assert.throws(()=>updateOrderStatus(order.id,'cancelled','received'),/another device/);
+ recordPosEntry(order.id,'YOCO-TEST','fixture');
  updateOrderStatus(order.id,'ready','accepted');updateOrderStatus(order.id,'completed','ready');
- assert.deepEqual(getOrderEvents(order.id).map(e=>e.to_status),['received','accepted','ready','completed']);
+ assert.deepEqual(getOrderEvents(order.id).map(e=>e.to_status),['received','accepted','pos-recorded','ready','completed']);
  assert.equal(getOrderEvents(order.id)[1].actor,'shared-staff-tablet');
  assert.throws(()=>updateOrderStatus(order.id,'cancelled','completed'));
- assert.equal(getOrderEvents(order.id).length,4);
+ assert.equal(getOrderEvents(order.id).length,5);
 });
 test('invalid submission rolls back and does not reserve its key',()=>{
  const request=input();assert.throws(()=>createOrder({...request,lines:[]}));

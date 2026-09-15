@@ -2,10 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-// Durable storage boundary: this file only. Yoco integration has been
-// dropped entirely (2026-09-14 decision) - FOND now takes real orders
-// through this app and a facility tablet, with payment handled in person by
-// staff (existing card machine or cash), independent of this system.
+// Durable storage boundary for orders, accounts and configuration.
 // Node's built-in SQLite is used deliberately so the Alpine production image
 // needs no native module compilation step.
 
@@ -92,10 +89,18 @@ export function getDb(): DatabaseSync {
     ['company', `ALTER TABLE orders ADD COLUMN company TEXT`],
     ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
     ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
+    ['user_id', `ALTER TABLE orders ADD COLUMN user_id TEXT`],
+    ['customer_email', `ALTER TABLE orders ADD COLUMN customer_email TEXT`],
+    ['pos_required', `ALTER TABLE orders ADD COLUMN pos_required INTEGER NOT NULL DEFAULT 0`],
+    ['pos_recorded_at', `ALTER TABLE orders ADD COLUMN pos_recorded_at TEXT`],
+    ['pos_recorded_by', `ALTER TABLE orders ADD COLUMN pos_recorded_by TEXT`],
+    ['pos_reference', `ALTER TABLE orders ADD COLUMN pos_reference TEXT`],
   ];
   for (const [column, sql] of orderMigrations) {
     if (!existingOrderColumns.has(column)) db.exec(sql);
   }
+  const userColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map(column => column.name));
+  if (!userColumns.has('email_verified_at')) db.exec('ALTER TABLE users ADD COLUMN email_verified_at TEXT');
   // Modifiers (2026-09-15 addition) - "add this / remove this" options such
   // as "extra cheese (+15)" or "no onion", stored as JSON per menu item.
   const existingMenuColumns = new Set(
@@ -107,7 +112,11 @@ export function getDb(): DatabaseSync {
   db.exec(`
     CREATE TABLE IF NOT EXISTS promotion_images (id TEXT PRIMARY KEY,mime TEXT NOT NULL,bytes BLOB NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS provider_secrets (name TEXT PRIMARY KEY, iv BLOB NOT NULL, tag BLOB NOT NULL, ciphertext BLOB NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS email_verifications (user_id TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, sent_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS email_jobs (id TEXT PRIMARY KEY, order_id TEXT, event TEXT NOT NULL, recipient TEXT NOT NULL, status TEXT NOT NULL, provider_id TEXT, error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_members (id TEXT PRIMARY KEY, name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS team_two_factor (member_id TEXT PRIMARY KEY, iv BLOB NOT NULL, tag BLOB NOT NULL, ciphertext BLOB NOT NULL, active INTEGER NOT NULL DEFAULT 0, recovery_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_sessions (token_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL, expires_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE, email TEXT, company TEXT, notes TEXT NOT NULL DEFAULT '', marketing_consent INTEGER NOT NULL DEFAULT 0, consent_note TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);

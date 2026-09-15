@@ -1,9 +1,14 @@
 import { createHmac,timingSafeEqual,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { settings } from './management';
+import {providerSecret} from './provider-secrets';
+const yocoKey=()=>providerSecret('yoco-secret')??process.env.YOCO_SECRET_KEY;
+const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SECRET;
 export function onlinePaymentsConfigured(){
-  const key=process.env.YOCO_SECRET_KEY;
-  return !!key && (key.startsWith("sk_live_") || (process.env.FOND_ALLOW_TEST_PAYMENTS === "true" && key.startsWith("sk_test_"))) && !!process.env.YOCO_WEBHOOK_SECRET && !!process.env.FOND_PUBLIC_URL;
+  try {
+    const key=yocoKey();
+    return !!key && (key.startsWith("sk_live_") || (process.env.FOND_ALLOW_TEST_PAYMENTS === "true" && key.startsWith("sk_test_"))) && !!webhookKey() && !!process.env.FOND_PUBLIC_URL;
+  } catch { return false; }
 }
 export function paymentStatus(orderId:string){
   const paid=(getDb().prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id=?').get(orderId) as {n:number}).n;
@@ -21,7 +26,7 @@ export async function createCheckout(reference:string){
   const base=new URL(process.env.FOND_PUBLIC_URL!);if(base.protocol!=='https:')throw new Error('Online payment requires a secure site URL.');
   db.prepare("INSERT OR IGNORE INTO yoco_checkouts VALUES (?,NULL,NULL,'creating',?)").run(order.id,new Date().toISOString());
   const response=await fetch('https://payments.yoco.com/api/checkouts',{
-    method:'POST',headers:{Authorization:`Bearer ${process.env.YOCO_SECRET_KEY}`,'Content-Type':'application/json','Idempotency-Key':order.id},signal:AbortSignal.timeout(20000),
+    method:'POST',headers:{Authorization:`Bearer ${yocoKey()}`,'Content-Type':'application/json','Idempotency-Key':order.id},signal:AbortSignal.timeout(20000),
     body:JSON.stringify({amount:order.total_cents,currency:'ZAR',metadata:{fondOrderId:order.id},externalId:order.id,successUrl:`${base.origin}/?payment=return&reference=${encodeURIComponent(reference)}`,cancelUrl:`${base.origin}/?payment=cancelled&reference=${encodeURIComponent(reference)}`,failureUrl:`${base.origin}/?payment=failed&reference=${encodeURIComponent(reference)}`})
   });
   if(!response.ok)throw new Error('Yoco could not start checkout. Retry the same order or contact FOND.');
@@ -31,7 +36,7 @@ export async function createCheckout(reference:string){
   return url.toString();
 }
 export function verifyYocoSignature(raw:string,headers:Headers,now=Date.now()){
-  const secret=process.env.YOCO_WEBHOOK_SECRET,id=headers.get('webhook-id'),timestamp=headers.get('webhook-timestamp'),signature=headers.get('webhook-signature');
+  const secret=webhookKey(),id=headers.get('webhook-id'),timestamp=headers.get('webhook-timestamp'),signature=headers.get('webhook-signature');
   if(!secret?.startsWith('whsec_')||!id||!timestamp||!/^\d+$/.test(timestamp)||!signature||Math.abs(now/1000-Number(timestamp))>180)return false;
   const expected=createHmac('sha256',Buffer.from(secret.slice(6),'base64')).update(`${id}.${timestamp}.${raw}`).digest();
   return signature.split(' ').some(s=>{const [version,value]=s.split(',');if(version!=='v1'||!value)return false;const actual=Buffer.from(value,'base64');return actual.length===expected.length&&timingSafeEqual(actual,expected);});
@@ -44,7 +49,7 @@ export function processPaymentEvent(event:{id:string;type:string;payload:{id:str
   try{
     if(db.prepare('SELECT id FROM webhook_receipts WHERE id=?').get(event.id)){db.exec('COMMIT');return {duplicate:true};}
     const checkout=db.prepare('SELECT c.order_id,o.total_cents FROM yoco_checkouts c JOIN orders o ON o.id=c.order_id WHERE c.checkout_id=?').get(p.metadata?.checkoutId??'') as {order_id:string;total_cents:number}|undefined;
-    const expectedMode=process.env.YOCO_SECRET_KEY?.startsWith('sk_test_')?'test':'live';
+    const expectedMode=yocoKey()?.startsWith('sk_test_')?'test':'live';
     if(expectedMode==='test'&&process.env.FOND_ALLOW_TEST_PAYMENTS!=='true')throw new Error('Sandbox payment processing is disabled.');
     if(!checkout||p.currency!=='ZAR'||p.status!=='succeeded'||(!Number.isSafeInteger(p.amount)||p.amount<=0||(!refund&&p.amount!==checkout.total_cents)||p.amount>checkout.total_cents)||p.mode!==expectedMode||typeof p.id!=='string')throw new Error('Payment does not match the stored checkout.');
     const reference=(refund?'yoco-refund:':'yoco:')+p.id;
