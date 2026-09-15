@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { ADMIN_COOKIE, adminRole } from '@/lib/admin-auth';
 import { teamSession } from '@/lib/team';
 import { activateTwoFactor, beginTwoFactor, twoFactorActive } from '@/lib/two-factor';
+import { validRequestOrigin } from '@/lib/request-origin';
 
 const headers = { 'Cache-Control': 'no-store' };
 async function member() {
@@ -17,8 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const current = await member();
   if (!current) return Response.json({ message: 'Sign in with a named admin account.' }, { status: 403, headers });
-  const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin) return Response.json({ message: 'Invalid origin.' }, { status: 403, headers });
+  if (!validRequestOrigin(request)) return Response.json({ message: 'Invalid origin.' }, { status: 403, headers });
   const body = await request.json().catch(() => null);
   try {
     if (body?.action === 'begin') return Response.json(beginTwoFactor(current.id, current.username), { headers });
