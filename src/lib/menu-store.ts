@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
-import { SEED_MENU, type Meal, type Category } from './menu';
+import { SEED_MENU, type Meal, type Category, type Modifier } from './menu';
 
 // Live, editable menu (2026-09-14 later addition — the admin/CRM backend).
 // The menu_items table is seeded once from SEED_MENU the first time it's
@@ -20,6 +21,7 @@ type MenuRow = {
   is_special: number;
   special_label: string | null;
   special_price_cents: number | null;
+  modifiers_json: string;
   updated_at: string;
 };
 
@@ -39,6 +41,7 @@ function fromRow(row: MenuRow): Meal {
     isSpecial,
     specialLabel: row.special_label,
     basePrice: isSpecial && row.special_price_cents != null ? basePrice : undefined,
+    modifiers: JSON.parse(row.modifiers_json || '[]'),
   };
 }
 
@@ -81,9 +84,24 @@ export type MenuItemPatch = Partial<{
   specialPrice: number | null; // cents, or null to clear
   diet: Meal['diet'];
   symbol: string;
+  modifiers: Modifier[]; // full replacement list
 }>;
 
 export class MenuValidationError extends Error {}
+
+function validateModifiers(modifiers: Modifier[] | undefined): string | undefined {
+  if (modifiers === undefined) return undefined;
+  if (!Array.isArray(modifiers) || modifiers.length > 20) throw new MenuValidationError('Too many modifiers.');
+  for (const m of modifiers) {
+    if (!m || typeof m.id !== 'string' || typeof m.name !== 'string' || !m.name.trim() || m.name.length > 60) {
+      throw new MenuValidationError('Each modifier needs a name.');
+    }
+    if (!Number.isInteger(m.price) || m.price < -100_00 || m.price > 100_00) {
+      throw new MenuValidationError('Modifier price must be a valid amount (can be negative, e.g. "no cheese").');
+    }
+  }
+  return JSON.stringify(modifiers);
+}
 
 export function updateMenuItem(id: string, patch: MenuItemPatch): Meal {
   seedIfEmpty();
@@ -108,11 +126,12 @@ export function updateMenuItem(id: string, patch: MenuItemPatch): Meal {
   }
   const dietJson = patch.diet !== undefined ? JSON.stringify(patch.diet ?? []) : row.diet_json;
   const symbol = patch.symbol !== undefined ? patch.symbol : row.symbol;
+  const modifiersJson = validateModifiers(patch.modifiers) ?? row.modifiers_json;
   const updatedAt = new Date().toISOString();
 
   db.prepare(
-    `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, updated_at = ? WHERE id = ?`,
-  ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, updatedAt, id);
+    `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, modifiers_json = ?, updated_at = ? WHERE id = ?`,
+  ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, modifiersJson, updatedAt, id);
 
   return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
 }
@@ -149,4 +168,45 @@ export function createMenuItem(input: {
 export function deleteMenuItem(id: string): void {
   seedIfEmpty();
   getDb().prepare(`DELETE FROM menu_items WHERE id = ?`).run(id);
+}
+
+// Add a single "add this / remove this" option to an item, e.g. "Extra
+// cheese" at +R15, or "No onion" at R0 — the price can be negative for a
+// removal that should discount (rare, but the field allows it).
+export function addModifier(itemId: string, input: { name: string; price: number }): Meal {
+  const item = getFullMenu().find((m) => m.id === itemId);
+  if (!item) throw new MenuValidationError('Menu item not found.');
+  const modifiers = [...(item.modifiers ?? []), { id: randomUUID(), name: input.name, price: input.price }];
+  return updateMenuItem(itemId, { modifiers });
+}
+
+export function removeModifier(itemId: string, modifierId: string): Meal {
+  const item = getFullMenu().find((m) => m.id === itemId);
+  if (!item) throw new MenuValidationError('Menu item not found.');
+  const modifiers = (item.modifiers ?? []).filter((m) => m.id !== modifierId);
+  return updateMenuItem(itemId, { modifiers });
+}
+
+// Aggregates quantity sold per menu item across all non-cancelled orders —
+// backs the admin "top / slow movers" report. Cancelled orders are excluded
+// so a rejected order never counts as a sale. Only quantity is tracked here:
+// orders store the raw basket (id/quantity), not a per-line price snapshot,
+// so per-item revenue isn't reconstructable from lines_json alone.
+export function getItemSalesStats(): Map<string, number> {
+  const db = getDb();
+  const rows = db.prepare(`SELECT lines_json FROM orders WHERE status != 'cancelled'`).all() as { lines_json: string }[];
+  const stats = new Map<string, number>();
+  for (const row of rows) {
+    let lines: { id: string; quantity: number }[];
+    try {
+      lines = JSON.parse(row.lines_json);
+    } catch {
+      continue;
+    }
+    for (const line of lines ?? []) {
+      if (!line || typeof line.id !== 'string' || !Number.isFinite(line.quantity)) continue;
+      stats.set(line.id, (stats.get(line.id) ?? 0) + line.quantity);
+    }
+  }
+  return stats;
 }

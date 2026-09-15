@@ -24,6 +24,7 @@ export type Category =
   | 'Sides, Sauces & Add-Ons';
 
 export type Diet = 'vegan' | 'vegetarian' | 'gluten-free';
+export type Modifier = { id: string; name: string; price: number }; // price in cents, added when selected
 export type Meal = {
   id: string;
   name: string;
@@ -36,6 +37,7 @@ export type Meal = {
   isSpecial?: boolean;
   specialLabel?: string | null;
   basePrice?: number; // present when isSpecial and different from price
+  modifiers?: Modifier[]; // e.g. "no onion", "extra cheese (+15)" — optional add/remove options
 };
 
 export const SEED_MENU: Meal[] = [
@@ -234,7 +236,14 @@ export const categories: Category[] = [
 
 export const money = (cents: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 2 }).format(cents / 100);
 
-export type CartLine = { id: string; quantity: number };
+// modifierIds identifies a line uniquely alongside id, so the same base item
+// can appear twice in a basket with different modifier selections (e.g. one
+// "no onion" and one plain) - lineKey() below is what "seen" dedupes on.
+export type CartLine = { id: string; quantity: number; modifierIds?: string[] };
+
+export function lineKey(line: CartLine): string {
+  return `${line.id}::${[...(line.modifierIds ?? [])].sort().join(',')}`;
+}
 
 // Pricing is always quoted against a caller-supplied menu, never trusted
 // from the client (2026-09-14 admin/CRM addition: the live menu now lives
@@ -246,10 +255,18 @@ export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
   const seen = new Set<string>();
   return lines.map((line) => {
     const meal = sourceMenu.find((m) => m.id === line.id && m.available !== false);
-    if (!meal || seen.has(line.id) || !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 20) {
+    const key = lineKey(line);
+    if (!meal || seen.has(key) || !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 20) {
       throw new Error('Your basket has an invalid item or quantity.');
     }
-    seen.add(line.id);
-    return { ...meal, quantity: line.quantity, subtotal: meal.price * line.quantity };
+    const modifierIds = line.modifierIds ?? [];
+    const selectedModifiers = modifierIds.map((mid) => {
+      const mod = meal.modifiers?.find((m) => m.id === mid);
+      if (!mod) throw new Error('Your basket has an invalid modifier selection.');
+      return mod;
+    });
+    seen.add(key);
+    const unitPrice = meal.price + selectedModifiers.reduce((sum, m) => sum + m.price, 0);
+    return { ...meal, quantity: line.quantity, selectedModifiers, unitPrice, subtotal: unitPrice * line.quantity };
   });
 }

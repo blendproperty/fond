@@ -17,7 +17,6 @@ export function getDb(): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL');
-  db.exec('PRAGMA busy_timeout = 5000');
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -62,6 +61,7 @@ export function getDb(): DatabaseSync {
       is_special INTEGER NOT NULL DEFAULT 0,
       special_label TEXT,
       special_price_cents INTEGER,
+      modifiers_json TEXT NOT NULL DEFAULT '[]',
       updated_at TEXT NOT NULL
     );
   `);
@@ -70,25 +70,27 @@ export function getDb(): DatabaseSync {
   // above only helps brand-new databases, so existing SQLite files on the
   // VPS need these columns added explicitly. Safe to run on every startup:
   // each ALTER is skipped once the column already exists.
-  const existingColumns = new Set(
+  const existingOrderColumns = new Set(
     (db.prepare(`PRAGMA table_info(orders)`).all() as { name: string }[]).map((c) => c.name),
   );
-  const migrations: [string, string][] = [
+  const orderMigrations: [string, string][] = [
     ['fulfillment', `ALTER TABLE orders ADD COLUMN fulfillment TEXT NOT NULL DEFAULT 'collection'`],
     ['contact_number', `ALTER TABLE orders ADD COLUMN contact_number TEXT`],
     ['company', `ALTER TABLE orders ADD COLUMN company TEXT`],
     ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
     ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
   ];
-  for (const [column, sql] of migrations) {
-    if (!existingColumns.has(column)) db.exec(sql);
+  for (const [column, sql] of orderMigrations) {
+    if (!existingOrderColumns.has(column)) db.exec(sql);
   }
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS order_submissions (submission_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, order_id TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS order_events (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, from_status TEXT, to_status TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS order_events_order ON order_events(order_id);
-    CREATE UNIQUE INDEX IF NOT EXISTS orders_new_reference_unique ON orders(reference) WHERE length(reference) > 11;
-  `);
+  // Modifiers (2026-09-15 addition) - "add this / remove this" options such
+  // as "extra cheese (+15)" or "no onion", stored as JSON per menu item.
+  const existingMenuColumns = new Set(
+    (db.prepare(`PRAGMA table_info(menu_items)`).all() as { name: string }[]).map((c) => c.name),
+  );
+  if (!existingMenuColumns.has('modifiers_json')) {
+    db.exec(`ALTER TABLE menu_items ADD COLUMN modifiers_json TEXT NOT NULL DEFAULT '[]'`);
+  }
   instance = db;
   return db;
 }
