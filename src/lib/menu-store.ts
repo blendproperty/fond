@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { SEED_MENU, type Meal, type Category, type Modifier } from './menu';
+import { DEFAULT_MENU_MODIFIERS } from './menu-modifier-defaults';
 
 // Live, editable menu (2026-09-14 later addition — the admin/CRM backend).
 // The menu_items table is seeded once from SEED_MENU the first time it's
@@ -48,15 +49,39 @@ function fromRow(row: MenuRow): Meal {
 function seedIfEmpty() {
   const db = getDb();
   const { count } = db.prepare(`SELECT COUNT(*) AS count FROM menu_items`).get() as { count: number };
-  if (count > 0) return;
-  const now = new Date().toISOString();
-  const insert = db.prepare(
-    `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?)`,
-  );
-  SEED_MENU.forEach((meal, index) => {
-    insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, now);
-  });
+  if (count === 0) {
+    const now = new Date().toISOString();
+    const insert = db.prepare(
+      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?)`,
+    );
+    SEED_MENU.forEach((meal, index) => {
+      insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, now);
+    });
+  }
+  // Apply the published launch choices once to existing menus, filling only
+  // items that still have no admin-configured modifiers. The marker prevents
+  // an admin intentionally clearing an item from being overwritten later.
+  const marker = 'menu-launch-modifiers-v1';
+  if (db.prepare('SELECT key FROM app_documents WHERE key = ?').get(marker)) return;
+  db.exec('SAVEPOINT fond_menu_defaults');
+  try {
+    const applied = db.prepare('SELECT key FROM app_documents WHERE key = ?').get(marker);
+    if (!applied) {
+      const now = new Date().toISOString();
+      const update = db.prepare(`UPDATE menu_items SET modifiers_json = ?, updated_at = ? WHERE id = ? AND description = ? AND modifiers_json = '[]'`);
+      for (const [id, modifiers] of Object.entries(DEFAULT_MENU_MODIFIERS)) {
+        const original = SEED_MENU.find(item => item.id === id);
+        if (original) update.run(JSON.stringify(modifiers), now, id, original.description);
+      }
+      db.prepare('INSERT INTO app_documents (key, value, updated_at) VALUES (?, ?, ?)').run(marker, 'applied', now);
+    }
+    db.exec('RELEASE fond_menu_defaults');
+  } catch (error) {
+    db.exec('ROLLBACK TO fond_menu_defaults');
+    db.exec('RELEASE fond_menu_defaults');
+    throw error;
+  }
 }
 
 // Full menu including unavailable items — for the admin panel only.

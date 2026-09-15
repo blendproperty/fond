@@ -30,7 +30,7 @@ test('trading hours use Johannesburg and settings reject invalid values',()=>{
  assert.throws(()=>validateSettings({...s,maxActiveOrders:0}));
 });
 test('paused/capacity order intake rejects new orders but still permits unchanged retries',()=>{
- const request={submissionKey:randomUUID(),customerName:'Test',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',source:'customer' as const};
+ const request={submissionKey:randomUUID(),customerName:'Test',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',source:'customer' as const,contactNumber:'0821234567'};
  const first=createOrder(request);saveDocument('trading',{...DEFAULT_SETTINGS,orderingEnabled:false},'admin');
  assert.equal(createOrder(request).id,first.id);assert.throws(order,/closed/);
  saveDocument('trading',{...DEFAULT_SETTINGS,maxActiveOrders:1},'admin');assert.throws(order,/capacity/);

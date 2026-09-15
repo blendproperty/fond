@@ -5,6 +5,7 @@ test('lost order response can be retried with the same submission key',async({pa
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:'Basket',exact:true}).click();
  await page.getByLabel(/Your name/).fill('Retry browser test');
+ await page.getByLabel('Contact number').fill('0821234567');
  const keys:string[]=[];const references:string[]=[];
  await page.route('**/api/orders',async route=>{
    if(route.request().method()!=='POST')return route.continue();
@@ -26,12 +27,14 @@ test('staff manual intake sends an idempotency key',async({page})=>{
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);
  await page.getByRole('button',{name:'Open order queue'}).click();
  await page.getByRole('button',{name:'Add order',exact:true}).click();
+ await page.getByRole('dialog').getByLabel('No pickled red onion').check();
  await page.getByRole('button',{name:/Smashed Avo/}).click();
  await page.getByLabel('Name / table / desk').fill('Manual browser test');
  const responsePromise=page.waitForResponse(r=>r.url().endsWith('/api/staff/orders')&&r.request().method()==='POST');
  await page.getByRole('dialog').getByRole('button',{name:'Add to queue'}).click();
  const response=await responsePromise;expect(response.status()).toBe(201);
  expect(response.request().headers()['idempotency-key']).toBeTruthy();
+ expect(response.request().postDataJSON().lines[0].modifierIds).toHaveLength(1);
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByText('Manual browser test').first()).toBeVisible();
 });

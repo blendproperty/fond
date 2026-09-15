@@ -5,7 +5,7 @@ test('HTTP retry, access boundaries and audited lifecycle',async({request})=>{
   expect((await request.get('/api/staff/orders')).status()).toBe(401);
   expect((await request.get('/api/staff/orders/unknown/history')).status()).toBe(401);
   expect((await request.patch('/api/staff/orders/unknown',{data:{status:'accepted'}})).status()).toBe(401);
-  const data={customerName:'Reliability test',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP'};
+  const data={customerName:'Reliability test',contactNumber:'0821234567',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP'};
   const headers={'Idempotency-Key':randomUUID()};
   const first=await request.post('/api/orders',{data,headers});expect(first.status()).toBe(201);
   const order=await first.json();

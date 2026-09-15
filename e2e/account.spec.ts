@@ -14,6 +14,7 @@ test('customer can sign up, place an order, then see it in their own account', a
   await page.getByRole('button', { name: 'Add Smashed Avo', exact: true }).click();
   await page.getByRole('button', { name: /Basket/ }).first().click();
   await page.getByLabel(/Your name/).fill('Account browser test');
+  await page.getByLabel('Contact number').fill('0821234567');
   await page.getByRole('button', { name: 'Send order to FOND' }).click();
   await expect(page.getByText('Order sent to FOND.')).toBeVisible();
   await page.goto('/account');

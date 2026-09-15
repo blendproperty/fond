@@ -6,6 +6,7 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
  await page.getByLabel('Preferred collection').selectOption('Lunch collection');
  await page.getByLabel(/Your name/).fill('Playwright Test');
+ await page.getByLabel('Contact number').fill('0821234567');
  await page.getByRole('button',{name:'Send order to FOND'}).click();
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
  await expect(page.getByRole('dialog')).toContainText(/240/);
@@ -36,4 +37,19 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
  await expect(page.getByRole('heading',{name:'Order queue'})).toBeVisible();
+});
+
+test('menu add-ons update the basket and collection needs a contact number',async({page,request})=>{
+ await page.goto('/');
+ await page.getByRole('tab',{name:'Smoothies'}).click();
+ const smoothie=page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Tropical Gold'})});
+ await smoothie.getByLabel('Add protein powder').check();
+ await smoothie.getByRole('button',{name:'Add Tropical Gold'}).click();
+ await page.getByRole('button',{name:/^Basket/}).click();
+ await expect(page.getByText('Add protein powder').last()).toBeVisible();
+ await page.getByLabel(/Your name/).fill('Modifier browser test');
+ await page.getByRole('button',{name:'Send order to FOND'}).click();
+ await expect(page.getByText('Enter a contact number so FOND can reach you about your order.')).toBeVisible();
+ const rejected=await request.post('/api/orders',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{customerName:'Missing phone',collectionTime:'ASAP',lines:[{id:'tropical-gold',quantity:1}]}});
+ expect(rejected.status()).toBe(400);
 });

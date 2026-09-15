@@ -21,7 +21,7 @@ test('verified accounts get one receipt per order while unverified accounts get 
     saveProviderSecret('email-api', 're_test_example', 'shared-admin');
     saveDocument('email-from', 'orders@fond.co.za', 'shared-admin');
     const { token, user } = signUp('account@example.test', 'long-password-123');
-    const order = createOrder({ customerName: 'Account', source: 'customer', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email });
+    const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email });
     assert.equal(await deliverOrderEmail(order, 'received'), false);
     assert.equal(messages.length, 0);
     await requestVerification(user);

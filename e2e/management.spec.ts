@@ -14,7 +14,7 @@ test('admin sections save customer, publish CMS, record receipts and create name
  await page.getByRole('button',{name:'Publish to website',exact:true}).click();await expect(page.getByRole('status')).toContainText('Saved');
  const store=await (await request.get('/api/store')).json();expect(store.content.announcement).toMatch(/^Fresh food/);
  // Create an actual isolated order, then reconcile it through the admin UI.
- const res=await request.post('/api/orders',{headers:{'Idempotency-Key':randomUUID()},data:{customerName:'Finance '+tag,collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}]}});expect(res.status()).toBe(201);
+ const res=await request.post('/api/orders',{headers:{'Idempotency-Key':randomUUID()},data:{customerName:'Finance '+tag,contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}]}});expect(res.status()).toBe(201);
  await page.getByRole('button',{name:'Finance',exact:true}).click();await expect(page.getByRole('heading',{name:'Record payment or refund'})).toBeVisible();
  const option=page.getByRole('combobox',{name:'Order',exact:true}).locator('option').filter({hasText:'Finance '+tag});
  await expect(option).toHaveCount(1);await page.getByRole('combobox',{name:'Order',exact:true}).selectOption((await option.getAttribute('value'))!);

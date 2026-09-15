@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 test('staff accepts, records Yoco entry, then marks the order ready', async ({ page, request }) => {
-  const created = await request.post('/api/orders', { headers: { 'Idempotency-Key': randomUUID() }, data: { customerName: 'POS browser test', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }] } });
+  const created = await request.post('/api/orders', { headers: { 'Idempotency-Key': randomUUID() }, data: { customerName: 'POS browser test', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }] } });
   expect(created.status()).toBe(201);
   const { reference } = await created.json();
   await page.goto('/staff');

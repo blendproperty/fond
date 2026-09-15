@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, Clock3, Lock, LogOut, Plus, Minus, Truck, X, ShoppingBag } from 'lucide-react';
-import { categories, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
+import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
@@ -223,6 +223,7 @@ export function StaffTablet() {
 function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose: () => void; onCreated: () => void }) {
   const [category, setCategory] = useState<Category>(categories[0]);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
   const [customerName, setCustomerName] = useState('');
   const [collectionTime, setCollectionTime] = useState('As soon as possible');
   const [note, setNote] = useState('');
@@ -230,13 +231,24 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   const [submitting, setSubmitting] = useState(false);
   const sending = useRef(false);
 
-  const total = useMemo(() => cart.reduce((n, l) => n + (menu.find((m) => m.id === l.id)?.price ?? 0) * l.quantity, 0), [cart, menu]);
+  const pricedCart = useMemo(() => {
+    try { return cart.length ? quoteCart(cart, menu) : []; } catch { return []; }
+  }, [cart, menu]);
+  const total = pricedCart.reduce((n, line) => n + line.subtotal, 0);
 
-  function change(id: string, delta: number) {
+  function toggleModifier(itemId: string, modifierId: string) {
+    setPendingMods(current => {
+      const selected = current[itemId] ?? [];
+      return {...current, [itemId]: selected.includes(modifierId) ? selected.filter(id => id !== modifierId) : [...selected, modifierId]};
+    });
+  }
+
+  function change(id: string, delta: number, modifierIds: string[] = []) {
     setCart((current) => {
-      const qty = current.find((l) => l.id === id)?.quantity ?? 0;
+      const key = lineKey({id, quantity: 1, modifierIds});
+      const qty = current.find((l) => lineKey(l) === key)?.quantity ?? 0;
       const next = Math.max(0, Math.min(20, qty + delta));
-      return [...current.filter((l) => l.id !== id), ...(next ? [{ id, quantity: next }] : [])];
+      return [...current.filter((l) => lineKey(l) !== key), ...(next ? [{ id, quantity: next, modifierIds }] : [])];
     });
   }
 
@@ -288,29 +300,31 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
             ))}
           </div>
           <div className="staff-item-grid" role="tabpanel" aria-label={category}>
-            {menu.filter((m) => m.category === category).map((m) => (
-              <button className="staff-item" key={m.id} onClick={() => change(m.id, 1)}>
-                <span>{m.symbol}</span>
-                <strong>{m.name}</strong>
-                <em>{money(m.price)}</em>
-                {cart.find((l) => l.id === m.id) && <b>{cart.find((l) => l.id === m.id)!.quantity}</b>}
-              </button>
-            ))}
+            {menu.filter((m) => m.category === category).map((m) => {
+              const selected = pendingMods[m.id] ?? [];
+              const selectedPrice = (m.modifiers ?? []).filter(mod => selected.includes(mod.id)).reduce((sum, mod) => sum + mod.price, m.price);
+              return <div className="staff-item" key={m.id}>
+                <button className="staff-item-add" onClick={() => change(m.id, 1, selected)} aria-label={`Add ${m.name}`}>
+                  <span>{m.symbol}</span><strong>{m.name}</strong><em>{money(selectedPrice)}</em>
+                </button>
+                {!!m.modifiers?.length && <div className="staff-item-modifiers">{m.modifiers.map(mod => <label key={mod.id}><input type="checkbox" checked={selected.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)}/>{mod.name}{mod.price ? ` (+${money(mod.price)})` : ''}</label>)}</div>}
+              </div>;
+            })}
           </div>
           {cart.length > 0 && (
             <div className="staff-cart">
               <h3><ShoppingBag size={16} /> Basket</h3>
-              {cart.map((l) => {
-                const item = menu.find((m) => m.id === l.id)!;
+              {pricedCart.map((l) => {
+                const modifiers = l.selectedModifiers.map(mod => mod.id);
                 return (
-                  <div className="cart-line" key={l.id}>
-                    <div><h3>{item.name}</h3></div>
+                  <div className="cart-line" key={lineKey({id:l.id,quantity:l.quantity,modifierIds:modifiers})}>
+                    <div><h3>{l.name}</h3>{l.selectedModifiers.length > 0 && <p>{l.selectedModifiers.map(mod => mod.name).join(', ')}</p>}</div>
                     <div className="quantity">
-                      <button aria-label={`Remove one ${item.name}`} onClick={() => change(l.id, -1)}><Minus size={14} /></button>
+                      <button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, modifiers)}><Minus size={14} /></button>
                       <span>{l.quantity}</span>
-                      <button aria-label={`Add one ${item.name}`} onClick={() => change(l.id, 1)}><Plus size={14} /></button>
+                      <button aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, modifiers)}><Plus size={14} /></button>
                     </div>
-                    <strong>{money(item.price * l.quantity)}</strong>
+                    <strong>{money(l.subtotal)}</strong>
                   </div>
                 );
               })}

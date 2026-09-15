@@ -6,7 +6,7 @@ import { createOrder, getOrderByReference, getOrderEvents, recordPosEntry, updat
 import { updateMenuItem, deleteMenuItem } from '../src/lib/menu-store';
 process.env.FOND_DB_PATH = ':memory:';
 beforeEach(resetDbForTests);
-const input = () => ({submissionKey:randomUUID(),customerName:'Test',lines:[{id:'espresso-single',quantity:2}],collectionTime:'ASAP',source:'customer' as const});
+const input = () => ({submissionKey:randomUUID(),customerName:'Test',lines:[{id:'espresso-single',quantity:2}],collectionTime:'ASAP',source:'customer' as const,contactNumber:'0821234567'});
 test('retry returns the same order even after the menu changes',()=>{
  const request=input();const order=createOrder(request);
  updateMenuItem('espresso-single',{price:5000});

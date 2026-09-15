@@ -130,8 +130,8 @@ export function OrderingApp() {
       if (offline) throw new Error('Reconnect before continuing.');
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
+      if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
       if (fulfillment === 'delivery') {
-        if (!contactNumber.trim()) throw new Error('Enter a contact number so the runner can reach you.');
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
       }
     } catch (e) {
@@ -214,12 +214,12 @@ export function OrderingApp() {
           {fulfillment === 'collection' ? (
             <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}>{(store?.settings.collectionSlots??['As soon as possible','Breakfast collection','Lunch collection','After-work collection']).map(t=><option key={t}>{t}</option>)}</select></label>
           ) : <>
-            <label className="field">Contact number<input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For the delivery runner to reach you" inputMode="tel" /></label>
+            <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel" /></label>
             <label className="field">Company (optional)<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Blend Property" /></label>
             <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
             <label className="field-check"><input type="checkbox" checked={whatsappOptIn} onChange={(e) => setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()} /> WhatsApp me when my order is accepted and ready</label>
           </>}
-          {fulfillment==='collection'&&<label className="field">Contact number (optional)<input value={contactNumber} onChange={e=>setContactNumber(e.target.value)} inputMode="tel"/></label>}
+          {fulfillment==='collection'&&<label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>}
           {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
           {store?.onlinePayments&&<label className="field-check"><input type="checkbox" checked={payOnline} onChange={e=>setPayOnline(e.target.checked)}/> Pay online with Yoco after placing my order</label>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>

@@ -8,7 +8,7 @@ import { checkStaffCode, isValidStaffToken } from '../src/lib/staff-auth';
 process.env.FOND_DB_PATH = ':memory:';
 beforeEach(resetDbForTests);
 test('a signed-in order is visible only to its own account and POS entry is audited', () => {
-  const order = createOrder({ customerName: 'Account customer', collectionTime: 'ASAP', source: 'customer', lines: [{ id: 'espresso-single', quantity: 1 }], userId: 'account-one', customerEmail: 'one@example.test' });
+  const order = createOrder({ customerName: 'Account customer', collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567', lines: [{ id: 'espresso-single', quantity: 1 }], userId: 'account-one', customerEmail: 'one@example.test' });
   assert.equal(listCustomerOrders('account-one')[0].id, order.id);
   assert.deepEqual(listCustomerOrders('account-two'), []);
   assert.throws(() => recordPosEntry(order.id, 'POS-1', 'staff'), /Accept/);

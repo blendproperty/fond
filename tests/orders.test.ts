@@ -21,7 +21,7 @@ beforeEach(() => resetDbForTests());
 const lines = [{ id: 'espresso-single', quantity: 2 }];
 
 test('customer orders start at received; staff orders start at accepted', () => {
-  const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(customer.status, 'received');
   assert.match(customer.reference, /^FOND-/);
   const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff' });
@@ -36,7 +36,7 @@ test('rejects missing name, collection time or an empty/invalid basket', () => {
 });
 
 test('an order can be looked up by reference and only active orders are listed', () => {
-  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(getOrderByReference(order.reference)?.id, order.id);
   assert.equal(getOrderByReference('FOND-NOPE'), null);
   assert.equal(listActiveOrders().length, 1);
@@ -48,7 +48,7 @@ test('an order can be looked up by reference and only active orders are listed',
 });
 
 test('valid transitions succeed and invalid ones are rejected', () => {
-  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(updateOrderStatus(order.id, 'accepted').status, 'accepted');
   assert.throws(() => updateOrderStatus(order.id, 'completed'), OrderTransitionError);
   assert.throws(() => updateOrderStatus(order.id, 'ready'), /Record the Yoco order entry/);
@@ -60,7 +60,7 @@ test('valid transitions succeed and invalid ones are rejected', () => {
 });
 
 test('defaults to collection, and delivery requires a contact number and building', () => {
-  const collection = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' });
+  const collection = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(collection.fulfillment, 'collection');
   assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery' }));
   assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', contactNumber: '0821234567' }));
@@ -80,13 +80,15 @@ test('defaults to collection, and delivery requires a contact number and buildin
   assert.equal(delivery.whatsappOptIn, true);
 });
 
-test('whatsapp opt-in is ignored without a contact number', () => {
-  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', whatsappOptIn: true });
-  assert.equal(order.whatsappOptIn, false);
+test('collection requires a valid contact number', () => {
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' }), /contact number/);
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: 'abc123' }), /valid contact number/);
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567', whatsappOptIn: true });
+  assert.equal(order.whatsappOptIn, true);
 });
 
 test('orders can be searched by status, fulfillment and free text', () => {
-  createOrder({ customerName: 'Alice', lines, collectionTime: 'ASAP', source: 'customer' });
+  createOrder({ customerName: 'Alice', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', contactNumber: '0821234567', building: 'OnPoint' });
   assert.equal(searchOrders({ fulfillment: 'delivery' }).length, 1);
   assert.equal(searchOrders({ query: 'Alice' }).length, 1);
