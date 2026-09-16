@@ -20,7 +20,7 @@ export function yocoCredentialMode(){try{const key=yocoKey();return key?.startsW
 export async function createCheckout(reference:string,options:{allowSandbox?:boolean}={}){
   const s=settings(),mode=yocoCredentialMode();
   const allowed=options.allowSandbox
-    ? mode==='test'&&s.allowTestPayments&&onlinePaymentsConfigured()
+    ? mode==='test'&&s.allowTestPayments&&!!yocoKey()&&!!publicBaseUrl()
     : mode==='live'&&s.onlinePaymentsEnabled&&onlinePaymentsConfigured();
   if(!allowed)throw new Error('Online payment is not available. Please pay at FOND.');
   const db=getDb();const order=db.prepare('SELECT id,total_cents,status FROM orders WHERE reference=?').get(reference) as {id:string;total_cents:number;status:string}|undefined;

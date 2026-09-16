@@ -92,7 +92,7 @@ test('notification jobs are durable and unconfigured provider is visible without
 
 test('sandbox hosted checkout is admin-only and reuses its stored redirect',async()=>{
  const o=order();saveDocument('trading',{...settings(),allowTestPayments:true},'admin');
- process.env.YOCO_SECRET_KEY='sk_test_fixture';process.env.YOCO_WEBHOOK_SECRET='whsec_fixture';process.env.FOND_PUBLIC_URL='https://fond.example';
+ process.env.YOCO_SECRET_KEY='sk_test_fixture';process.env.FOND_PUBLIC_URL='https://fond.example';
  await assert.rejects(()=>createCheckout(o.reference),/not available/);
  process.env.FOND_ALLOW_TEST_PAYMENTS='true';const original=global.fetch;let calls=0;
  global.fetch=async (_url,init)=>{calls++;const body=JSON.parse(init!.body as string);assert.equal(body.amount,o.totalCents);assert.equal(body.currency,'ZAR');assert.equal(new Headers(init!.headers).get('Idempotency-Key'),o.id);return Response.json({id:'checkout_mock',redirectUrl:'https://c.yoco.com/mock'});};
