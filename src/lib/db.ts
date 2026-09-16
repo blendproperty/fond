@@ -44,6 +44,8 @@ export function getDb(): DatabaseSync {
       company TEXT,
       building TEXT,
       whatsapp_opt_in INTEGER NOT NULL DEFAULT 0,
+      payment_method TEXT NOT NULL DEFAULT 'pay_at_collection',
+      payment_required INTEGER NOT NULL DEFAULT 0,
       estimated_prep_minutes INTEGER NOT NULL DEFAULT 20
     );
     CREATE TABLE IF NOT EXISTS order_submissions (
@@ -98,6 +100,8 @@ export function getDb(): DatabaseSync {
     ['pos_recorded_by', `ALTER TABLE orders ADD COLUMN pos_recorded_by TEXT`],
     ['pos_reference', `ALTER TABLE orders ADD COLUMN pos_reference TEXT`],
     ['estimated_prep_minutes', `ALTER TABLE orders ADD COLUMN estimated_prep_minutes INTEGER NOT NULL DEFAULT 20`],
+    ['payment_method', `ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'pay_at_collection'`],
+    ['payment_required', `ALTER TABLE orders ADD COLUMN payment_required INTEGER NOT NULL DEFAULT 0`],
   ];
   for (const [column, sql] of orderMigrations) {
     if (!existingOrderColumns.has(column)) db.exec(sql);

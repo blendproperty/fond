@@ -12,7 +12,7 @@ import type { TradingSettings,SiteContent } from '@/lib/management';
 
 
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment;estimatedPrepMinutes:number };
-type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; reference: string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number };
+type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; paymentMethod?:'yoco_online'|'pay_at_collection';fulfillment?:Fulfillment;reference: string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number };
 type Fulfillment = 'collection' | 'delivery';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function OrderingApp() {
-  const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean}|null>(null);
+  const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean;paymentMode?:'live'|'sandbox'|'none'}|null>(null);
   useEffect(()=>{const timer=setInterval(()=>{fetch('/api/store').then(r=>r.json()).then(setStore).catch(()=>{});},60000);return()=>clearInterval(timer);},[]);
   const [installHelp,setInstallHelp]=useState(false);
   const [payOnline,setPayOnline]=useState(false);
@@ -134,6 +134,7 @@ export function OrderingApp() {
       if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
       if (fulfillment === 'delivery') {
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
+        if(!store?.onlinePayments)throw new Error('Delivery requires secure online payment, which is not available right now.');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Please check your basket.');
@@ -142,12 +143,14 @@ export function OrderingApp() {
     sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn});
+      const paymentMethod=fulfillment==='delivery'||payOnline?'yoco_online':'pay_at_collection';
+      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn});
       const key = await submissionKey(payload);
       const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
       clearSubmission(key);
+      if(data.redirectUrl){location.assign(data.redirectUrl);return;}
       setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment,estimatedPrepMinutes:data.estimatedPrepMinutes });
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
@@ -203,13 +206,13 @@ export function OrderingApp() {
           <label className="field">Order reference<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-XXXXXX" /></label>
           <button className="primary full" onClick={() => lookupOrder(trackInput)}><Search size={18} /> Check status</button>
           {trackError && <p role="alert">{trackError}</p>}
-          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)} · approx. {tracked.estimatedPrepMinutes} min preparation</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?"Payment recorded":"Payment not yet confirmed"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
+          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)} · approx. {tracked.estimatedPrepMinutes} min preparation</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?"Paid online":tracked.paymentMethod==='yoco_online'?"Waiting for confirmed Yoco payment":"Payment due at collection"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>Pay securely with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">Pay at FOND, or use online checkout when available. Online payments are confirmed after verification. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p>{store?.onlinePayments&&<button className="primary" disabled={paying} onClick={()=>pay(confirmation.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
             <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
-            <button role="tab" aria-selected={fulfillment === 'delivery'} disabled={store?.settings.deliveryEnabled===false} onClick={() => setFulfillment('delivery')}><Truck size={16} /> Delivery</button>
+            <button role="tab" aria-selected={fulfillment === 'delivery'} disabled={store?.settings.deliveryEnabled===false||!store?.onlinePayments} onClick={() => {setFulfillment('delivery');setPayOnline(true);}}><Truck size={16} /> Delivery</button>
           </div>
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
           {fulfillment === 'collection' ? (
@@ -222,12 +225,12 @@ export function OrderingApp() {
           </>}
           {fulfillment==='collection'&&<label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>}
           {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
-          {store?.onlinePayments&&<label className="field-check"><input type="checkbox" checked={payOnline} onChange={e=>setPayOnline(e.target.checked)}/> Pay online with Yoco after placing my order</label>}
+          {store?.onlinePayments?<fieldset className="payment-choice"><legend>Payment</legend><label className="field-check"><input type="radio" name="payment" checked={payOnline} onChange={()=>setPayOnline(true)}/> Pay securely now with Yoco{store.paymentMode==='sandbox'?' · TEST MODE':''}</label>{fulfillment==='collection'&&<label className="field-check"><input type="radio" name="payment" checked={!payOnline} onChange={()=>setPayOnline(false)}/> Pay at FOND when collecting</label>}{fulfillment==='delivery'&&<p className="small">Delivery orders must be paid online before FOND can prepare them.</p>}</fieldset>:<p className="notice">Online payment is currently unavailable. Collection orders can be paid at FOND. Delivery ordering will open when secure online payment is enabled.</p>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
           {error && <p role="alert">{error}</p>}
-          <button className="primary full" disabled={offline || submitting || store?.open===false} onClick={placeOrder}>{submitting ? 'Sending…' : 'Send order to FOND'} <ArrowRight size={18} /></button>
-          <p className="small center">Pay at FOND, or choose online payment when available.</p>
+          <button className="primary full" disabled={offline || submitting || store?.open===false} onClick={placeOrder}>{submitting ? 'Sending…' : payOnline?'Continue to secure payment':'Send order to FOND'} <ArrowRight size={18} /></button>
+          <p className="small center">{payOnline?'Your order moves forward only after Yoco confirms payment.':'Payment will be due when you collect.'}</p>
         </> : <div className="empty"><ShoppingBag /><h3>A little something good?</h3><p>Your basket is waiting for its first favourite.</p><button className="primary" onClick={() => setPanel(null)}>Explore the menu <ArrowRight size={18} /></button></div>}
       </div>
     </section></div>}

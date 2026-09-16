@@ -18,6 +18,7 @@ import { getAvailableMenu } from './menu-store';
 export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
+export type PaymentMethod = 'yoco_online' | 'pay_at_collection';
 
 export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number; prepMinutes?:number; modifiers?: {id:string;name:string;price:number}[] };
 
@@ -45,6 +46,8 @@ export type OrderRecord = {
   posRecordedBy: string | null;
   posReference: string | null;
   estimatedPrepMinutes:number;
+  paymentMethod:PaymentMethod;
+  paymentRequired:boolean;
 };
 
 const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready'];
@@ -81,6 +84,8 @@ type OrderRow = {
   pos_recorded_by: string | null;
   pos_reference: string | null;
   estimated_prep_minutes:number;
+  payment_method:string;
+  payment_required:number;
 };
 
 function fromRow(row: OrderRow): OrderRecord {
@@ -108,6 +113,8 @@ function fromRow(row: OrderRow): OrderRecord {
     posRecordedBy: row.pos_recorded_by,
     posReference: row.pos_reference,
     estimatedPrepMinutes:row.estimated_prep_minutes??20,
+    paymentMethod:row.payment_method==='yoco_online'?'yoco_online':'pay_at_collection',
+    paymentRequired:!!row.payment_required,
   };
 }
 
@@ -128,6 +135,7 @@ export function createOrder(input: {
   actor?: string;
   userId?: string | null;
   customerEmail?: string | null;
+  paymentMethod?:PaymentMethod;
 }): OrderRecord {
   const db = getDb();
   const key = input.submissionKey;
@@ -146,6 +154,7 @@ export function createOrder(input: {
         building: input.building ?? null,
         optIn: input.whatsappOptIn ?? false,
         userId: input.userId ?? null,
+        paymentMethod:input.paymentMethod??'pay_at_collection',
       }),
     )
     .digest('hex');
@@ -170,6 +179,8 @@ export function createOrder(input: {
     const note = input.note?.trim() || null;
     if (note && note.length > 300) throw new Error('Note is too long.');
     const fulfillment: FulfillmentType = input.fulfillment === 'delivery' ? 'delivery' : 'collection';
+    const paymentMethod:PaymentMethod=input.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection';
+    if(input.source==='customer'&&fulfillment==='delivery'&&paymentMethod!=='yoco_online')throw new Error('Delivery orders must be paid securely online before FOND can prepare them.');
     const contactNumber = input.contactNumber?.trim() || null;
     if (!contactNumber) throw new Error('Enter a contact number so FOND can reach you about your order.');
     if (contactNumber && (contactNumber.length > 30 || !/^\+?[0-9][0-9 ()-]*$/.test(contactNumber) || contactNumber.replace(/\D/g, '').length < 6 || contactNumber.replace(/\D/g, '').length > 15)) throw new Error('Enter a valid contact number.');
@@ -224,10 +235,12 @@ export function createOrder(input: {
       posRecordedBy: null,
       posReference: null,
       estimatedPrepMinutes,
+      paymentMethod,
+      paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
+      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -249,6 +262,8 @@ export function createOrder(input: {
       record.customerEmail,
       1,
       record.estimatedPrepMinutes,
+      record.paymentMethod,
+      record.paymentRequired?1:0,
     );
     if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(
@@ -343,7 +358,7 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
     if (nextStatus === 'accepted' && current.status === 'received') {
       const checkout = db.prepare('SELECT status FROM yoco_checkouts WHERE order_id = ?').get(id) as {status:string}|undefined;
       const paid = db.prepare("SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ? AND method = 'yoco'").get(id) as {n:number};
-      if (checkout && ['creating','pending'].includes(checkout.status) && paid.n < current.totalCents) throw new OrderTransitionError('Await signed Yoco payment confirmation before accepting this order.');
+      if ((current.paymentRequired||checkout && ['creating','pending'].includes(checkout.status)) && paid.n < current.totalCents) throw new OrderTransitionError('Await signed Yoco payment confirmation before accepting this order.');
     }
     const updatedAt = new Date().toISOString();
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);

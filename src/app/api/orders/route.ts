@@ -1,4 +1,4 @@
-import { paymentStatus } from '@/lib/payments';
+import { createCustomerCheckout,customerCheckoutMode,paymentStatus } from '@/lib/payments';
 import { cookies } from 'next/headers';
 import { SESSION_COOKIE, resolveSession } from '@/lib/auth';
 import { deliverOrderEmail } from '@/lib/email';
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   try {
     const submissionKey = request.headers.get('Idempotency-Key');
     if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
+    if(body.fulfillment==='delivery'&&customerCheckoutMode()==='none')throw new Error('Delivery ordering requires secure online payment, which is not available right now.');
     const order = createOrder({
       submissionKey,
       customerName: body.customerName,
@@ -29,7 +30,9 @@ export async function POST(request: Request) {
       whatsappOptIn: !!body.whatsappOptIn,
       userId: user?.id,
       customerEmail: user?.email,
+      paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
+    const redirectUrl=order.paymentMethod==='yoco_online'?await createCustomerCheckout(order.reference):null;
     if (user?.emailVerified) await deliverOrderEmail(order, 'received').catch(() => false);
     return NextResponse.json(
       {
@@ -37,6 +40,9 @@ export async function POST(request: Request) {
         status: order.status,
         totalCents: order.totalCents,
         message: 'Your order has been sent to FOND. Please pay at the counter on collection.',
+        paymentMethod:order.paymentMethod,
+        redirectUrl,
+        estimatedPrepMinutes:order.estimatedPrepMinutes,
       },
       { status: 201, headers: { 'Cache-Control': 'no-store' } },
     );
@@ -56,7 +62,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ code: 'NOT_FOUND', message: 'No order found with that reference.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }
   return NextResponse.json(
-    { reference: order.reference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime, payment:paymentStatus(order.id) },
+    { reference: order.reference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime, fulfillment:order.fulfillment,paymentMethod:order.paymentMethod,payment:paymentStatus(order.id),estimatedPrepMinutes:order.estimatedPrepMinutes },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

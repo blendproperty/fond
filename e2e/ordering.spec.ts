@@ -4,6 +4,8 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await expect(page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Smashed Avo'})}).getByText(/Approx\. \d+ min/)).toBeVisible();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
+ await expect(page.getByRole('tab',{name:'Delivery'})).toBeDisabled();
+ await expect(page.getByText(/Online payment is currently unavailable/)).toBeVisible();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
  await page.getByLabel('Preferred collection').selectOption('Lunch collection');
  await page.getByLabel(/Your name/).fill('Playwright Test');

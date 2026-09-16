@@ -17,6 +17,14 @@ export function paymentStatus(orderId:string){
   return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
 export function yocoCredentialMode(){try{const key=yocoKey();return key?.startsWith('sk_test_')?'test':key?.startsWith('sk_live_')?'live':'none';}catch{return 'none';}}
+export function customerCheckoutMode(){
+  try{
+    const mode=yocoCredentialMode(),s=settings(),base=publicBaseUrl();
+    if(mode==='live'&&s.onlinePaymentsEnabled&&onlinePaymentsConfigured())return 'live' as const;
+    if(mode==='test'&&s.allowTestPayments&&!!webhookKey()&&!!base&&new URL(base).hostname==='fond-test.mid-point.co.za')return 'sandbox' as const;
+  }catch{/* fail closed */}
+  return 'none' as const;
+}
 export async function registerYocoWebhook(actor:string){
   const key=yocoKey(),mode=yocoCredentialMode(),base=publicBaseUrl();
   if(!key||mode==='none')throw new Error('Store a valid Yoco secret key first.');
@@ -57,6 +65,7 @@ export async function createCheckout(reference:string,options:{allowSandbox?:boo
   db.prepare("UPDATE yoco_checkouts SET checkout_id=?,redirect_url=?,status=CASE WHEN status='paid' THEN status ELSE 'pending' END,updated_at=? WHERE order_id=?").run(result.id,url.toString(),new Date().toISOString(),order.id);
   return url.toString();
 }
+export async function createCustomerCheckout(reference:string){return createCheckout(reference,{allowSandbox:customerCheckoutMode()==='sandbox'});}
 export function verifyYocoSignature(raw:string,headers:Headers,now=Date.now()){
   const secret=webhookKey(),id=headers.get('webhook-id'),timestamp=headers.get('webhook-timestamp'),signature=headers.get('webhook-signature');
   if(!secret?.startsWith('whsec_')||!id||!timestamp||!/^\d+$/.test(timestamp)||!signature||Math.abs(now/1000-Number(timestamp))>180)return false;

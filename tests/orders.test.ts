@@ -86,6 +86,12 @@ test('pending Yoco checkout cannot be accepted before signed payment is recorded
   assert.throws(()=>updateOrderStatus(order.id,'accepted'),/Await signed Yoco payment confirmation/);
   assert.equal(getOrderByReference(order.reference)?.status,'received');
 });
+test('online payment choice blocks acceptance even before a checkout exists',()=>{
+  const order=createOrder({customerName:'Jane',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567',paymentMethod:'yoco_online'});
+  assert.equal(order.paymentRequired,true);
+  assert.equal(order.paymentMethod,'yoco_online');
+  assert.throws(()=>updateOrderStatus(order.id,'accepted'),/Await signed Yoco payment confirmation/);
+});
 
 test('defaults to collection, and delivery requires a contact number and building', () => {
   const collection = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
@@ -98,6 +104,7 @@ test('defaults to collection, and delivery requires a contact number and buildin
     collectionTime: 'ASAP',
     source: 'customer',
     fulfillment: 'delivery',
+    paymentMethod:'yoco_online',
     contactNumber: '0821234567',
     company: 'Blend Property',
     building: 'OnPoint 2nd floor',
@@ -117,7 +124,7 @@ test('collection requires a valid contact number', () => {
 
 test('orders can be searched by status, fulfillment and free text', () => {
   createOrder({ customerName: 'Alice', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
-  createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', contactNumber: '0821234567', building: 'OnPoint' });
+  createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', paymentMethod:'yoco_online', contactNumber: '0821234567', building: 'OnPoint' });
   assert.equal(searchOrders({ fulfillment: 'delivery' }).length, 1);
   assert.equal(searchOrders({ query: 'Alice' }).length, 1);
   assert.equal(searchOrders({}).length, 2);

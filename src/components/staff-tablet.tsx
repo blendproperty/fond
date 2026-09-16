@@ -28,6 +28,8 @@ type StaffOrder = {
   posRecordedAt: string | null;
   posReference: string | null;
   estimatedPrepMinutes:number;
+  paymentMethod:'yoco_online'|'pay_at_collection';
+  paymentRequired:boolean;
 };
 
 function timeAgo(iso: string): string {
@@ -222,9 +224,10 @@ export function StaffTablet() {
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
+                    <p className="staff-meta"><strong>{order.paymentMethod==='yoco_online'?'PAY ONLINE':'PAY AT COLLECTION'}</strong></p>
                     {posOrderId === order.id && <form className="staff-pos-form" onSubmit={event => { event.preventDefault(); void recordYoco(order.id); }}><label className="field">Yoco order reference<input autoFocus required maxLength={100} value={posReference} onChange={event => setPosReference(event.target.value)} placeholder="Reference shown in the Yoco system"/></label><p>Confirm only after this order has been added to Yoco for kitchen printing.</p><button className="primary" type="submit">Confirm Yoco entry</button><button className="quiet" type="button" onClick={() => {setPosOrderId(null);setPosReference('');}}>Cancel</button></form>}
                     <div className="staff-card-bottom">
-                      <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid" : order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment pending — check before taking payment" : `Due ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
+                      <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid online" : order.paymentRequired||order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment required — do not prepare" : `Due at collection ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
                       <div className="staff-card-actions">
                         {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && posOrderId !== order.id && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}

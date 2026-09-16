@@ -23,3 +23,7 @@ test('delay starts when a stage is entered and uses preparation setting',()=>{
   assert.deepEqual(laneTiming({...preparing,estimatedPrepMinutes:15},now,{new:5,payment:10,yoco:5,preparing:20,delivery:10,collection:10}),{lane:'preparing',targetMinutes:15,elapsedMinutes:16,delayed:true});
   assert.equal(laneTiming({...base,status:'accepted',posRecordedAt:'2026-09-15T10:24:00.000Z'},now).delayed,false);
 });
+test('an online-payment order stays in the payment lane before checkout creation',()=>{
+  assert.equal(queueLane({...base,paymentRequired:true,payment:{paidCents:0,checkout:null}}),'payment');
+  assert.equal(queueLane({...base,paymentRequired:true,payment:{paidCents:9500,checkout:'paid'}}),'new');
+});

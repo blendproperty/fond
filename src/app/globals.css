@@ -111,6 +111,9 @@ footer span:last-child{margin-left:auto}
 .field select,.field input{padding:14px;background:var(--paper);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%;font-weight:400}
 .field-check{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:12px;color:var(--slate);font-weight:400}
 .field-check input{width:auto}
+.payment-choice{margin:18px 0 0;padding:16px 18px;border:1px solid #cbd9d6;border-radius:12px;background:#f7faf9}
+.payment-choice legend{padding:0 7px;font-size:12px;font-weight:800;color:var(--ink)}
+.payment-choice .field-check{margin:8px 0;color:var(--ink)}
 .fulfillment-toggle{display:flex;gap:8px;margin-top:22px;background:var(--mist);border-radius:30px;padding:5px}
 .fulfillment-toggle button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:26px;font-size:13px;font-weight:600;color:var(--ink);background:transparent}
 .fulfillment-toggle button[aria-selected=true]{background:var(--ink);color:var(--paper)}

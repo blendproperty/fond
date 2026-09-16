@@ -1,6 +1,6 @@
 import type { OrderRecord } from './orders';
 
-export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'|'posRequired'|'createdAt'|'updatedAt'|'totalCents'|'estimatedPrepMinutes'> & {
+export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'|'posRequired'|'createdAt'|'updatedAt'|'totalCents'|'estimatedPrepMinutes'> & {paymentRequired?:boolean;
   payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
 };
 export type QueueLane = 'new'|'payment'|'yoco'|'preparing'|'delivery'|'collection';
@@ -19,7 +19,7 @@ export function queueLane(order: QueueOrder): QueueLane {
   if (order.status === 'ready') return order.fulfillment === 'delivery' ? 'delivery' : 'collection';
   if (order.status === 'preparing') return 'preparing';
   if (order.status === 'accepted') return order.posRecordedAt ? 'yoco' : 'new';
-  if (order.status === 'received' && ['creating','pending'].includes(order.payment?.checkout??'') && (order.payment?.paidCents??0) < order.totalCents) return 'payment';
+  if (order.status === 'received' && (order.paymentRequired||['creating','pending'].includes(order.payment?.checkout??'')) && (order.payment?.paidCents??0) < order.totalCents) return 'payment';
   return 'new';
 }
 
