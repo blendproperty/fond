@@ -16,6 +16,12 @@ export function paymentStatus(orderId:string){
   const checkout=getDb().prepare('SELECT status,updated_at FROM yoco_checkouts WHERE order_id=?').get(orderId) as {status:string;updated_at:string}|undefined;
   return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
+export function paymentAudit(orderId:string){
+  const db=getDb();
+  const checkout=db.prepare('SELECT checkout_id AS checkoutId,status,updated_at AS updatedAt FROM yoco_checkouts WHERE order_id=?').get(orderId) as {checkoutId:string|null;status:string;updatedAt:string}|undefined;
+  const records=db.prepare('SELECT amount_cents AS amountCents,method,reference,actor,created_at AS createdAt FROM payment_records WHERE order_id=? ORDER BY created_at').all(orderId) as {amountCents:number;method:string;reference:string;actor:string;createdAt:string}[];
+  return {checkout:checkout??null,records};
+}
 export function yocoCredentialMode(){try{const key=yocoKey();return key?.startsWith('sk_test_')?'test':key?.startsWith('sk_live_')?'live':'none';}catch{return 'none';}}
 export function customerCheckoutMode(){
   try{

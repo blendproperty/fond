@@ -193,6 +193,14 @@ footer span:last-child{margin-left:auto}
 .staff-payment-status[data-payment-state="pending"]{color:#755000;background:#fff4cf;border-color:#d39a0b}
 .staff-payment-status[data-payment-state="due"]{color:#8c281f;background:#fff0ed;border-color:#c84d3e}
 .staff-ref{font-family:monospace;font-size:11px;color:var(--slate)}
+.staff-fulfilment{display:grid;gap:3px;margin:9px 0 11px;padding:10px 11px;border-radius:8px;background:#f3f7f6;font-size:12px;color:var(--slate)}
+.staff-fulfilment strong{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:12px;letter-spacing:.06em}
+.staff-fulfilment[data-fulfilment="delivery"]{background:#eef8f5;border-left:4px solid #238f78}
+.staff-fulfilment[data-fulfilment="collection"]{border-left:4px solid #328c42}
+.staff-history-toggle{margin:0 0 10px;padding:0;border:0;background:none;color:var(--oxblood);font:inherit;font-size:11px;font-weight:800;text-decoration:underline;cursor:pointer}
+.staff-audit{margin:0 0 12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fafafa;font-size:10px;line-height:1.4;color:var(--slate);overflow-wrap:anywhere}
+.staff-audit>strong{display:block;color:var(--ink);font-size:11px;margin-bottom:5px}
+.staff-audit p{margin:3px 0}
 .staff-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--slate);margin-bottom:10px}
 .staff-lines{margin:0 0 10px;padding:0;list-style:none;font-size:13px;color:var(--ink)}
 .staff-lines li{padding:2px 0}

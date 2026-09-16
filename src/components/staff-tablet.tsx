@@ -31,6 +31,10 @@ type StaffOrder = {
   paymentMethod:'yoco_online'|'pay_at_collection';
   paymentRequired:boolean;
 };
+type OrderAudit = {
+  events:{from_status:string|null;to_status:string;actor:string;created_at:string}[];
+  payment:{checkout:{checkoutId:string|null;status:string;updatedAt:string}|null;records:{amountCents:number;method:string;reference:string;actor:string;createdAt:string}[]};
+};
 
 function timeAgo(iso: string): string {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -60,6 +64,8 @@ export function StaffTablet() {
   const [queueTargets, setQueueTargets] = useState<QueueTargets>(DEFAULT_QUEUE_TARGETS);
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
+  const [historyOrderId,setHistoryOrderId]=useState<string|null>(null);
+  const [orderAudit,setOrderAudit]=useState<OrderAudit|null>(null);
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
@@ -120,6 +126,17 @@ export function StaffTablet() {
       setPosOrderId(null); setPosReference('');
       await refresh();
     } catch (error) { setQueueError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
+  }
+
+  async function toggleHistory(id:string) {
+    if(historyOrderId===id){setHistoryOrderId(null);setOrderAudit(null);return;}
+    setQueueError('');setHistoryOrderId(id);setOrderAudit(null);
+    try{
+      const response=await fetch(`/api/staff/orders/${id}/history`,{cache:'no-store'});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.message??'Could not load order history.');
+      setOrderAudit(data);
+    }catch(error){setHistoryOrderId(null);setQueueError(error instanceof Error?error.message:'Could not load order history.');}
   }
 
   useEffect(() => {
@@ -208,10 +225,10 @@ export function StaffTablet() {
                 const paidOnline = (order.payment?.paidCents ?? 0) >= order.totalCents;
                 const paymentState = paidOnline ? 'paid' : order.paymentMethod === 'yoco_online' ? 'pending' : 'due';
                 const paymentLabel = paidOnline
-                  ? 'PAID ONLINE'
+                  ? `PAID ONLINE · ${money(order.payment?.paidCents ?? order.totalCents)}`
                   : paymentState === 'pending'
-                    ? 'PAYMENT PENDING · DO NOT PREPARE'
-                    : `PAYMENT DUE AT FOND · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))}`;
+                    ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
+                    : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
                 const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
@@ -222,9 +239,9 @@ export function StaffTablet() {
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
                     {order.fulfillment === 'delivery' ? (
-                      <p className="staff-meta staff-delivery"><Truck size={14} /> Deliver to {order.building}{order.company ? ` · ${order.company}` : ''} · {order.contactNumber} · {timeAgo(order.createdAt)}</p>
+                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><span>Requested: {order.collectionTime} · ordered {timeAgo(order.createdAt)}</span></div>
                     ) : (
-                      <p className="staff-meta"><Clock3 size={14} /> {order.collectionTime} · {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</p>
+                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><span>Requested: {order.collectionTime} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
                     )}
                     <ul className="staff-lines">
                       {order.lines.map((line) => {
@@ -235,6 +252,8 @@ export function StaffTablet() {
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
+                    <button className="staff-history-toggle" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>
+                    {historyOrderId===order.id&&<div className="staff-audit" aria-live="polite">{!orderAudit?<p>Loading audit trail…</p>:<><strong>Permanent order record</strong>{orderAudit.payment.checkout&&<p>Yoco checkout: {orderAudit.payment.checkout.status} · {orderAudit.payment.checkout.checkoutId??'creating'} · {new Date(orderAudit.payment.checkout.updatedAt).toLocaleString('en-ZA')}</p>}{orderAudit.payment.records.map(record=><p key={record.reference}>Payment: {money(record.amountCents)} · {record.method} · {record.reference} · {new Date(record.createdAt).toLocaleString('en-ZA')}</p>)}{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}
                     {posOrderId === order.id && <form className="staff-pos-form" onSubmit={event => { event.preventDefault(); void recordYoco(order.id); }}><label className="field">Yoco order reference<input autoFocus required maxLength={100} value={posReference} onChange={event => setPosReference(event.target.value)} placeholder="Reference shown in the Yoco system"/></label><p>Confirm only after this order has been added to Yoco for kitchen printing.</p><button className="primary" type="submit">Confirm Yoco entry</button><button className="quiet" type="button" onClick={() => {setPosOrderId(null);setPosReference('');}}>Cancel</button></form>}
                     <div className="staff-card-bottom">
                       <strong>{money(order.totalCents)}</strong>
