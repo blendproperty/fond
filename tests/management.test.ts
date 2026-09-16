@@ -29,6 +29,8 @@ test('trading hours use Johannesburg and settings reject invalid values',()=>{
  assert.equal(orderingAvailable(s,new Date('2026-09-15T15:00:00Z')),false);
  assert.throws(()=>validateSettings({...s,maxActiveOrders:0}));
  assert.throws(()=>validateSettings({...s,newOrderMinutes:0}));
+ assert.throws(()=>validateSettings({...s,preparationWeightPercent:4}));
+ assert.throws(()=>validateSettings({...s,preparationWeightPercent:9}));
 });
 test('stored legacy settings inherit new queue targets',()=>{
  const legacy={...DEFAULT_SETTINGS} as Partial<typeof DEFAULT_SETTINGS>;
@@ -88,13 +90,13 @@ test('notification jobs are durable and unconfigured provider is visible without
  assert.equal(getDb().prepare('SELECT status FROM notification_jobs').get()?.status,'not-configured');
 });
 
-test('hosted checkout uses trusted totals and reuses its stored redirect',async()=>{
- const o=order();saveDocument('trading',{...settings(),onlinePaymentsEnabled:true},'admin');
+test('sandbox hosted checkout is admin-only and reuses its stored redirect',async()=>{
+ const o=order();saveDocument('trading',{...settings(),allowTestPayments:true},'admin');
  process.env.YOCO_SECRET_KEY='sk_test_fixture';process.env.YOCO_WEBHOOK_SECRET='whsec_fixture';process.env.FOND_PUBLIC_URL='https://fond.example';
  await assert.rejects(()=>createCheckout(o.reference),/not available/);
  process.env.FOND_ALLOW_TEST_PAYMENTS='true';const original=global.fetch;let calls=0;
  global.fetch=async (_url,init)=>{calls++;const body=JSON.parse(init!.body as string);assert.equal(body.amount,o.totalCents);assert.equal(body.currency,'ZAR');assert.equal(new Headers(init!.headers).get('Idempotency-Key'),o.id);return Response.json({id:'checkout_mock',redirectUrl:'https://c.yoco.com/mock'});};
- try{assert.equal(await createCheckout(o.reference),'https://c.yoco.com/mock');assert.equal(await createCheckout(o.reference),'https://c.yoco.com/mock');assert.equal(calls,1);assert.throws(()=>recordPayment({orderId:o.id,amountCents:o.totalCents,method:'cash',reference:'counter'},'admin'),/pending/);}finally{global.fetch=original;}
+ try{assert.equal(await createCheckout(o.reference,{allowSandbox:true}),'https://c.yoco.com/mock');assert.equal(await createCheckout(o.reference,{allowSandbox:true}),'https://c.yoco.com/mock');assert.equal(calls,1);assert.throws(()=>recordPayment({orderId:o.id,amountCents:o.totalCents,method:'cash',reference:'counter'},'admin'),/pending/);}finally{global.fetch=original;}
 });
 test('signed refund notifications cannot refund twice or over-refund',()=>{
  const o=order();process.env.YOCO_SECRET_KEY='sk_live_fixture';

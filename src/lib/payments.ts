@@ -7,7 +7,7 @@ const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SE
 export function onlinePaymentsConfigured(){
   try {
     const key=yocoKey();
-    return !!key && (key.startsWith("sk_live_") || (process.env.FOND_ALLOW_TEST_PAYMENTS === "true" && key.startsWith("sk_test_"))) && !!webhookKey() && !!process.env.FOND_PUBLIC_URL;
+    return !!key && (key.startsWith("sk_live_") || ((settings().allowTestPayments||process.env.FOND_ALLOW_TEST_PAYMENTS === "true") && key.startsWith("sk_test_"))) && !!webhookKey() && !!process.env.FOND_PUBLIC_URL;
   } catch { return false; }
 }
 export function paymentStatus(orderId:string){
@@ -15,8 +15,13 @@ export function paymentStatus(orderId:string){
   const checkout=getDb().prepare('SELECT status,updated_at FROM yoco_checkouts WHERE order_id=?').get(orderId) as {status:string;updated_at:string}|undefined;
   return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
-export async function createCheckout(reference:string){
-  if(!settings().onlinePaymentsEnabled||!onlinePaymentsConfigured())throw new Error('Online payment is not available. Please pay at FOND.');
+export function yocoCredentialMode(){try{const key=yocoKey();return key?.startsWith('sk_test_')?'test':key?.startsWith('sk_live_')?'live':'none';}catch{return 'none';}}
+export async function createCheckout(reference:string,options:{allowSandbox?:boolean}={}){
+  const s=settings(),mode=yocoCredentialMode();
+  const allowed=options.allowSandbox
+    ? mode==='test'&&s.allowTestPayments&&onlinePaymentsConfigured()
+    : mode==='live'&&s.onlinePaymentsEnabled&&onlinePaymentsConfigured();
+  if(!allowed)throw new Error('Online payment is not available. Please pay at FOND.');
   const db=getDb();const order=db.prepare('SELECT id,total_cents,status FROM orders WHERE reference=?').get(reference) as {id:string;total_cents:number;status:string}|undefined;
   if(!order||order.status==='cancelled')throw new Error('Order unavailable.');
   if(paymentStatus(order.id).paidCents>0)throw new Error('A payment is already recorded. Contact FOND for the remaining balance.');
@@ -51,7 +56,7 @@ export function processPaymentEvent(event:{id:string;type:string;payload:{id:str
     if(db.prepare('SELECT id FROM webhook_receipts WHERE id=?').get(event.id)){db.exec('COMMIT');return {duplicate:true};}
     const checkout=db.prepare('SELECT c.order_id,o.total_cents FROM yoco_checkouts c JOIN orders o ON o.id=c.order_id WHERE c.checkout_id=?').get(p.metadata?.checkoutId??'') as {order_id:string;total_cents:number}|undefined;
     const expectedMode=yocoKey()?.startsWith('sk_test_')?'test':'live';
-    if(expectedMode==='test'&&process.env.FOND_ALLOW_TEST_PAYMENTS!=='true')throw new Error('Sandbox payment processing is disabled.');
+    if(expectedMode==='test'&&!settings().allowTestPayments&&process.env.FOND_ALLOW_TEST_PAYMENTS!=='true')throw new Error('Sandbox payment processing is disabled.');
     if(!checkout||p.currency!=='ZAR'||p.status!=='succeeded'||(!Number.isSafeInteger(p.amount)||p.amount<=0||(!refund&&p.amount!==checkout.total_cents)||p.amount>checkout.total_cents)||p.mode!==expectedMode||typeof p.id!=='string')throw new Error('Payment does not match the stored checkout.');
     const reference=(refund?'yoco-refund:':'yoco:')+p.id;
     if(!db.prepare('SELECT id FROM payment_records WHERE reference=?').get(reference)){

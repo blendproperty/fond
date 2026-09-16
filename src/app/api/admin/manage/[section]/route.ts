@@ -40,7 +40,7 @@ export async function POST(request:Request,context:Context){
   try{
     if(section==='settings'){
       const next=validateSettings(b),prior=settings();
-      if((await role())!=='super-admin'&&(next.onlinePaymentsEnabled!==prior.onlinePaymentsEnabled||next.whatsappEnabled!==prior.whatsappEnabled))return Response.json({message:'Super admin access is required to change provider switches.'},{status:403,headers});
+      if((await role())!=='super-admin'&&(next.onlinePaymentsEnabled!==prior.onlinePaymentsEnabled||next.allowTestPayments!==prior.allowTestPayments||next.whatsappEnabled!==prior.whatsappEnabled))return Response.json({message:'Super admin access is required to change provider switches.'},{status:403,headers});
       saveDocument('trading',next,who);
     }
     else if(section==='team'){

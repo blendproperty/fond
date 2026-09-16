@@ -38,6 +38,7 @@ export type Meal = {
   specialLabel?: string | null;
   basePrice?: number; // present when isSpecial and different from price
   modifiers?: Modifier[]; // e.g. "no onion", "extra cheese (+15)" — optional add/remove options
+  prepMinutes?: number; // editable estimated kitchen preparation time before buffer
 };
 
 export const SEED_MENU: Meal[] = [

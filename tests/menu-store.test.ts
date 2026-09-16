@@ -25,6 +25,17 @@ test('seeds from SEED_MENU on first read and is idempotent', () => {
   assert.equal(second.length, first.length);
 });
 
+test('seeds editable research estimates once and preserves later admin changes', () => {
+  const menu = getFullMenu();
+  assert.equal(menu.find(item => item.id === 'espresso-single')?.prepMinutes, 3);
+  assert.equal(menu.find(item => item.id === 'rump-350')?.prepMinutes, 20);
+  assert.equal(menu.find(item => item.id === 'classic-margherita-pizza')?.prepMinutes, 15);
+  assert.ok(menu.every(item => Number.isInteger(item.prepMinutes) && item.prepMinutes! >= 1 && item.prepMinutes! <= 240));
+  updateMenuItem('espresso-single', {prepMinutes: 6});
+  assert.equal(getFullMenu().find(item => item.id === 'espresso-single')?.prepMinutes, 6);
+  assert.throws(() => updateMenuItem('espresso-single', {prepMinutes: 0}), MenuValidationError);
+});
+
 test('published modifier defaults appear once and admin can remove them', () => {
   const menu = getFullMenu();
   const smoothie = menu.find(item => item.id === 'tropical-gold')!;
@@ -71,9 +82,10 @@ test('rejects a special price higher than the normal price', () => {
 });
 
 test('creating a new item derives a slug id and rejects a duplicate', () => {
-  const created = createMenuItem({ id: 'Winter Toastie!', name: 'Winter Toastie', description: 'Seasonal', category: 'Sandwiches', price: 6500 });
+  const created = createMenuItem({ id: 'Winter Toastie!', name: 'Winter Toastie', description: 'Seasonal', category: 'Sandwiches', price: 6500, prepMinutes: 9 });
   assert.equal(created.id, 'winter-toastie');
   assert.equal(created.price, 6500);
+  assert.equal(created.prepMinutes, 9);
   assert.throws(() => createMenuItem({ id: 'Winter Toastie!', name: 'Winter Toastie', description: '', category: 'Sandwiches', price: 6500 }), MenuValidationError);
 });
 

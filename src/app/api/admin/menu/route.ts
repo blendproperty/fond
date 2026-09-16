@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       price: body.price,
       symbol: typeof body.symbol === 'string' ? body.symbol : undefined,
       diet: Array.isArray(body.diet) ? body.diet : undefined,
+      prepMinutes:typeof body.prepMinutes==='number'?body.prepMinutes:undefined,
     });
     return NextResponse.json({ item }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {

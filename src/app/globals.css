@@ -74,6 +74,7 @@ h2{font-size:34px;line-height:1.15;margin-bottom:25px;color:var(--ink)}
 .meal-content h3{font-size:17px;letter-spacing:-.3px;margin-bottom:9px;color:var(--ink)}
 .meal-content p{color:var(--slate);font-size:12px;line-height:1.7;min-height:42px}
 .meal-modifiers{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.meal-prep{font-size:11px;color:var(--slate);margin-top:7px}
 .modifier-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)}
 .cart-line-mods{color:var(--slate)}
 .meal-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:20px}

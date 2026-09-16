@@ -27,6 +27,7 @@ type StaffOrder = {
   posRequired: boolean;
   posRecordedAt: string | null;
   posReference: string | null;
+  estimatedPrepMinutes:number;
 };
 
 function timeAgo(iso: string): string {
@@ -206,7 +207,7 @@ export function StaffTablet() {
                       <strong>{order.customerName}</strong>
                       <span className="staff-ref">{order.reference}</span>
                     </div>
-                    <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
+                    <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     {order.fulfillment === 'delivery' ? (
                       <p className="staff-meta staff-delivery"><Truck size={14} /> Deliver to {order.building}{order.company ? ` · ${order.company}` : ''} · {order.contactNumber} · {timeAgo(order.createdAt)}</p>
                     ) : (

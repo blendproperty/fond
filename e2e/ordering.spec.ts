@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('browse, adjust basket, place order and track it',async({page})=>{
  await page.goto('/');await expect(page.getByRole('heading',{name:/Good food/,level:1})).toBeVisible();
+ await expect(page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Smashed Avo'})}).getByText(/Approx\. \d+ min/)).toBeVisible();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();

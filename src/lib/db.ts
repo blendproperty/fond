@@ -43,7 +43,8 @@ export function getDb(): DatabaseSync {
       contact_number TEXT,
       company TEXT,
       building TEXT,
-      whatsapp_opt_in INTEGER NOT NULL DEFAULT 0
+      whatsapp_opt_in INTEGER NOT NULL DEFAULT 0,
+      estimated_prep_minutes INTEGER NOT NULL DEFAULT 20
     );
     CREATE TABLE IF NOT EXISTS order_submissions (
       submission_key TEXT PRIMARY KEY,
@@ -72,6 +73,7 @@ export function getDb(): DatabaseSync {
       special_label TEXT,
       special_price_cents INTEGER,
       modifiers_json TEXT NOT NULL DEFAULT '[]',
+      prep_minutes INTEGER NOT NULL DEFAULT 10,
       updated_at TEXT NOT NULL
     );
   `);
@@ -95,6 +97,7 @@ export function getDb(): DatabaseSync {
     ['pos_recorded_at', `ALTER TABLE orders ADD COLUMN pos_recorded_at TEXT`],
     ['pos_recorded_by', `ALTER TABLE orders ADD COLUMN pos_recorded_by TEXT`],
     ['pos_reference', `ALTER TABLE orders ADD COLUMN pos_reference TEXT`],
+    ['estimated_prep_minutes', `ALTER TABLE orders ADD COLUMN estimated_prep_minutes INTEGER NOT NULL DEFAULT 20`],
   ];
   for (const [column, sql] of orderMigrations) {
     if (!existingOrderColumns.has(column)) db.exec(sql);
@@ -109,6 +112,7 @@ export function getDb(): DatabaseSync {
   if (!existingMenuColumns.has('modifiers_json')) {
     db.exec(`ALTER TABLE menu_items ADD COLUMN modifiers_json TEXT NOT NULL DEFAULT '[]'`);
   }
+  if (!existingMenuColumns.has('prep_minutes')) db.exec(`ALTER TABLE menu_items ADD COLUMN prep_minutes INTEGER NOT NULL DEFAULT 10`);
   db.exec(`
     CREATE TABLE IF NOT EXISTS promotion_images (id TEXT PRIMARY KEY,mime TEXT NOT NULL,bytes BLOB NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);

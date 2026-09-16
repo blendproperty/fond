@@ -1,5 +1,6 @@
 import { enqueueNotification } from './notifications';
-import { assertTrading } from './management';
+import { assertTrading,settings } from './management';
+import {weightedPrepMinutes} from './preparation-estimates';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
@@ -18,7 +19,7 @@ export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'com
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
 
-export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number; modifiers?: {id:string;name:string;price:number}[] };
+export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number; prepMinutes?:number; modifiers?: {id:string;name:string;price:number}[] };
 
 export type OrderRecord = {
   id: string;
@@ -43,6 +44,7 @@ export type OrderRecord = {
   posRecordedAt: string | null;
   posRecordedBy: string | null;
   posReference: string | null;
+  estimatedPrepMinutes:number;
 };
 
 const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready'];
@@ -78,6 +80,7 @@ type OrderRow = {
   pos_recorded_at: string | null;
   pos_recorded_by: string | null;
   pos_reference: string | null;
+  estimated_prep_minutes:number;
 };
 
 function fromRow(row: OrderRow): OrderRecord {
@@ -104,6 +107,7 @@ function fromRow(row: OrderRow): OrderRecord {
     posRecordedAt: row.pos_recorded_at,
     posRecordedBy: row.pos_recorded_by,
     posReference: row.pos_reference,
+    estimatedPrepMinutes:row.estimated_prep_minutes??20,
   };
 }
 
@@ -181,6 +185,7 @@ export function createOrder(input: {
     // throws on unknown/unavailable items, bad quantities or modifiers - priced against the live admin-editable menu
     const priced = quoteCart(input.lines, getAvailableMenu());
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
+    const estimatedPrepMinutes=weightedPrepMinutes(Math.max(...priced.map(line=>line.prepMinutes??10)),settings().preparationWeightPercent);
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.
@@ -193,6 +198,7 @@ export function createOrder(input: {
       name: line.name,
       unitPriceCents: line.unitPrice,
       subtotalCents: line.subtotal,
+      prepMinutes:line.prepMinutes??10,
     }));
     const record: OrderRecord = {
       id: randomUUID(),
@@ -217,10 +223,11 @@ export function createOrder(input: {
       posRecordedAt: null,
       posRecordedBy: null,
       posReference: null,
+      estimatedPrepMinutes,
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -241,6 +248,7 @@ export function createOrder(input: {
       record.userId,
       record.customerEmail,
       1,
+      record.estimatedPrepMinutes,
     );
     if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(

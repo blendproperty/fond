@@ -24,6 +24,8 @@ const lines = [{ id: 'espresso-single', quantity: 2 }];
 test('customer orders start at received; staff orders start at accepted', () => {
   const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(customer.status, 'received');
+  assert.equal(customer.estimatedPrepMinutes, 4);
+  assert.equal(customer.lines[0].prepMinutes, 3);
   assert.match(customer.reference, /^FOND-/);
   assert.throws(() => createOrder({ customerName: 'Table 5', lines, collectionTime: 'ASAP', source: 'staff' }), /contact number/);
   const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff', contactNumber: '0821234567' });
@@ -59,6 +61,13 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   updateOrderStatus(order.id, 'completed');
   assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);
   assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
+});
+
+test('basket estimate uses the slowest item plus the editable uncertainty buffer', async () => {
+  const {saveDocument,settings}=await import('../src/lib/management');
+  saveDocument('trading',{...settings(),preparationWeightPercent:8},'fixture');
+  const mixed=createOrder({customerName:'Jane',lines:[{id:'espresso-single',quantity:1},{id:'rump-350',quantity:1}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  assert.equal(mixed.estimatedPrepMinutes,22);
 });
 
 test('staff can track Yoco entry, preparation and fulfilment without losing the active order', () => {

@@ -11,13 +11,14 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
 
-type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment };
-type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; reference: string; status: string; totalCents: number; collectionTime: string };
+type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment;estimatedPrepMinutes:number };
+type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; reference: string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number };
 type Fulfillment = 'collection' | 'delivery';
 
 const STATUS_LABEL: Record<string, string> = {
   received: 'Received — waiting for FOND to accept',
   accepted: 'Accepted — being prepared',
+  preparing: 'Preparing in the kitchen',
   ready: 'Ready for collection',
   completed: 'Collected',
   cancelled: 'Cancelled',
@@ -147,7 +148,7 @@ export function OrderingApp() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
       clearSubmission(key);
-      setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment });
+      setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment,estimatedPrepMinutes:data.estimatedPrepMinutes });
       setPlacedReferences((current) => [data.reference, ...current]);
       setCart([]);
       setNote('');
@@ -187,7 +188,7 @@ export function OrderingApp() {
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><CategoryNavigation value={category} onChange={setCategory}/></div>
         <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
-          {!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
+          <p className="meal-prep">Approx. {Math.ceil((m.prepMinutes??10)*(1+(store?.settings.preparationWeightPercent??7)/100))} min preparation</p>{!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
           <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> Add{qty ? ` (${qty})` : ''}</button></div></div></article>; })}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
 
@@ -202,9 +203,9 @@ export function OrderingApp() {
           <label className="field">Order reference<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-XXXXXX" /></label>
           <button className="primary full" onClick={() => lookupOrder(trackInput)}><Search size={18} /> Check status</button>
           {trackError && <p role="alert">{trackError}</p>}
-          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)}</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?"Payment recorded":"Payment not yet confirmed"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
+          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)} · approx. {tracked.estimatedPrepMinutes} min preparation</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?"Payment recorded":"Payment not yet confirmed"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p className="notice">Pay at FOND, or use online checkout when available. Online payments are confirmed after verification. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p>{store?.onlinePayments&&<button className="primary" disabled={paying} onClick={()=>pay(confirmation.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">Pay at FOND, or use online checkout when available. Online payments are confirmed after verification. FOND will accept your order shortly; use &ldquo;Track order&rdquo; to check its status.</p>{store?.onlinePayments&&<button className="primary" disabled={paying} onClick={()=>pay(confirmation.reference)}>Pay with Yoco</button>}{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
             <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>

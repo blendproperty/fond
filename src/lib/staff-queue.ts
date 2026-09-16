@@ -1,6 +1,6 @@
 import type { OrderRecord } from './orders';
 
-export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'|'posRequired'|'createdAt'|'updatedAt'|'totalCents'> & {
+export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'|'posRequired'|'createdAt'|'updatedAt'|'totalCents'|'estimatedPrepMinutes'> & {
   payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
 };
 export type QueueLane = 'new'|'payment'|'yoco'|'preparing'|'delivery'|'collection';
@@ -34,7 +34,7 @@ export const DEFAULT_QUEUE_TARGETS:QueueTargets=Object.fromEntries(QUEUE_LANES.m
 
 export function laneTiming(order: QueueOrder, now: number, targets:QueueTargets = DEFAULT_QUEUE_TARGETS) {
   const lane=queueLane(order);
-  const targetMinutes=targets[lane];
+  const targetMinutes=lane==='preparing'&&order.estimatedPrepMinutes?order.estimatedPrepMinutes:targets[lane];
   const elapsedMinutes=Math.max(0,Math.floor((now-Date.parse(laneEnteredAt(order,lane)))/60000));
   return {lane,targetMinutes,elapsedMinutes,delayed:elapsedMinutes>targetMinutes};
 }

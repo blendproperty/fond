@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = {
   enforceHours:false, openingTime:'07:00', closingTime:'17:00', openDays:[1,2,3,4,5],
   maxActiveOrders:100, newOrderMinutes:5, paymentConfirmationMinutes:10,
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
+  preparationWeightPercent:7,allowTestPayments:false,
   deliveryArea:'Midpoint Hub',
   collectionSlots:['As soon as possible','Breakfast collection','Lunch collection','After-work collection'],
   closedMessage:'Online ordering is currently closed. Please contact FOND.',
@@ -28,12 +29,13 @@ export const settings=():TradingSettings=>({...DEFAULT_SETTINGS,...document('tra
 export function validateSettings(input:unknown):TradingSettings {
   const s=input as TradingSettings;
   if(!s || typeof s!=='object')throw new Error('Provide trading settings.');
-  for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','onlinePaymentsEnabled'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
+  for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','onlinePaymentsEnabled','allowTestPayments'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
   for(const k of ['openingTime','closingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
   if(s.openingTime>=s.closingTime)throw new Error('Closing time must be after opening time. Overnight trading is not supported.');
   if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');
   if(!Number.isInteger(s.maxActiveOrders)||s.maxActiveOrders<1||s.maxActiveOrders>1000)throw new Error('Check maximum active orders.');
   for(const k of ['newOrderMinutes','paymentConfirmationMinutes','yocoEntryMinutes','preparationMinutes','readyDeliveryMinutes','readyCollectionMinutes'] as const)if(!Number.isInteger(s[k])||s[k]<1||s[k]>240)throw new Error('Every queue target must be between 1 and 240 minutes.');
+  if(!Number.isInteger(s.preparationWeightPercent)||s.preparationWeightPercent<5||s.preparationWeightPercent>8)throw new Error('Preparation weighting must be between 5% and 8%.');
   for(const k of ['deliveryArea','closedMessage','contactPhone'] as const)if(typeof s[k]!=='string'||s[k].length>250)throw new Error('Invalid contact or display text.');
   if(!Array.isArray(s.collectionSlots)||!s.collectionSlots.length||s.collectionSlots.length>12||s.collectionSlots.some(t=>typeof t!=='string'||!t.trim()||t.length>80))throw new Error('Provide 1–12 collection options.');
   return {...DEFAULT_SETTINGS,...s};

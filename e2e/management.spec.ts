@@ -34,4 +34,5 @@ test('new management APIs and webhook reject anonymous or forged requests',async
  for(const section of ['settings','customers','finance','marketing','history'])expect((await request.get('/api/admin/manage/'+section)).status()).toBe(401);
  expect((await request.post('/api/admin/manage/team',{data:{name:'Bad'}})).status()).toBe(401);
  expect((await request.post('/api/payments/webhook',{data:{type:'payment.succeeded'}})).status()).toBe(401);
+ expect((await request.post('/api/admin/yoco/test-checkout')).status()).toBe(403);
 });

@@ -263,6 +263,7 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
   const [newModPrice, setNewModPrice] = useState('');
   const [modBusy, setModBusy] = useState(false);
   const [modError, setModError] = useState('');
+  const [prepMinutes,setPrepMinutes]=useState(String(item.prepMinutes??10));
 
   function toggleDiet(d: string) {
     const next = diet.includes(d) ? diet.filter((x) => x !== d) : [...diet, d];
@@ -311,6 +312,7 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
           <label className="field">Description<input value={description} onChange={(e) => setDescription(e.target.value)} onBlur={() => onPatch({ description })} /></label>
           <label className="field">Category<select value={category} onChange={(e) => { const v = e.target.value as Category; setCategory(v); onPatch({ category: v }); }}>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
           <label className="field">Symbol/emoji<input value={symbol} onChange={(e) => setSymbol(e.target.value)} onBlur={() => onPatch({ symbol })} style={{ maxWidth: 80 }} /></label>
+          <label className="field">Estimated preparation (minutes)<input type="number" min="1" max="240" value={prepMinutes} onChange={e=>setPrepMinutes(e.target.value)} onBlur={()=>onPatch({prepMinutes:Number(prepMinutes)})}/></label>
           <div className="field-check-row">
             {DIET_OPTIONS.map((d) => (
               <label className="field-check" key={d}><input type="checkbox" checked={diet.includes(d)} onChange={() => toggleDiet(d)} /> {d}</label>

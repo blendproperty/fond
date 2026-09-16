@@ -30,6 +30,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       symbol: typeof body.symbol === 'string' ? body.symbol : undefined,
       diet: Array.isArray(body.diet) ? body.diet : undefined,
       modifiers: Array.isArray(body.modifiers) ? body.modifiers : undefined,
+      prepMinutes:typeof body.prepMinutes==='number'?body.prepMinutes:undefined,
     });
     return NextResponse.json({ item }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {

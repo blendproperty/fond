@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { SEED_MENU, type Meal, type Category, type Modifier } from './menu';
 import { DEFAULT_MENU_MODIFIERS } from './menu-modifier-defaults';
+import {estimatedPrepMinutes} from './preparation-estimates';
 
 // Live, editable menu (2026-09-14 later addition — the admin/CRM backend).
 // The menu_items table is seeded once from SEED_MENU the first time it's
@@ -23,6 +24,7 @@ type MenuRow = {
   special_label: string | null;
   special_price_cents: number | null;
   modifiers_json: string;
+  prep_minutes:number;
   updated_at: string;
 };
 
@@ -43,6 +45,7 @@ function fromRow(row: MenuRow): Meal {
     specialLabel: row.special_label,
     basePrice: isSpecial && row.special_price_cents != null ? basePrice : undefined,
     modifiers: JSON.parse(row.modifiers_json || '[]'),
+    prepMinutes:row.prep_minutes,
   };
 }
 
@@ -52,12 +55,18 @@ function seedIfEmpty() {
   if (count === 0) {
     const now = new Date().toISOString();
     const insert = db.prepare(
-      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?)`,
+      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, prep_minutes, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?)`,
     );
     SEED_MENU.forEach((meal, index) => {
-      insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, now);
+      insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, estimatedPrepMinutes(meal), now);
     });
+  }
+  const timingMarker='menu-preparation-estimates-v1';
+  if(!db.prepare('SELECT key FROM app_documents WHERE key=?').get(timingMarker)){
+    const update=db.prepare('UPDATE menu_items SET prep_minutes=?,updated_at=? WHERE id=?');const now=new Date().toISOString();
+    for(const item of SEED_MENU)update.run(estimatedPrepMinutes(item),now,item.id);
+    db.prepare('INSERT INTO app_documents (key,value,updated_at) VALUES (?,?,?)').run(timingMarker,'research-seeded',now);
   }
   // Apply the published launch choices once to existing menus, filling only
   // items that still have no admin-configured modifiers. The marker prevents
@@ -110,6 +119,7 @@ export type MenuItemPatch = Partial<{
   diet: Meal['diet'];
   symbol: string;
   modifiers: Modifier[]; // full replacement list
+  prepMinutes:number;
 }>;
 
 export class MenuValidationError extends Error {}
@@ -152,11 +162,13 @@ export function updateMenuItem(id: string, patch: MenuItemPatch): Meal {
   const dietJson = patch.diet !== undefined ? JSON.stringify(patch.diet ?? []) : row.diet_json;
   const symbol = patch.symbol !== undefined ? patch.symbol : row.symbol;
   const modifiersJson = validateModifiers(patch.modifiers) ?? row.modifiers_json;
+  const prepMinutes=patch.prepMinutes??row.prep_minutes;
+  if(!Number.isInteger(prepMinutes)||prepMinutes<1||prepMinutes>240)throw new MenuValidationError('Preparation time must be between 1 and 240 minutes.');
   const updatedAt = new Date().toISOString();
 
   db.prepare(
-    `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, modifiers_json = ?, updated_at = ? WHERE id = ?`,
-  ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, modifiersJson, updatedAt, id);
+    `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, modifiers_json = ?, prep_minutes=?, updated_at = ? WHERE id = ?`,
+  ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, modifiersJson,prepMinutes, updatedAt, id);
 
   return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
 }
@@ -169,6 +181,7 @@ export function createMenuItem(input: {
   price: number;
   symbol?: string;
   diet?: Meal['diet'];
+  prepMinutes?:number;
 }): Meal {
   seedIfEmpty();
   const db = getDb();
@@ -184,9 +197,9 @@ export function createMenuItem(input: {
   const now = new Date().toISOString();
   const { max } = db.prepare(`SELECT COALESCE(MAX(sort_order), 0) AS max FROM menu_items WHERE category = ?`).get(input.category) as { max: number };
   db.prepare(
-    `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?)`,
-  ).run(id, name, description, input.category, input.price, JSON.stringify(input.diet ?? []), input.symbol || '🍽️', max + 1, now);
+    `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, prep_minutes, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?)`,
+  ).run(id, name, description, input.category, input.price, JSON.stringify(input.diet ?? []), input.symbol || '🍽️', max + 1,input.prepMinutes??estimatedPrepMinutes({id,category:input.category}), now);
   return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
 }
 
