@@ -13,8 +13,9 @@ export function onlinePaymentsConfigured(){
 }
 export function paymentStatus(orderId:string){
   const paid=(getDb().prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id=?').get(orderId) as {n:number}).n;
+  const latest=getDb().prepare("SELECT method FROM payment_records WHERE order_id=? AND amount_cents>0 ORDER BY created_at DESC,rowid DESC LIMIT 1").get(orderId) as {method:string}|undefined;
   const checkout=getDb().prepare('SELECT status,updated_at FROM yoco_checkouts WHERE order_id=?').get(orderId) as {status:string;updated_at:string}|undefined;
-  return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
+  return {paidCents:paid,paymentMethod:latest?.method??null,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
 export function paymentAudit(orderId:string){
   const db=getDb();

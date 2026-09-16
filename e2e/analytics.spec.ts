@@ -7,7 +7,9 @@ test('analytics dashboard has honest empty states, filters and real order charts
  const login=await request.post('/api/staff/login',{data:{code:process.env.FOND_STAFF_CODE}});const headers={Cookie:login.headers()['set-cookie'].split(';')[0]};
  const created=await request.post('/api/staff/orders',{headers:{...headers,'Idempotency-Key':randomUUID()},data:{customerName:'Analytics visual fixture',contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:2}]}});expect(created.ok()).toBe(true);const {order}=await created.json();
  expect((await request.post('/api/staff/orders/'+order.id+'/pos-entry',{headers,data:{posReference:'YOCO-ANALYTICS-E2E'}})).ok()).toBe(true);
- for(const status of ['ready','completed'])expect((await request.patch('/api/staff/orders/'+order.id,{headers,data:{status}})).ok()).toBe(true);
+ expect((await request.patch('/api/staff/orders/'+order.id,{headers,data:{status:'ready'}})).ok()).toBe(true);
+ expect((await request.post('/api/staff/orders/'+order.id+'/payment',{headers,data:{method:'cash'}})).ok()).toBe(true);
+ expect((await request.patch('/api/staff/orders/'+order.id,{headers,data:{status:'completed'}})).ok()).toBe(true);
  await page.getByRole('button',{name:'30 days',exact:true}).click();await expect(page.getByRole('img',{name:/Completed order value by order date/})).toBeVisible();await expect(page.getByRole('cell',{name:'Espresso (Single)',exact:true})).toBeVisible();
  await page.getByLabel('Search report items').fill('no-match-xyz');await expect(page.getByText('No items match these filters.')).toBeVisible();await page.getByLabel('Search report items').fill('');
  await expect(page.getByRole('cell',{name:'Espresso (Single)',exact:true})).toBeVisible();await page.screenshot({path:testInfo.outputPath('analytics-populated.png'),fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

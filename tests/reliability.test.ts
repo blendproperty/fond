@@ -24,7 +24,7 @@ test('status audit is atomic and stale tablet transitions are rejected',()=>{
  const order=createOrder(input());updateOrderStatus(order.id,'accepted','received');
  assert.throws(()=>updateOrderStatus(order.id,'cancelled','received'),/another device/);
  recordPosEntry(order.id,'YOCO-TEST','fixture');
- updateOrderStatus(order.id,'ready','accepted');updateOrderStatus(order.id,'completed','ready');
+ updateOrderStatus(order.id,'ready','accepted');getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run(randomUUID(),order.id,order.totalCents,'cash',randomUUID(),'fixture',new Date().toISOString());updateOrderStatus(order.id,'completed','ready');
  assert.deepEqual(getOrderEvents(order.id).map(e=>e.to_status),['received','accepted','pos-recorded','ready','completed']);
  assert.equal(getOrderEvents(order.id)[1].actor,'shared-staff-tablet');
  assert.throws(()=>updateOrderStatus(order.id,'cancelled','completed'));

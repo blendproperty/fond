@@ -41,7 +41,7 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await expect(page.getByLabel('Authenticator or recovery code')).toHaveCount(0);
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
- await expect(page.getByRole('heading',{name:'Order queue'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
 });
 
 test('menu add-ons update the basket and collection needs a contact number',async({page,request})=>{

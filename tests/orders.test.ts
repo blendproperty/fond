@@ -47,6 +47,7 @@ test('an order can be looked up by reference and only active orders are listed',
   updateOrderStatus(order.id, 'accepted');
   recordPosEntry(order.id, 'YOCO-TEST', 'fixture');
   updateOrderStatus(order.id, 'ready');
+  getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run('p1',order.id,order.totalCents,'cash','r1','fixture',new Date().toISOString());
   updateOrderStatus(order.id, 'completed');
   assert.equal(listActiveOrders().length, 0);
 });
@@ -58,6 +59,8 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   assert.throws(() => updateOrderStatus(order.id, 'ready'), /Record the Yoco order entry/);
   recordPosEntry(order.id, 'YOCO-TEST', 'fixture');
   updateOrderStatus(order.id, 'ready');
+  assert.throws(() => updateOrderStatus(order.id, 'completed'), /Record full payment/);
+  getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run('p2',order.id,order.totalCents,'card','r2','fixture',new Date().toISOString());
   updateOrderStatus(order.id, 'completed');
   assert.throws(() => updateOrderStatus(order.id, 'ready'), OrderTransitionError);
   assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
@@ -77,6 +80,7 @@ test('staff can track Yoco entry, preparation and fulfilment without losing the 
   assert.equal(updateOrderStatus(order.id,'preparing').status,'preparing');
   assert.equal(listActiveOrders()[0].status,'preparing');
   assert.equal(updateOrderStatus(order.id,'ready').status,'ready');
+  getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run('p3',order.id,order.totalCents,'cash','r3','fixture',new Date().toISOString());
   assert.equal(updateOrderStatus(order.id,'completed').status,'completed');
 });
 

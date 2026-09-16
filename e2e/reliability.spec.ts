@@ -21,9 +21,9 @@ test('HTTP retry, access boundaries and audited lifecycle',async({request})=>{
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'received',status:'accepted'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).status()).toBe(409);
   expect((await request.post(`/api/staff/orders/${id}/pos-entry`,{headers:staffHeaders,data:{posReference:'YOCO-E2E-1'}})).ok()).toBeTruthy();
-  for(const [expectedStatus,status] of [['accepted','ready'],['ready','completed']]) {
-    expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus,status}})).ok()).toBeTruthy();
-  }
+  expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).ok()).toBeTruthy();
+  expect((await request.post(`/api/staff/orders/${id}/payment`,{headers:staffHeaders,data:{method:'cash'}})).ok()).toBeTruthy();
+  expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'ready',status:'completed'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'received',status:'cancelled'}})).ok()).toBeFalsy();
   const history=await (await request.get(`/api/staff/orders/${id}/history`,{headers:staffHeaders})).json();
   expect(history.events.map((e:{to_status:string})=>e.to_status)).toEqual(['received','accepted','pos-recorded','ready','completed']);

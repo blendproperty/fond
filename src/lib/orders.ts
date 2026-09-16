@@ -360,6 +360,10 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
       const paid = db.prepare("SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ? AND method = 'yoco'").get(id) as {n:number};
       if ((current.paymentRequired||checkout && ['creating','pending'].includes(checkout.status)) && paid.n < current.totalCents) throw new OrderTransitionError('Await signed Yoco payment confirmation before accepting this order.');
     }
+    if (nextStatus === 'completed') {
+      const paid = db.prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ?').get(id) as {n:number};
+      if (paid.n < current.totalCents) throw new OrderTransitionError('Record full payment before completing this order.');
+    }
     const updatedAt = new Date().toISOString();
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, actor, updatedAt);

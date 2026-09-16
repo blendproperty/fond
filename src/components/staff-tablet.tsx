@@ -8,7 +8,7 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 
 type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 type StaffOrder = {
-  payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
+  payment?: {paidCents:number;paymentMethod:string|null;checkout:string|null;checkoutUpdatedAt?:string|null};
   id: string;
   reference: string;
   customerName: string;
@@ -64,13 +64,17 @@ export function StaffTablet() {
   const [queueTargets, setQueueTargets] = useState<QueueTargets>(DEFAULT_QUEUE_TARGETS);
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
+  const [paymentOrderId,setPaymentOrderId]=useState<string|null>(null);
+  const [paymentMethod,setPaymentMethod]=useState<'cash'|'card'>('card');
+  const [paymentReference,setPaymentReference]=useState('');
+  const [lastUpdated,setLastUpdated]=useState<Date|null>(null);
   const [historyOrderId,setHistoryOrderId]=useState<string|null>(null);
   const [orderAudit,setOrderAudit]=useState<OrderAudit|null>(null);
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
     fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
-    const timer=setInterval(()=>setNow(Date.now()),1000);
+    const timer=setInterval(()=>setNow(Date.now()),15000);
     return ()=>clearInterval(timer);
   }, []);
 
@@ -109,6 +113,7 @@ export function StaffTablet() {
     }
     seenOrders.current = new Set(current.map(o => o.id));
     setOrders(current);
+    setLastUpdated(new Date());
   }, [notificationsEnabled,soundEnabled]);
 
   async function enableNotifications() {
@@ -126,6 +131,15 @@ export function StaffTablet() {
       setPosOrderId(null); setPosReference('');
       await refresh();
     } catch (error) { setQueueError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
+  }
+
+  async function recordInPersonPayment(id:string) {
+    try{
+      const response=await fetch(`/api/staff/orders/${id}/payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({method:paymentMethod,reference:paymentReference})});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.message??'Could not record payment.');
+      setPaymentOrderId(null);setPaymentReference('');await refresh();
+    }catch(error){setQueueError(error instanceof Error?error.message:'Could not record payment.');}
   }
 
   async function toggleHistory(id:string) {
@@ -202,8 +216,10 @@ export function StaffTablet() {
     <div className="staff-app">
       <header className="staff-header">
         <div>
-          <p className="eyebrow">FOND · FACILITY TABLET</p>
-          <h1>Order queue</h1>{queueError && <p role="alert">{queueError}</p>}
+          <p className="eyebrow">FOND · MIDPOINT SERVICE</p>
+          <div className="staff-title-row"><h1>Live order board</h1><span className="staff-live"><i/> Live</span></div>
+          <p className="staff-sync">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}` : 'Connecting'} · refreshes every 5 seconds</p>
+          {queueError && <p role="alert" className="staff-connection-error">{queueError}</p>}
         </div>
         <div className="staff-header-actions">
           <button className="quiet" onClick={enableNotifications}>{notificationsEnabled ? 'Notifications on' : 'Enable order alerts'}</button>
@@ -212,7 +228,8 @@ export function StaffTablet() {
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
-      <div className="staff-queue-controls"><span>Slide to see all six stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
+      <div className="staff-summary" aria-label="Queue summary"><div><span>Active orders</span><strong>{orders.length}</strong></div><div><span>Need attention</span><strong>{orders.filter(order=>laneTiming(order,now,queueTargets).delayed).length}</strong></div><div><span>Ready now</span><strong>{orders.filter(order=>order.status==='ready').length}</strong></div><div><span>Payment pending</span><strong>{orders.filter(order=>queueLane(order)==='payment').length}</strong></div></div>
+      <div className="staff-queue-controls"><span>Swipe or use arrows to move through stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
       <div className="staff-columns" ref={queueRef}>
         {QUEUE_LANES.map((col) => (
           <section className="staff-column" data-lane={col.key} key={col.key} aria-label={col.title}>
@@ -222,14 +239,16 @@ export function StaffTablet() {
               .filter((o) => queueLane(o) === col.key)
               .map((order) => {
                 const timing = laneTiming(order, now, queueTargets);
-                const paidOnline = (order.payment?.paidCents ?? 0) >= order.totalCents;
-                const paymentState = paidOnline ? 'paid' : order.paymentMethod === 'yoco_online' ? 'pending' : 'due';
-                const paymentLabel = paidOnline
-                  ? `PAID ONLINE · ${money(order.payment?.paidCents ?? order.totalCents)}`
+                const fullyPaid = (order.payment?.paidCents ?? 0) >= order.totalCents;
+                const paidOnline = fullyPaid && order.payment?.paymentMethod === 'yoco';
+                const paymentState = fullyPaid ? 'paid' : order.paymentMethod === 'yoco_online' ? 'pending' : 'due';
+                const paidMethod = order.payment?.paymentMethod==='cash'?'CASH':order.payment?.paymentMethod==='card'?'CARD':order.payment?.paymentMethod==='eft'?'EFT':'ONLINE';
+                const paymentLabel = fullyPaid
+                  ? `PAID ${paidOnline?'ONLINE':`IN PERSON · ${paidMethod}`} · ${money(order.payment?.paidCents ?? order.totalCents)}`
                   : paymentState === 'pending'
                     ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
                     : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
-                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
+                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' && fullyPaid ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
@@ -254,11 +273,11 @@ export function StaffTablet() {
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
                     <button className="staff-history-toggle" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>
                     {historyOrderId===order.id&&<div className="staff-audit" aria-live="polite">{!orderAudit?<p>Loading audit trail…</p>:<><strong>Permanent order record</strong>{orderAudit.payment.checkout&&<p>Yoco checkout: {orderAudit.payment.checkout.status} · {orderAudit.payment.checkout.checkoutId??'creating'} · {new Date(orderAudit.payment.checkout.updatedAt).toLocaleString('en-ZA')}</p>}{orderAudit.payment.records.map(record=><p key={record.reference}>Payment: {money(record.amountCents)} · {record.method} · {record.reference} · {new Date(record.createdAt).toLocaleString('en-ZA')}</p>)}{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}
-                    {posOrderId === order.id && <form className="staff-pos-form" onSubmit={event => { event.preventDefault(); void recordYoco(order.id); }}><label className="field">Yoco order reference<input autoFocus required maxLength={100} value={posReference} onChange={event => setPosReference(event.target.value)} placeholder="Reference shown in the Yoco system"/></label><p>Confirm only after this order has been added to Yoco for kitchen printing.</p><button className="primary" type="submit">Confirm Yoco entry</button><button className="quiet" type="button" onClick={() => {setPosOrderId(null);setPosReference('');}}>Cancel</button></form>}
                     <div className="staff-card-bottom">
                       <strong>{money(order.totalCents)}</strong>
                       <div className="staff-card-actions">
-                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && posOrderId !== order.id && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
+                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
+                        {order.status==='ready'&&!fullyPaid&&order.paymentMethod==='pay_at_collection'&&<button className="primary staff-payment-action" onClick={()=>{setPaymentOrderId(order.id);setPaymentMethod('card');setPaymentReference('');}}>Take payment</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
                         {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>
@@ -270,6 +289,8 @@ export function StaffTablet() {
           </section>
         ))}
       </div>
+      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p>Enter the receipt or order number shown on the restaurant Yoco system. This confirms the kitchen order was entered manually.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>setPosReference(event.target.value)} placeholder="Example: YOCO-12345"/></label><div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
+      {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed.</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
       {manualOpen && <ManualOrderPanel menu={menu} onClose={() => setManualOpen(false)} onCreated={refresh} />}
     </div>
   );
