@@ -1,5 +1,6 @@
 import { document } from './management';
 import { providerSecret } from './provider-secrets';
+import { publicBaseUrl } from './public-url';
 
 // Transactional WhatsApp notifications use Twilio ContentSid templates when
 // the merchant has registered a WhatsApp sender and approved the templates.
@@ -32,12 +33,23 @@ export type WhatsAppNotification = {
   reference: string;
 };
 
-export type TwilioConfig = { accountSid: string; sender: string; acceptedContentSid: string; readyContentSid: string };
-export const EMPTY_TWILIO: TwilioConfig = { accountSid: '', sender: '', acceptedContentSid: '', readyContentSid: '' };
-export const twilioConfig = () => document('twilio-config', EMPTY_TWILIO);
+export type TwilioConfig = { mode: 'production' | 'sandbox'; accountSid: string; sender: string; acceptedContentSid: string; readyContentSid: string };
+export const TWILIO_SANDBOX_SENDER = '+14155238886';
+export const EMPTY_TWILIO: TwilioConfig = { mode: 'production', accountSid: '', sender: '', acceptedContentSid: '', readyContentSid: '' };
+export const twilioConfig = (): TwilioConfig => ({ ...EMPTY_TWILIO, ...document('twilio-config', EMPTY_TWILIO) });
+export function twilioSandboxAllowed() {
+  try { return new URL(publicBaseUrl() ?? '').hostname.toLowerCase() === 'fond-test.mid-point.co.za'; }
+  catch { return false; }
+}
 export function validateTwilioConfig(input: unknown): TwilioConfig {
-  const value = input as TwilioConfig;
-  if (!value || !/^AC[a-f0-9]{32}$/i.test(value.accountSid) || !/^\+[1-9]\d{7,14}$/.test(value.sender) || !/^HX[a-f0-9]{32}$/i.test(value.acceptedContentSid) || !/^HX[a-f0-9]{32}$/i.test(value.readyContentSid)) throw new Error('Enter the Twilio Account SID, registered WhatsApp sender and two approved Content SIDs.');
+  const raw = input as Partial<TwilioConfig>;
+  const value: TwilioConfig = { mode: raw?.mode === 'sandbox' ? 'sandbox' : 'production', accountSid: raw?.accountSid?.trim() ?? '', sender: raw?.sender?.trim() ?? '', acceptedContentSid: raw?.acceptedContentSid?.trim() ?? '', readyContentSid: raw?.readyContentSid?.trim() ?? '' };
+  if (!/^AC[a-f0-9]{32}$/i.test(value.accountSid)) throw new Error('Enter a valid Twilio Account SID.');
+  if (value.mode === 'sandbox') {
+    if (!twilioSandboxAllowed()) throw new Error('Twilio Sandbox mode is restricted to fond-test.mid-point.co.za.');
+    return { ...value, sender: TWILIO_SANDBOX_SENDER, acceptedContentSid: '', readyContentSid: '' };
+  }
+  if (!/^\+[1-9]\d{7,14}$/.test(value.sender) || !/^HX[a-f0-9]{32}$/i.test(value.acceptedContentSid) || !/^HX[a-f0-9]{32}$/i.test(value.readyContentSid)) throw new Error('Enter the registered WhatsApp sender and two approved Content SIDs.');
   return value;
 }
 export function twilioConfigured() {
@@ -55,11 +67,14 @@ export async function sendWhatsAppNotification(notification: WhatsAppNotificatio
   }
   if (twilioConfigured()) {
     const config = twilioConfig(), token = providerSecret('twilio-auth-token')!;
-    const body = new URLSearchParams({
-      From: `whatsapp:${config.sender}`, To: `whatsapp:${notification.toE164}`,
-      ContentSid: notification.templateName === 'order_accepted' ? config.acceptedContentSid : config.readyContentSid,
-      ContentVariables: JSON.stringify({ '1': notification.customerName, '2': notification.reference }),
-    });
+    const body = new URLSearchParams({ From: `whatsapp:${config.sender}`, To: `whatsapp:${notification.toE164}` });
+    if (config.mode === 'sandbox') {
+      const state = notification.templateName === 'order_accepted' ? 'has been accepted and is being prepared' : 'is ready';
+      body.set('Body', `Hi ${notification.customerName}, your FOND order ${notification.reference} ${state}.`);
+    } else {
+      body.set('ContentSid', notification.templateName === 'order_accepted' ? config.acceptedContentSid : config.readyContentSid);
+      body.set('ContentVariables', JSON.stringify({ '1': notification.customerName, '2': notification.reference }));
+    }
     try {
       const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`, {
         method: 'POST', signal: AbortSignal.timeout(10000),

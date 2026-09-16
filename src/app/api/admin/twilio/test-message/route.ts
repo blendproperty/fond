@@ -10,7 +10,7 @@ export async function POST(request:Request){
  const token=(await cookies()).get(ADMIN_COOKIE)?.value;
  if(adminRole(token)!=='super-admin')return Response.json({message:'Super admin access required.'},{status:403,headers});
  if(!validRequestOrigin(request))return Response.json({message:'Invalid origin.'},{status:403,headers});
- if(!twilioConfigured())return Response.json({message:'Store the Twilio auth token, sender and approved template Content SIDs first.'},{status:400,headers});
+ if(!twilioConfigured())return Response.json({message:'Store the Twilio auth token and a valid Twilio configuration first.'},{status:400,headers});
  const body=await request.json().catch(()=>null) as {to?:unknown;template?:unknown}|null;
  if(!body||typeof body.to!=='string'||!['order_accepted','order_ready'].includes(String(body.template)))return Response.json({message:'Enter a recipient and choose a test message.'},{status:400,headers});
  try{
