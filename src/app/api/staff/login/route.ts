@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   try {
     if (body.username) {
       if (body.password.length > 128) return NextResponse.json({message:'Invalid credentials.'},{status:400});
-      const result=loginMember(body.username,body.password);
+      const result=loginMember(body.username,body.password,typeof body.twoFactorCode==='string'?body.twoFactorCode:undefined);
       token=result?.token ?? null;
     } else { token = checkStaffCode(body.code); }
   } catch {

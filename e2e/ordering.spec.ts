@@ -36,7 +36,9 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await page.getByLabel('Sign in with a named account').check();
  await expect(page.getByLabel('Username')).toBeVisible();
  await expect(page.getByLabel('Password')).toBeVisible();
+ await expect(page.getByLabel('Authenticator or recovery code')).toBeVisible();
  await page.getByLabel('Sign in with a named account').uncheck();
+ await expect(page.getByLabel('Authenticator or recovery code')).toHaveCount(0);
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
  await expect(page.getByRole('heading',{name:'Order queue'})).toBeVisible();

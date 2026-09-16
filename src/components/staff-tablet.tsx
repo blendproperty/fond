@@ -45,6 +45,7 @@ export function StaffTablet() {
   const [code, setCode] = useState('');
   const [named,setNamed]=useState(false);
   const [username,setUsername]=useState('');
+  const [twoFactorCode,setTwoFactorCode]=useState('');
   const [loginError, setLoginError] = useState('');
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [menu, setMenu] = useState<Meal[]>([]);
@@ -130,13 +131,14 @@ export function StaffTablet() {
   async function submitCode(e: React.FormEvent) {
     e.preventDefault();
     setLoginError('');
-    const res = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code} : {code}) });
+    const res = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(named ? {username,password:code,twoFactorCode} : {code}) });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       setLoginError(data?.message ?? 'Incorrect code.');
       return;
     }
     setCode('');
+    setTwoFactorCode('');
     await refresh();
   }
 
@@ -167,9 +169,10 @@ export function StaffTablet() {
           <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
           <h1>Ready for service.</h1>
           <p className="admin-login-intro">Sign in to manage today's orders.</p>
-          <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
+          <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setTwoFactorCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
           {named&&<label className="admin-login-field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" placeholder="Your username"/></label>}
           <label className="admin-login-field">{named?'Password':'Staff access code'}<input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} autoComplete={named?'current-password':'off'} placeholder={named?'Enter your password':'Enter the staff code'} aria-label={named?'Password':'Staff access code'} /></label>
+          {named&&<label className="admin-login-field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="numeric" placeholder="Six digit code or recovery code"/></label>}
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full admin-login-submit" type="submit">Open order queue</button>
           <p className="admin-login-foot">Private access for the FOND team.</p>
