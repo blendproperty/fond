@@ -12,6 +12,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await expect(page.getByRole('button',{name:'Enable sound'})).toBeVisible();
   const card = page.locator('.staff-card').filter({ hasText: reference });
   await expect(card).toBeVisible();
+  await expect(card.getByRole('status').filter({ hasText: 'PAYMENT DUE AT FOND' })).toBeVisible();
   await card.getByRole('button', { name: 'Accept' }).click();
   await expect(card.getByRole('button', { name: 'Start preparing' })).toHaveCount(0);
   await card.getByRole('button', { name: 'Record Yoco entry' }).click();

@@ -188,6 +188,10 @@ footer span:last-child{margin-left:auto}
 .staff-awaiting{font-size:11px;color:#8b6411;font-weight:700}
 .staff-card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .staff-card-top strong{font-size:16px;color:var(--ink)}
+.staff-payment-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;padding:10px 12px;border:2px solid;border-radius:9px;font-size:12px;font-weight:900;letter-spacing:.055em;line-height:1.25}
+.staff-payment-status[data-payment-state="paid"]{color:#075d3c;background:#e7f7ef;border-color:#159565}
+.staff-payment-status[data-payment-state="pending"]{color:#755000;background:#fff4cf;border-color:#d39a0b}
+.staff-payment-status[data-payment-state="due"]{color:#8c281f;background:#fff0ed;border-color:#c84d3e}
 .staff-ref{font-family:monospace;font-size:11px;color:var(--slate)}
 .staff-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--slate);margin-bottom:10px}
 .staff-lines{margin:0 0 10px;padding:0;list-style:none;font-size:13px;color:var(--ink)}

@@ -205,6 +205,13 @@ export function StaffTablet() {
               .filter((o) => queueLane(o) === col.key)
               .map((order) => {
                 const timing = laneTiming(order, now, queueTargets);
+                const paidOnline = (order.payment?.paidCents ?? 0) >= order.totalCents;
+                const paymentState = paidOnline ? 'paid' : order.paymentMethod === 'yoco_online' ? 'pending' : 'due';
+                const paymentLabel = paidOnline
+                  ? 'PAID ONLINE'
+                  : paymentState === 'pending'
+                    ? 'PAYMENT PENDING · DO NOT PREPARE'
+                    : `PAYMENT DUE AT FOND · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))}`;
                 const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
@@ -213,6 +220,7 @@ export function StaffTablet() {
                       <span className="staff-ref">{order.reference}</span>
                     </div>
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
+                    <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
                     {order.fulfillment === 'delivery' ? (
                       <p className="staff-meta staff-delivery"><Truck size={14} /> Deliver to {order.building}{order.company ? ` · ${order.company}` : ''} · {order.contactNumber} · {timeAgo(order.createdAt)}</p>
                     ) : (
@@ -227,10 +235,9 @@ export function StaffTablet() {
                     </ul>
                     {order.note && <p className="staff-note">“{order.note}”</p>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
-                    <p className="staff-meta"><strong>{order.paymentMethod==='yoco_online'?'PAY ONLINE':'PAY AT COLLECTION'}</strong></p>
                     {posOrderId === order.id && <form className="staff-pos-form" onSubmit={event => { event.preventDefault(); void recordYoco(order.id); }}><label className="field">Yoco order reference<input autoFocus required maxLength={100} value={posReference} onChange={event => setPosReference(event.target.value)} placeholder="Reference shown in the Yoco system"/></label><p>Confirm only after this order has been added to Yoco for kitchen printing.</p><button className="primary" type="submit">Confirm Yoco entry</button><button className="quiet" type="button" onClick={() => {setPosOrderId(null);setPosReference('');}}>Cancel</button></form>}
                     <div className="staff-card-bottom">
-                      <strong>{money(order.totalCents)}</strong><span>{order.payment?.paidCents===order.totalCents ? "Paid online" : order.paymentRequired||order.payment?.checkout==='pending'||order.payment?.checkout==='creating' ? "Online payment required — do not prepare" : `Due at collection ${money(Math.max(0,order.totalCents-(order.payment?.paidCents??0)))}`}</span>
+                      <strong>{money(order.totalCents)}</strong>
                       <div className="staff-card-actions">
                         {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && posOrderId !== order.id && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
