@@ -1,7 +1,7 @@
 import { createHmac,timingSafeEqual,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { settings } from './management';
-import {providerSecret} from './provider-secrets';
+import {providerSecret,saveProviderSecret} from './provider-secrets';
 import {publicBaseUrl} from './public-url';
 const yocoKey=()=>providerSecret('yoco-secret')??process.env.YOCO_SECRET_KEY;
 const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SECRET;
@@ -17,6 +17,21 @@ export function paymentStatus(orderId:string){
   return {paidCents:paid,checkout:checkout?.status??null,checkoutUpdatedAt:checkout?.updated_at??null};
 }
 export function yocoCredentialMode(){try{const key=yocoKey();return key?.startsWith('sk_test_')?'test':key?.startsWith('sk_live_')?'live':'none';}catch{return 'none';}}
+export async function registerYocoWebhook(actor:string){
+  const key=yocoKey(),mode=yocoCredentialMode(),base=publicBaseUrl();
+  if(!key||mode==='none')throw new Error('Store a valid Yoco secret key first.');
+  if(!base)throw new Error('Configure the secure public FOND URL first.');
+  const url=`${new URL(base).origin}/api/payments/webhook`;
+  const response=await fetch('https://payments.yoco.com/api/webhooks',{
+    method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(20000),
+    body:JSON.stringify({name:mode==='test'?'FOND Midpoint Sandbox':'FOND Midpoint Payments',url})
+  });
+  if(!response.ok)throw new Error(response.status===409?'A Yoco webhook already exists for this URL. Remove it in Yoco before registering again.':'Yoco could not register the webhook. Check the stored key and try again.');
+  const result=await response.json() as {id?:unknown;secret?:unknown;url?:unknown;mode?:unknown};
+  if(typeof result.id!=='string'||typeof result.secret!=='string'||!result.secret.startsWith('whsec_')||result.url!==url||(result.mode!==undefined&&result.mode!==mode))throw new Error('Yoco returned an invalid webhook registration.');
+  saveProviderSecret('yoco-webhook',result.secret,actor);
+  return {id:result.id,url,mode};
+}
 export async function createCheckout(reference:string,options:{allowSandbox?:boolean}={}){
   const s=settings(),mode=yocoCredentialMode();
   const allowed=options.allowSandbox
