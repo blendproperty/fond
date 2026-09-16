@@ -21,6 +21,8 @@ test('admin sections save customer, publish CMS, record receipts and create name
  await page.getByLabel('Amount (R)',{exact:true}).fill(String((await res.json()).totalCents/100));await page.getByLabel('Unique receipt / reference').fill('receipt-'+tag);
  await page.getByRole('button',{name:'Record transaction'}).click();await expect(page.getByText('receipt-'+tag,{exact:false}).last()).toBeVisible();
  await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByLabel('Member name',{exact:true}).fill('Staff '+tag);await page.getByLabel('Username',{exact:true}).fill('staff'+tag);await page.getByLabel('Password (12+ characters)',{exact:true}).fill('local-test-password');
+ await page.getByLabel('New order (minutes)',{exact:true}).fill('7');await page.getByRole('button',{name:'Save settings'}).click();await expect(page.getByRole('status')).toContainText('Saved');
+ expect((await (await request.get('/api/store')).json()).settings.newOrderMinutes).toBe(7);
  await page.getByRole('button',{name:'Save team member'}).click();await expect(page.getByRole('button',{name:new RegExp('Staff '+tag)})).toBeVisible();
  const login=await request.post('/api/staff/login',{data:{username:'staff'+tag,password:'local-test-password'}});expect(login.status()).toBe(200);
  const headers={Cookie:login.headers()['set-cookie'].split(';')[0]};expect((await request.get('/api/staff/orders',{headers})).status()).toBe(200);expect((await request.get('/api/admin/manage/finance',{headers})).status()).toBe(401);

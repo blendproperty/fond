@@ -4,6 +4,7 @@ export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'
   payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
 };
 export type QueueLane = 'new'|'payment'|'yoco'|'preparing'|'delivery'|'collection';
+export type QueueTargets = Record<QueueLane,number>;
 
 export const QUEUE_LANES: {key:QueueLane;title:string;targetMinutes:number}[] = [
   {key:'new',title:'New',targetMinutes:5},
@@ -29,9 +30,11 @@ export function laneEnteredAt(order: QueueOrder, lane: QueueLane): string {
   return order.updatedAt;
 }
 
-export function laneTiming(order: QueueOrder, now: number, preparationMinutes = 20) {
+export const DEFAULT_QUEUE_TARGETS:QueueTargets=Object.fromEntries(QUEUE_LANES.map(lane=>[lane.key,lane.targetMinutes])) as QueueTargets;
+
+export function laneTiming(order: QueueOrder, now: number, targets:QueueTargets = DEFAULT_QUEUE_TARGETS) {
   const lane=queueLane(order);
-  const targetMinutes=lane==='preparing'?preparationMinutes:QUEUE_LANES.find(item=>item.key===lane)!.targetMinutes;
+  const targetMinutes=targets[lane];
   const elapsedMinutes=Math.max(0,Math.floor((now-Date.parse(laneEnteredAt(order,lane)))/60000));
   return {lane,targetMinutes,elapsedMinutes,delayed:elapsedMinutes>targetMinutes};
 }

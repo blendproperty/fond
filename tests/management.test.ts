@@ -28,12 +28,25 @@ test('trading hours use Johannesburg and settings reject invalid values',()=>{
  assert.ok(orderingAvailable(s,new Date('2026-09-15T05:00:00Z')));
  assert.equal(orderingAvailable(s,new Date('2026-09-15T15:00:00Z')),false);
  assert.throws(()=>validateSettings({...s,maxActiveOrders:0}));
+ assert.throws(()=>validateSettings({...s,newOrderMinutes:0}));
+});
+test('stored legacy settings inherit new queue targets',()=>{
+ const legacy={...DEFAULT_SETTINGS} as Partial<typeof DEFAULT_SETTINGS>;
+ delete legacy.newOrderMinutes;delete legacy.paymentConfirmationMinutes;delete legacy.yocoEntryMinutes;delete legacy.readyDeliveryMinutes;delete legacy.readyCollectionMinutes;
+ saveDocument('trading',legacy,'fixture');
+ assert.equal(settings().newOrderMinutes,5);assert.equal(settings().readyDeliveryMinutes,10);
 });
 test('paused/capacity order intake rejects new orders but still permits unchanged retries',()=>{
  const request={submissionKey:randomUUID(),customerName:'Test',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',source:'customer' as const,contactNumber:'0821234567'};
  const first=createOrder(request);saveDocument('trading',{...DEFAULT_SETTINGS,orderingEnabled:false},'admin');
  assert.equal(createOrder(request).id,first.id);assert.throws(order,/closed/);
  saveDocument('trading',{...DEFAULT_SETTINGS,maxActiveOrders:1},'admin');assert.throws(order,/capacity/);
+});
+test('preparing orders count toward kitchen capacity',()=>{
+ const active=order();updateOrderStatus(active.id,'accepted');
+ getDb().prepare("UPDATE orders SET pos_recorded_at=?,pos_reference=? WHERE id=?").run(new Date().toISOString(),'YOCO-CAPACITY',active.id);
+ updateOrderStatus(active.id,'preparing');saveDocument('trading',{...DEFAULT_SETTINGS,maxActiveOrders:1},'admin');
+ assert.throws(order,/capacity/);
 });
 test('customer import normalizes phone, links history and does not manufacture consent',()=>{
  const o=order();const id=importCustomerFromOrder(o.id,'admin');

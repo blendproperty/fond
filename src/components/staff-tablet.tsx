@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
-import { QUEUE_LANES, queueLane, laneTiming } from '@/lib/staff-queue';
+import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueTargets } from '@/lib/staff-queue';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
@@ -53,13 +53,13 @@ export function StaffTablet() {
   const audioRef = useRef<AudioContext | null>(null);
   const queueRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(Date.now());
-  const [preparationMinutes, setPreparationMinutes] = useState(20);
+  const [queueTargets, setQueueTargets] = useState<QueueTargets>(DEFAULT_QUEUE_TARGETS);
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
 
   useEffect(() => {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
-    fetch('/api/store').then(r=>r.json()).then(data=>setPreparationMinutes(Math.max(1,Number(data.settings?.preparationMinutes)||20))).catch(()=>{});
+    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
     const timer=setInterval(()=>setNow(Date.now()),1000);
     return ()=>clearInterval(timer);
   }, []);
@@ -198,7 +198,7 @@ export function StaffTablet() {
             {orders
               .filter((o) => queueLane(o) === col.key)
               .map((order) => {
-                const timing = laneTiming(order, now, preparationMinutes);
+                const timing = laneTiming(order, now, queueTargets);
                 const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
