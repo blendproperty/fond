@@ -36,3 +36,31 @@ jobs:
             sleep 5
             docker compose ps
             docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health
+  deploy-staging:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy isolated staging over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          envs: VERIFIED_SHA
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/fond-test
+            git fetch origin
+            test "$(git rev-parse origin/main)" = "$VERIFIED_SHA" || exit 0
+            git checkout main
+            git reset --hard "$VERIFIED_SHA"
+            test -f compose.test.yaml
+            test -f compose.traefik.yaml
+            docker compose -f compose.test.yaml -f compose.traefik.yaml config --quiet
+            docker compose -f compose.test.yaml -f compose.traefik.yaml build
+            docker compose -f compose.test.yaml -f compose.traefik.yaml up -d
+            sleep 5
+            docker compose -f compose.test.yaml -f compose.traefik.yaml ps
+            docker compose -f compose.test.yaml -f compose.traefik.yaml exec -T fond wget -qO- http://127.0.0.1:3000/api/health
