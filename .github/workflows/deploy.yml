@@ -38,6 +38,7 @@ jobs:
             docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health
   deploy-staging:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Deploy isolated staging over SSH
@@ -52,6 +53,7 @@ jobs:
           script: |
             set -euo pipefail
             cd /opt/fond-test
+            git remote set-url origin https://github.com/blendproperty/fond.git
             git fetch origin
             test "$(git rev-parse origin/main)" = "$VERIFIED_SHA" || exit 0
             git checkout main
