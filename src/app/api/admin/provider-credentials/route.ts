@@ -7,10 +7,11 @@ import {saveDocument} from '@/lib/management';
 import {twilioConfig,validateTwilioConfig} from '@/lib/whatsapp';
 import {validRequestOrigin} from '@/lib/request-origin';
 import {yocoCredentialMode} from '@/lib/payments';
+import {publicBaseUrl} from '@/lib/public-url';
 const names:ProviderName[]=['yoco-secret','yoco-webhook','email-api','staff-shared-code','twilio-auth-token'];
 const noStore={'Cache-Control':'no-store'};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;if(adminRole(token)!=='super-admin')return null;const member=teamSession(token);return member?'super:'+member.id:'shared-admin';}
-export async function GET(){if(!await actor())return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});return Response.json({configured:Object.fromEntries(names.map(n=>[n,providerSecretStatus(n)])),yocoMode:yocoCredentialMode(),webhookUrl:`${process.env.FOND_PUBLIC_URL??''}/api/payments/webhook`,vaultReady:/^[a-f0-9]{64}$/i.test(process.env.FOND_CREDENTIALS_KEY??''),emailFrom:emailSender(),twilio:twilioConfig()},{headers:noStore});}
+export async function GET(){if(!await actor())return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});const base=publicBaseUrl();return Response.json({configured:Object.fromEntries(names.map(n=>[n,providerSecretStatus(n)])),yocoMode:yocoCredentialMode(),webhookUrl:base?`${base}/api/payments/webhook`:'Public URL not configured',vaultReady:/^[a-f0-9]{64}$/i.test(process.env.FOND_CREDENTIALS_KEY??''),emailFrom:emailSender(),twilio:twilioConfig()},{headers:noStore});}
 export async function POST(request:Request){const who=await actor();if(!who)return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});
  if(!validRequestOrigin(request))return Response.json({message:'Invalid origin.'},{status:403,headers:noStore});
  const b=await request.json().catch(()=>null);if(!b)return Response.json({message:'Invalid setting.'},{status:400,headers:noStore});

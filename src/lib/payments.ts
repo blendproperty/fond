@@ -2,12 +2,13 @@ import { createHmac,timingSafeEqual,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { settings } from './management';
 import {providerSecret} from './provider-secrets';
+import {publicBaseUrl} from './public-url';
 const yocoKey=()=>providerSecret('yoco-secret')??process.env.YOCO_SECRET_KEY;
 const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SECRET;
 export function onlinePaymentsConfigured(){
   try {
     const key=yocoKey();
-    return !!key && (key.startsWith("sk_live_") || ((settings().allowTestPayments||process.env.FOND_ALLOW_TEST_PAYMENTS === "true") && key.startsWith("sk_test_"))) && !!webhookKey() && !!process.env.FOND_PUBLIC_URL;
+    return !!key && (key.startsWith("sk_live_") || ((settings().allowTestPayments||process.env.FOND_ALLOW_TEST_PAYMENTS === "true") && key.startsWith("sk_test_"))) && !!webhookKey() && !!publicBaseUrl();
   } catch { return false; }
 }
 export function paymentStatus(orderId:string){
@@ -29,7 +30,7 @@ export async function createCheckout(reference:string,options:{allowSandbox?:boo
   if(prior?.status==='paid')throw new Error('This order is already paid.');
   if(prior?.redirect_url)return prior.redirect_url;
   if(prior && Date.now()-Date.parse(prior.updated_at)>3600000)throw new Error("Checkout needs reconciliation with Yoco. Contact FOND before retrying payment.");
-  const base=new URL(process.env.FOND_PUBLIC_URL!);if(base.protocol!=='https:')throw new Error('Online payment requires a secure site URL.');
+  const publicUrl=publicBaseUrl();if(!publicUrl)throw new Error('Online payment requires a secure site URL.');const base=new URL(publicUrl);
   db.prepare("INSERT OR IGNORE INTO yoco_checkouts VALUES (?,NULL,NULL,'creating',?)").run(order.id,new Date().toISOString());
   const response=await fetch('https://payments.yoco.com/api/checkouts',{
     method:'POST',headers:{Authorization:`Bearer ${yocoKey()}`,'Content-Type':'application/json','Idempotency-Key':order.id},signal:AbortSignal.timeout(20000),
