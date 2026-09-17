@@ -34,6 +34,16 @@ export type WhatsAppNotification = {
 };
 
 export type TwilioConfig = { mode: 'production' | 'sandbox'; accountSid: string; sender: string; acceptedContentSid: string; readyContentSid: string };
+export type MetaConfig = { phoneNumberId: string; wabaId: string; acceptedTemplate: string; readyTemplate: string; languageCode: string };
+export const EMPTY_META: MetaConfig = { phoneNumberId: '', wabaId: '', acceptedTemplate: 'fond_order_accepted', readyTemplate: 'fond_order_ready', languageCode: 'en' };
+export const metaConfig = (): MetaConfig => ({ ...EMPTY_META, ...document('meta-whatsapp-config', EMPTY_META) });
+export function validateMetaConfig(input: unknown): MetaConfig {
+  const raw=input as Partial<MetaConfig>;
+  const value={phoneNumberId:raw?.phoneNumberId?.trim()??'',wabaId:raw?.wabaId?.trim()??'',acceptedTemplate:raw?.acceptedTemplate?.trim()??'',readyTemplate:raw?.readyTemplate?.trim()??'',languageCode:raw?.languageCode?.trim()||'en'};
+  if(!/^\d{6,30}$/.test(value.phoneNumberId)||!/^\d{6,30}$/.test(value.wabaId)||!/^[a-z0-9_]{1,512}$/.test(value.acceptedTemplate)||!/^[a-z0-9_]{1,512}$/.test(value.readyTemplate)||!/^[a-z]{2}(?:_[A-Z]{2})?$/.test(value.languageCode))throw new Error('Enter valid Meta WhatsApp IDs, template names and language.');
+  return value;
+}
+export function metaConfigured(){try{validateMetaConfig(metaConfig());return !!(providerSecret('meta-access-token')||process.env.FOND_WHATSAPP_TOKEN);}catch{return false;}}
 export const TWILIO_SANDBOX_SENDER = '+14155238886';
 export const EMPTY_TWILIO: TwilioConfig = { mode: 'production', accountSid: '', sender: '', acceptedContentSid: '', readyContentSid: '' };
 export const twilioConfig = (): TwilioConfig => ({ ...EMPTY_TWILIO, ...document('twilio-config', EMPTY_TWILIO) });
@@ -57,15 +67,15 @@ export function twilioConfigured() {
   catch { return false; }
 }
 
-function isConfigured(): boolean {
-  return twilioConfigured() || !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
+export function whatsappConfigured(): boolean {
+  return metaConfigured() || twilioConfigured() || !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
 }
 
 export async function sendWhatsAppNotification(notification: WhatsAppNotification): Promise<{ sent: boolean; reason?: string }> {
-  if (!isConfigured()) {
+  if (!whatsappConfigured()) {
     return { sent: false, reason: 'NOT_CONFIGURED' };
   }
-  if (twilioConfigured()) {
+  if (!metaConfigured() && twilioConfigured()) {
     const config = twilioConfig(), token = providerSecret('twilio-auth-token')!;
     const body = new URLSearchParams({ From: `whatsapp:${config.sender}`, To: `whatsapp:${notification.toE164}` });
     if (config.mode === 'sandbox') {
@@ -84,8 +94,9 @@ export async function sendWhatsAppNotification(notification: WhatsAppNotificatio
       return response.ok ? { sent: true } : { sent: false, reason: `TWILIO_HTTP_${response.status}` };
     } catch { return { sent: false, reason: 'NETWORK_ERROR' }; }
   }
-  const token = process.env.FOND_WHATSAPP_TOKEN!;
-  const phoneNumberId = process.env.FOND_WHATSAPP_PHONE_NUMBER_ID!;
+  const config=metaConfig();
+  const token = providerSecret('meta-access-token')??process.env.FOND_WHATSAPP_TOKEN!;
+  const phoneNumberId = config.phoneNumberId||process.env.FOND_WHATSAPP_PHONE_NUMBER_ID!;
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
       method: 'POST',
@@ -96,8 +107,8 @@ export async function sendWhatsAppNotification(notification: WhatsAppNotificatio
         to: notification.toE164,
         type: 'template',
         template: {
-          name: notification.templateName,
-          language: { code: 'en' },
+          name: notification.templateName==='order_accepted'?config.acceptedTemplate:config.readyTemplate,
+          language: { code: config.languageCode },
           components: [
             {
               type: 'body',

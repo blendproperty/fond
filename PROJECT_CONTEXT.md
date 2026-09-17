@@ -1,5 +1,13 @@
 # FOND ordering PWA
 
+## 2026-09-17 - direct Meta WhatsApp Cloud API implementation
+
+Implementation: added direct Meta Cloud API as FOND's preferred WhatsApp provider while retaining Twilio as a fallback. Super-admin Settings now stores the permanent Meta access token, app secret and webhook verification token in the encrypted credential vault, plus non-secret phone-number/WABA IDs and accepted/ready template names. Added `/api/webhooks/whatsapp` with callback challenge verification and HMAC-SHA256 validation of Meta webhook payloads. Controlled test sends and order notification jobs use Meta whenever it is configured. No provider secret is returned to the browser.
+
+Testing: TypeScript passed, all 70 unit/integration tests, all 38 desktop/mobile browser checks and the production Next.js build passed. New tests prove matching callback challenges, rejection of invalid webhook signatures, acceptance of valid signatures, Meta bearer authentication, phone-number routing, template selection and customer/reference variables. Meta's live callback handshake and a real handset message remain provider UAT after deployment and credential entry. An initial browser run without the workflow's isolated test environment failed because it reused local operational state; rerunning with the documented CI environment passed all 38 checks.
+
+Commit/push: pending. Merge: direct-main promotion is pending; no separate PR. Deployment/configuration: pending CI-gated production and isolated-staging deployment. Meta currently shows the FOND application/business verification and number registration complete, while webhook configuration remains incomplete. Live production verification is pending. Outstanding gates: deploy this endpoint, save staging Meta credentials through the dashboard, verify the Meta callback, approve both templates, send a controlled handset test, then enable transactional WhatsApp. Twilio/Stor24 assets must remain untouched.
+
 ## 2026-09-15 - navigation/install release live
 
 Commit/push: 3e923938af231514a4fa3617193dcb216a1db6bb pushed directly to main; no PR merge. Verify FOND #73 succeeded (1m46s job), https://github.com/blendproperty/fond/actions/runs/34947022470. Deploy FOND #27 succeeded (36s job), https://github.com/blendproperty/fond/actions/runs/34947195716. No environment/configuration changes.

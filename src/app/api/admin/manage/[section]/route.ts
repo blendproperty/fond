@@ -7,7 +7,7 @@ import { customers,saveCustomer,customerHistory,importCustomerFromOrder,finance,
 import { getDb } from '@/lib/db';
 import { deliverOrderEmail } from '@/lib/email';
 import { getOrderByReference } from '@/lib/orders';
-import { twilioConfigured } from '@/lib/whatsapp';
+import { whatsappConfigured } from '@/lib/whatsapp';
 const headers={'Cache-Control':'no-store'};
 type Context={params:Promise<{section:string}>};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;return isValidAdminToken(token)?(teamSession(token)?'team:'+teamSession(token)!.id:'shared-admin'):null;}
@@ -17,7 +17,7 @@ export async function GET(request:Request,context:Context){
   if(!await actor())return Response.json({message:'Admin access required.'},{status:401,headers});
   const {section}=await context.params,u=new URL(request.url);
   try{
-    if(section==='settings')return Response.json({settings:settings(),team:(await role())==='super-admin'?listTeam():[],role:await role(),providers:{yoco:onlinePaymentsConfigured(),whatsapp:twilioConfigured()||!!process.env.FOND_WHATSAPP_TOKEN&&!!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID},audit:(await role())==='super-admin'?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
+    if(section==='settings')return Response.json({settings:settings(),team:(await role())==='super-admin'?listTeam():[],role:await role(),providers:{yoco:onlinePaymentsConfigured(),whatsapp:whatsappConfigured()},audit:(await role())==='super-admin'?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
     if(section==='customers'){
       const rows=customers(u.searchParams.get('q')??'');
       if(u.searchParams.get('export')==='consented')return new Response(csv((rows as Record<string,unknown>[]).filter(r=>r.marketing_consent===1&&r.archived===0)),{headers:{...headers,'Content-Type':'text/csv','Content-Disposition':'attachment; filename="fond-consented-customers.csv"'}});
