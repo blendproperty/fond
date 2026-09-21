@@ -3,6 +3,7 @@ import { getDb } from './db';
 import { document } from './management';
 import { providerSecret } from './provider-secrets';
 import type { OrderRecord } from './orders';
+import { buildControlledTestEmail, buildOrderEmail, buildVerificationEmail, type EmailMessage } from './email-template';
 
 export const emailSender = () => document('email-from', '');
 export const validEmailSender = (value: string) => /^[a-z0-9._+-]+@fond\.mid-point\.co\.za$/i.test(value.trim());
@@ -14,13 +15,13 @@ function codeHash(userId: string, code: string) {
   if (!key || !/^[a-f0-9]{64}$/i.test(key)) throw new Error('Email verification key unavailable.');
   return createHmac('sha256', Buffer.from(key, 'hex')).update(`${userId}:${code}`).digest('hex');
 }
-async function send(to: string, subject: string, text: string, idempotencyKey: string) {
+async function send(to: string, message: EmailMessage, idempotencyKey: string) {
   const key = providerSecret('email-api'), from = emailSender();
   if (!key || !from) throw new Error('Email provider is not configured.');
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST', signal: AbortSignal.timeout(12000),
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-    body: JSON.stringify({ from: `FOND <${from}>`, to: [to], subject, text }),
+    body: JSON.stringify({ from: `FOND Midpoint <${from}>`, to: [to], ...message }),
   });
   if (!response.ok) throw new Error(`Email provider rejected this message (${response.status}).`);
   const result = await response.json() as { id?: string };
@@ -29,7 +30,7 @@ async function send(to: string, subject: string, text: string, idempotencyKey: s
 export async function sendControlledEmailTest(to: string) {
   const recipient = to.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid test email address.');
-  const providerId = await send(recipient, 'FOND email test', 'This is a controlled email test from FOND staging. Transactional email is configured.', `fond-email-test-${Date.now()}`);
+  const providerId = await send(recipient, buildControlledTestEmail(), `fond-email-test-${Date.now()}`);
   return { recipient, providerId };
 }
 export async function requestVerification(user: { id: string; email: string }) {
@@ -43,7 +44,7 @@ export async function requestVerification(user: { id: string; email: string }) {
   const code = String(randomInt(0, 1000000)).padStart(6, '0');
   const sentAt = new Date(now).toISOString();
   db.prepare('INSERT INTO email_verifications VALUES (?,?,?,0,?) ON CONFLICT(user_id) DO UPDATE SET code_hash=excluded.code_hash,expires_at=excluded.expires_at,attempts=0,sent_at=excluded.sent_at').run(user.id, codeHash(user.id, code), new Date(now + 10 * 60000).toISOString(), sentAt);
-  await send(user.email, 'Verify your FOND email', `Your FOND verification code is ${code}. It expires in 10 minutes.`, `fond-verify-${user.id}-${now}`);
+  await send(user.email, buildVerificationEmail(code), `fond-verify-${user.id}-${now}`);
   return { sent: true };
 }
 export function verifyEmail(userId: string, code: string) {
@@ -70,10 +71,8 @@ export async function deliverOrderEmail(order: OrderRecord, event: 'received' | 
   if (job.status === 'sent') return true;
   const claimed = db.prepare("UPDATE email_jobs SET status='sending',updated_at=? WHERE id=? AND (status IN ('pending','failed') OR (status='sending' AND updated_at<?))").run(now, id, new Date(Date.now() - 60000).toISOString());
   if (!claimed.changes) return false;
-  const subject = event === 'received' ? `FOND received ${order.reference}` : `FOND order ${order.reference}: ${event}`;
-  const text = `Hello ${order.customerName},\n\nYour FOND order ${order.reference} is ${event}.\nCollection: ${order.collectionTime}.\nTotal: R${(order.totalCents / 100).toFixed(2)}.\n\nYou can view your orders at ${process.env.FOND_PUBLIC_URL ?? 'https://fond.mid-point.co.za'}/account.\n\nFOND Midpoint Hub`;
   try {
-    const providerId = await send(order.customerEmail, subject, text, `fond-${id}`);
+    const providerId = await send(order.customerEmail, buildOrderEmail(order, event), `fond-${id}`);
     db.prepare("UPDATE email_jobs SET status='sent',provider_id=?,error=NULL,updated_at=? WHERE id=?").run(providerId, new Date().toISOString(), id);
     return true;
   } catch (error) {
