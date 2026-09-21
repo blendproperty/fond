@@ -30,7 +30,7 @@ async function send(to: string, message: EmailMessage, idempotencyKey: string) {
 export async function sendControlledEmailTest(to: string) {
   const recipient = to.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid test email address.');
-  const providerId = await send(recipient, buildControlledTestEmail(), `fond-email-test-${Date.now()}`);
+  const providerId = await send(recipient, buildControlledTestEmail(recipient), `fond-email-test-${Date.now()}`);
   return { recipient, providerId };
 }
 export async function requestVerification(user: { id: string; email: string }) {

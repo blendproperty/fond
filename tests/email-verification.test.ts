@@ -32,9 +32,11 @@ test('controlled email test uses the configured sender without creating an accou
     assert.deepEqual(message?.to, ['account@example.test']);
     assert.equal(message?.from, 'FOND Midpoint <orders@fond.mid-point.co.za>');
     assert.equal(message?.subject, 'Your FOND email updates are ready');
-    assert.match(message?.text ?? '', /transactional order updates/i);
-    assert.match(message?.html ?? '', /Your FOND updates are ready/);
-    assert.match(message?.html ?? '', /Visit FOND/);
+    assert.match(message?.text ?? '', /transactional email is connected/i);
+    assert.match(message?.html ?? '', /Your FOND email updates are ready/);
+    assert.match(message?.html ?? '', /Your email details/);
+    assert.match(message?.html ?? '', /account@example\.test/);
+    assert.match(message?.html ?? '', /Browse the FOND menu/);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });
 test('verified accounts get one receipt per order while unverified accounts get none', async () => {
@@ -55,7 +57,7 @@ test('verified accounts get one receipt per order while unverified accounts get 
     await requestVerification(user);
     assert.equal(messages[0].to[0], user.email);
     assert.equal(messages[0].subject, 'Your FOND verification code');
-    assert.match(messages[0].html, /Your six digit code/);
+    assert.match(messages[0].html, /Your verification code/);
     const code = messages[0].text.match(/\b\d{6}\b/)?.[0];
     assert.ok(code);
     assert.throws(() => verifyEmail(user.id, String((Number(code) + 1) % 1000000).padStart(6, '0')));
@@ -65,6 +67,8 @@ test('verified accounts get one receipt per order while unverified accounts get 
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(messages.length, 2);
     assert.equal(messages[1].subject, `FOND has received ${order.reference}`);
+    assert.match(messages[1].html, /Your order details/);
+    assert.match(messages[1].html, /Amount due/);
     assert.match(messages[1].html, /Espresso \(Single\)/);
     assert.match(messages[1].html, /R 32,00/);
     assert.match(messages[1].text, new RegExp(order.reference));
