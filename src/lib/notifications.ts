@@ -27,12 +27,12 @@ export async function processNotifications(){
   // An interrupted network send is ambiguous: require human reconciliation, not an automatic duplicate.
   db.prepare("UPDATE notification_jobs SET status='unknown',last_error='Interrupted send; check provider before retrying' WHERE status='sending' AND updated_at<?").run(new Date(now-120000).toISOString());
   }
-  if(flags.smsEnabled){const jobs=db.prepare("SELECT j.*,o.reference,o.contact_number,o.fulfillment,o.status AS order_status FROM sms_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';reference:string;contact_number:string;fulfillment:'collection'|'delivery';order_status:string}[];
+  if(flags.smsEnabled){const jobs=db.prepare("SELECT j.*,o.customer_name,o.reference,o.contact_number,o.fulfillment,o.status AS order_status FROM sms_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';customer_name:string;reference:string;contact_number:string;fulfillment:'collection'|'delivery';order_status:string}[];
   for(const j of jobs){
     const claim=db.prepare("UPDATE sms_jobs SET status='sending',attempts=attempts+1,updated_at=? WHERE id=? AND status='pending'").run(new Date().toISOString(),j.id);if(!claim.changes)continue;
     if(['completed','cancelled'].includes(j.order_status)||(j.template==='order_accepted'&&j.order_status==='ready')){db.prepare("UPDATE sms_jobs SET status='superseded',updated_at=? WHERE id=?").run(new Date().toISOString(),j.id);continue;}
     let result:Awaited<ReturnType<typeof sendSmsNotification>>;
-    try{result=await sendSmsNotification({toE164:normalizePhone(j.contact_number),templateName:j.template,reference:j.reference,fulfillment:j.fulfillment});}catch{result={sent:false,reason:'INVALID_PHONE'};}
+    try{result=await sendSmsNotification({toE164:normalizePhone(j.contact_number),templateName:j.template,reference:j.reference,customerName:j.customer_name,fulfillment:j.fulfillment});}catch{result={sent:false,reason:'INVALID_PHONE'};}
     const status=result.sent?(result.providerStatus??'provider-accepted'):result.reason==='NOT_CONFIGURED'?'not-configured':result.reason==='NETWORK_ERROR'?'unknown':result.reason==='INVALID_PHONE'?'failed':j.attempts>=4?'failed':'pending';
     db.prepare('UPDATE sms_jobs SET status=?,provider_id=?,last_error=?,next_at=?,updated_at=? WHERE id=?').run(status,result.sent?result.providerId:null,result.sent?null:result.reason,Date.now()+60000*2**j.attempts,new Date().toISOString(),j.id);
   }

@@ -9,6 +9,7 @@ import { deliverOrderEmail } from '@/lib/email';
 import { getOrderByReference } from '@/lib/orders';
 import { whatsappConfigured } from '@/lib/whatsapp';
 import {smsConfigured} from '@/lib/sms';
+import {DEFAULT_MESSAGE_TEMPLATES,validateMessageTemplates} from '@/lib/message-template-config';
 const headers={'Cache-Control':'no-store'};
 type Context={params:Promise<{section:string}>};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;return isValidAdminToken(token)?(teamSession(token)?'team:'+teamSession(token)!.id:'shared-admin'):null;}
@@ -24,7 +25,7 @@ export async function GET(request:Request,context:Context){
       if(u.searchParams.get('export')==='consented')return new Response(csv((rows as Record<string,unknown>[]).filter(r=>r.marketing_consent===1&&r.archived===0)),{headers:{...headers,'Content-Type':'text/csv','Content-Disposition':'attachment; filename="fond-consented-customers.csv"'}});
       return Response.json({customers:rows,history:u.searchParams.has('id')?customerHistory(u.searchParams.get('id')!):[],recentOrders:getDb().prepare('SELECT id,reference,customer_name,contact_number,created_at FROM orders ORDER BY created_at DESC LIMIT 100').all()},{headers});
     }
-    if(section==='marketing')return Response.json({draft:document('content-draft',DEFAULT_CONTENT),published:document('content-published',DEFAULT_CONTENT),jobs:getDb().prepare('SELECT id,order_id,template,status,attempts,last_error,updated_at FROM notification_jobs ORDER BY updated_at DESC LIMIT 100').all(),smsJobs:getDb().prepare('SELECT id,order_id,template,status,attempts,provider_id,last_error,updated_at FROM sms_jobs ORDER BY updated_at DESC LIMIT 100').all(),emailJobs:getDb().prepare('SELECT id,event,recipient,status,error,updated_at FROM email_jobs ORDER BY updated_at DESC LIMIT 100').all()},{headers});
+    if(section==='marketing')return Response.json({draft:document('content-draft',DEFAULT_CONTENT),published:document('content-published',DEFAULT_CONTENT),messageDraft:document('message-templates-draft',DEFAULT_MESSAGE_TEMPLATES),messagePublished:document('message-templates-published',DEFAULT_MESSAGE_TEMPLATES),jobs:getDb().prepare('SELECT id,order_id,template,status,attempts,last_error,updated_at FROM notification_jobs ORDER BY updated_at DESC LIMIT 100').all(),smsJobs:getDb().prepare('SELECT id,order_id,template,status,attempts,provider_id,last_error,updated_at FROM sms_jobs ORDER BY updated_at DESC LIMIT 100').all(),emailJobs:getDb().prepare('SELECT id,event,recipient,status,error,updated_at FROM email_jobs ORDER BY updated_at DESC LIMIT 100').all()},{headers});
     if(section==='finance'){
       const result=finance(u.searchParams.get('from')??new Date().toISOString().slice(0,10),u.searchParams.get('to')??new Date().toISOString().slice(0,10));
       if(u.searchParams.has('export'))return new Response(csv(result.payments as Record<string,unknown>[]),{headers:{...headers,'Content-Type':'text/csv','Content-Disposition':'attachment; filename="fond-payment-ledger.csv"'}});
@@ -52,6 +53,13 @@ export async function POST(request:Request,context:Context){
     else if(section==='marketing'){
       const content=validateContent(b.content);saveDocument('content-draft',content,who);
       if(b.publish===true){saveDocument('content-previous',document('content-published',DEFAULT_CONTENT),who);saveDocument('content-published',content,who);}
+    }
+    else if(section==='message-templates'){
+      if(b.restore===true){saveDocument('message-templates-published',document('message-templates-previous',DEFAULT_MESSAGE_TEMPLATES),who);}
+      else{
+        const content=validateMessageTemplates(b.content);saveDocument('message-templates-draft',content,who);
+        if(b.publish===true){saveDocument('message-templates-previous',document('message-templates-published',DEFAULT_MESSAGE_TEMPLATES),who);saveDocument('message-templates-published',content,who);}
+      }
     }
     else if(section==='restore-content')saveDocument('content-published',document('content-previous',DEFAULT_CONTENT),who);
     else if(section==='finance')recordPayment(b,who);

@@ -2,6 +2,8 @@ import {createHmac,timingSafeEqual} from 'node:crypto';
 import {document} from './management';
 import {providerSecret} from './provider-secrets';
 import {publicBaseUrl} from './public-url';
+import {renderMessageText,type SmsMessageKey} from './message-template-config';
+import {publishedMessageTemplates} from './message-templates';
 
 export type SmsConfig={accountSid:string;sender:string};
 export type SmsTemplate='order_accepted'|'order_ready';
@@ -15,11 +17,14 @@ export function validateSmsConfig(input:unknown):SmsConfig{
  return value;
 }
 export function smsConfigured(){try{validateSmsConfig(smsConfig());return !!providerSecret('twilio-auth-token');}catch{return false;}}
-export function smsBody(template:SmsTemplate,reference:string,fulfillment:SmsFulfillment='collection'){return template==='order_accepted'?`FOND: Your order ${reference} has been accepted and is being prepared.`:fulfillment==='delivery'?`FOND: Your order ${reference} is ready and will be delivered shortly.`:`FOND: Your order ${reference} is ready for collection.`;}
-export async function sendSmsNotification(input:{toE164:string;templateName:SmsTemplate;reference:string;fulfillment?:SmsFulfillment;statusCallback?:boolean}){
+export function smsBody(template:SmsTemplate,reference:string,fulfillment:SmsFulfillment='collection',customerName=''){
+ const key:SmsMessageKey=template==='order_accepted'?'accepted':fulfillment==='delivery'?'readyDelivery':'readyCollection';
+ return renderMessageText(publishedMessageTemplates().sms[key],{reference,customerName});
+}
+export async function sendSmsNotification(input:{toE164:string;templateName:SmsTemplate;reference:string;customerName?:string;fulfillment?:SmsFulfillment;statusCallback?:boolean}){
  if(!smsConfigured())return {sent:false,reason:'NOT_CONFIGURED'} as const;
  const config=smsConfig(),token=providerSecret('twilio-auth-token')!;
- const body=new URLSearchParams({From:config.sender,To:input.toE164,Body:smsBody(input.templateName,input.reference,input.fulfillment)});
+ const body=new URLSearchParams({From:config.sender,To:input.toE164,Body:smsBody(input.templateName,input.reference,input.fulfillment,input.customerName)});
  if(input.statusCallback!==false)body.set('StatusCallback',`${publicBaseUrl()}/api/webhooks/twilio/sms`);
  try{
   const response=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Authorization:`Basic ${Buffer.from(`${config.accountSid}:${token}`).toString('base64')}`,'Content-Type':'application/x-www-form-urlencoded'},body});

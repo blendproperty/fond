@@ -14,7 +14,7 @@ export async function POST(request:Request){
  if(!body||typeof body.to!=='string'||!['order_accepted','order_ready'].includes(String(body.template)))return Response.json({message:'Enter a recipient and choose a test message.'},{status:400,headers});
  try{
   const template=body.template as 'order_accepted'|'order_ready';
-  const result=await sendSmsNotification({toE164:normalizePhone(body.to),templateName:template,reference:'FOND-SMS-TEST',statusCallback:false});
+  const result=await sendSmsNotification({toE164:normalizePhone(body.to),templateName:template,reference:'FOND-SMS-TEST',customerName:'Brett',statusCallback:false});
   audit('super-admin','sms-test',template);
   if(!result.sent)return Response.json({message:`Twilio did not accept the SMS (${result.reason??'unknown error'}). Check the Twilio message log.`},{status:502,headers});
   return Response.json({ok:true,providerId:result.providerId,message:`Twilio accepted the SMS (${result.providerStatus}). Confirm delivery on the recipient phone and in the Twilio message log.`},{headers});
