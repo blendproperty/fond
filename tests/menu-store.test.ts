@@ -60,6 +60,30 @@ test('existing menu migration fills only empty items and preserves admin options
   assert.deepEqual(menu.find(item => item.id === 'toastie-cheddar-tomato')?.modifiers, []);
 });
 
+test('published 2026-09-21 food menu replaces legacy food once and preserves beverages and custom items', () => {
+  getFullMenu();
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('DELETE FROM app_documents WHERE key = ?').run('published-food-menu-2026-09-21-v1');
+  db.prepare('DELETE FROM menu_items WHERE id = ?').run('golden-goddess-bowl');
+  db.prepare('UPDATE menu_items SET price_cents = ? WHERE id = ?').run(99900, 'smashed-avo');
+  db.prepare('UPDATE menu_items SET price_cents = ? WHERE id = ?').run(5100, 'espresso-single');
+  db.prepare(`INSERT INTO menu_items (id,name,description,category,price_cents,diet_json,symbol,sort_order,available,is_special,special_label,special_price_cents,modifiers_json,prep_minutes,updated_at) VALUES (?,?,?,?,?,?,?,?,1,0,NULL,NULL,'[]',?,?)`)
+    .run('rump-250', 'Legacy Rump', 'Old size', 'The Grill', 18000, '[]', '🥩', 0, 18, now);
+  db.prepare(`INSERT INTO menu_items (id,name,description,category,price_cents,diet_json,symbol,sort_order,available,is_special,special_label,special_price_cents,modifiers_json,prep_minutes,updated_at) VALUES (?,?,?,?,?,?,?,?,1,0,NULL,NULL,'[]',?,?)`)
+    .run('chef-weekly-special', 'Chef Weekly Special', 'Admin-created item', 'Plates', 12300, '[]', '🍽️', 999, 12, now);
+
+  const menu = getFullMenu();
+  assert.equal(menu.find(item => item.id === 'smashed-avo')?.price, 12000);
+  assert.equal(menu.find(item => item.id === 'golden-goddess-bowl')?.price, 12000);
+  assert.equal(menu.find(item => item.id === 'rump-250')?.available, false);
+  assert.equal(menu.find(item => item.id === 'espresso-single')?.price, 5100);
+  assert.equal(menu.find(item => item.id === 'chef-weekly-special')?.price, 12300);
+
+  updateMenuItem('smashed-avo', { price: 12100 });
+  assert.equal(getFullMenu().find(item => item.id === 'smashed-avo')?.price, 12100);
+});
+
 test('unavailable items are hidden from the available menu but kept in the full menu', () => {
   const [item] = getFullMenu();
   updateMenuItem(item.id, { available: false });

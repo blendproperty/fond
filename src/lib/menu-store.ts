@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
-import { SEED_MENU, type Meal, type Category, type Modifier } from './menu';
+import { SEED_MENU, PUBLISHED_FOOD_MENU, type Meal, type Category, type Modifier } from './menu';
+import { RETIRED_FOOD_MENU_IDS } from './published-food-menu';
 import { DEFAULT_MENU_MODIFIERS } from './menu-modifier-defaults';
 import {estimatedPrepMinutes} from './preparation-estimates';
 
@@ -72,11 +73,9 @@ function seedIfEmpty() {
   // items that still have no admin-configured modifiers. The marker prevents
   // an admin intentionally clearing an item from being overwritten later.
   const marker = 'menu-launch-modifiers-v1';
-  if (db.prepare('SELECT key FROM app_documents WHERE key = ?').get(marker)) return;
-  db.exec('SAVEPOINT fond_menu_defaults');
-  try {
-    const applied = db.prepare('SELECT key FROM app_documents WHERE key = ?').get(marker);
-    if (!applied) {
+  if (!db.prepare('SELECT key FROM app_documents WHERE key = ?').get(marker)) {
+    db.exec('SAVEPOINT fond_menu_defaults');
+    try {
       const now = new Date().toISOString();
       const update = db.prepare(`UPDATE menu_items SET modifiers_json = ?, updated_at = ? WHERE id = ? AND description = ? AND modifiers_json = '[]'`);
       for (const [id, modifiers] of Object.entries(DEFAULT_MENU_MODIFIERS)) {
@@ -84,12 +83,67 @@ function seedIfEmpty() {
         if (original) update.run(JSON.stringify(modifiers), now, id, original.description);
       }
       db.prepare('INSERT INTO app_documents (key, value, updated_at) VALUES (?, ?, ?)').run(marker, 'applied', now);
+      db.exec('RELEASE fond_menu_defaults');
+    } catch (error) {
+      db.exec('ROLLBACK TO fond_menu_defaults');
+      db.exec('RELEASE fond_menu_defaults');
+      throw error;
     }
-    db.exec('RELEASE fond_menu_defaults');
-  } catch (error) {
-    db.exec('ROLLBACK TO fond_menu_defaults');
-    db.exec('RELEASE fond_menu_defaults');
-    throw error;
+  }
+
+  // Replace the published food range once on every existing database while
+  // leaving the separately supplied beverage catalogue and any admin-created
+  // items untouched. Retired rows are hidden rather than deleted so historic
+  // orders and reports can still resolve their original item ids.
+  const foodMenuMarker = 'published-food-menu-2026-09-21-v1';
+  if (!db.prepare('SELECT key FROM app_documents WHERE key = ?').get(foodMenuMarker)) {
+    db.exec('SAVEPOINT fond_food_menu_20260921');
+    try {
+      const now = new Date().toISOString();
+      const upsert = db.prepare(`
+        INSERT INTO menu_items
+          (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, modifiers_json, prep_minutes, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          description = excluded.description,
+          category = excluded.category,
+          price_cents = excluded.price_cents,
+          diet_json = excluded.diet_json,
+          symbol = excluded.symbol,
+          sort_order = excluded.sort_order,
+          available = 1,
+          is_special = 0,
+          special_label = NULL,
+          special_price_cents = NULL,
+          modifiers_json = excluded.modifiers_json,
+          prep_minutes = excluded.prep_minutes,
+          updated_at = excluded.updated_at
+      `);
+      PUBLISHED_FOOD_MENU.forEach((meal, index) => {
+        upsert.run(
+          meal.id,
+          meal.name,
+          meal.description,
+          meal.category,
+          meal.price,
+          JSON.stringify(meal.diet ?? []),
+          meal.symbol,
+          index,
+          JSON.stringify(DEFAULT_MENU_MODIFIERS[meal.id] ?? []),
+          estimatedPrepMinutes(meal),
+          now,
+        );
+      });
+      const retire = db.prepare(`UPDATE menu_items SET available = 0, is_special = 0, special_label = NULL, special_price_cents = NULL, updated_at = ? WHERE id = ?`);
+      for (const id of RETIRED_FOOD_MENU_IDS) retire.run(now, id);
+      db.prepare('INSERT INTO app_documents (key, value, updated_at) VALUES (?, ?, ?)').run(foodMenuMarker, 'applied', now);
+      db.exec('RELEASE fond_food_menu_20260921');
+    } catch (error) {
+      db.exec('ROLLBACK TO fond_food_menu_20260921');
+      db.exec('RELEASE fond_food_menu_20260921');
+      throw error;
+    }
   }
 }
 

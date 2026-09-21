@@ -3,17 +3,15 @@ import { SEED_MENU, type Modifier } from './menu';
 // Launch options transcribed from the existing FOND menu. Only the menu's
 // published add-on/swap prices are used; removing an ingredient costs R0.
 const itemOptions: Record<string, { name: string; price: number }[]> = {
-  'smashed-avo': [{ name: 'Vegan swap: smoky hummus instead of cheeses', price: 0 }, { name: 'No pickled red onion', price: 0 }, { name: 'No Parmesan', price: 0 }],
-  'brekkie-bun': [{ name: 'Vegan swap: tofu scramble & grilled aubergine', price: 1200 }, { name: 'No bacon', price: 0 }, { name: 'No mayonnaise', price: 0 }],
-  'honey-halloumi-bowl': [{ name: 'Swap eggs for tofu scramble', price: 1200 }, { name: 'No halloumi', price: 0 }],
-  'breakfast-burrito': [{ name: 'No grilled onions', price: 0 }, { name: 'No cheddar', price: 0 }],
+  'smashed-avo': [{ name: 'Vegan swap: smoky hummus instead of cheese', price: 0 }, { name: 'No pickled red onion', price: 0 }, { name: 'No Parmesan', price: 0 }],
+  'brekkie-bun': [{ name: 'Vegan swap: tofu scramble & grilled aubergine', price: 0 }, { name: 'No bacon', price: 0 }, { name: 'No mustard', price: 0 }],
+  'honey-halloumi-bowl': [{ name: 'Swap eggs for tofu scramble', price: 0 }, { name: 'No halloumi', price: 0 }],
   'everyday-breakfast': [{ name: 'No caramelised onion', price: 0 }],
   'spicy-chicken-burger': [{ name: 'No caramelised onions', price: 0 }, { name: 'No cheddar', price: 0 }, { name: 'No tomato', price: 0 }, { name: 'No garlic mayonnaise', price: 0 }],
-  'fond-smashburger': [{ name: 'No crispy onions', price: 0 }, { name: 'No pickled cabbage', price: 0 }, { name: 'No cheddar', price: 0 }, { name: 'No chermoula mayonnaise', price: 0 }],
+  'fond-smashburger': [{ name: 'No crispy onions', price: 0 }, { name: 'No pickled cabbage', price: 0 }, { name: 'No cheddar', price: 0 }, { name: 'No chipotle mayonnaise', price: 0 }],
   'halloumi-brinjal-burger': [{ name: 'No halloumi', price: 0 }, { name: 'No harissa relish', price: 0 }],
   'fond-club-sandwich': [{ name: 'No bacon', price: 0 }, { name: 'No tomato', price: 0 }, { name: 'No garlic aioli', price: 0 }],
   'the-gatsby': [{ name: 'No cheese', price: 0 }, { name: 'No piri-piri sauce', price: 0 }],
-  'muffuletta': [{ name: 'No olive salad', price: 0 }, { name: 'No salami', price: 0 }],
   'smashed-salmon-bagel': [{ name: 'No red onion', price: 0 }, { name: 'No capers', price: 0 }, { name: 'No cream cheese', price: 0 }],
   'happy-herbivore-sandwich': [{ name: 'No tomato', price: 0 }, { name: 'No pickled beetroot', price: 0 }],
   'toastie-cheddar-tomato': [{ name: 'No tomato', price: 0 }],
@@ -35,8 +33,10 @@ export const DEFAULT_MENU_MODIFIERS: Record<string, Modifier[]> = Object.fromEnt
       { name: 'Add collagen', price: 3000 },
       { name: 'Add protein powder', price: 3000 },
     );
-    if (meal.category === 'Sandwiches') choices.push({ name: meal.id.includes('bagel') ? 'Gluten-free bagel upgrade' : 'Gluten-free bread upgrade', price: meal.id.includes('bagel') ? 4000 : 3000 });
-    if (meal.category === 'Pizzas & Foldovers' && meal.description.includes('+30 for gluten-free base')) choices.push({ name: 'Gluten-free base', price: 3000 });
+    if (meal.category === 'Sandwiches') {
+      choices.push({ name: meal.id.includes('bagel') ? 'Gluten-free bagel upgrade' : 'Gluten-free bread upgrade', price: 2000 });
+      if (!meal.id.includes('bagel')) choices.push({ name: 'Thick-cut brioche bread upgrade', price: 2000 });
+    }
     if (meal.category === 'Coffee' && !['v60-single','v60-double','chemex-single','chemex-double','tasting-flight'].includes(meal.id)) choices.push(
       { name: 'Add espresso shot', price: 1200 },
       { name: 'Decaf', price: 1000 },

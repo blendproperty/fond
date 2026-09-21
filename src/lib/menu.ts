@@ -1,6 +1,9 @@
-// FOND Midrand menu — transcribed from FOND Midrand_Main Menu_V4.pdf and
-// FOND Midrand_Tapas Menu_V3.pdf (uploaded 2026-09-14). Prices are Rand,
-// stored here in integer cents. As of 2026-09-14 (later) this array is only
+import { PUBLISHED_FOOD_MENU } from './published-food-menu';
+
+// FOND Midpoint menu. The current food range is transcribed from
+// FOND_A3_Food_Menu_Landscape.md (supplied 2026-09-21); the separate beverage
+// range remains from the previously approved drinks menu. Prices are Rand,
+// stored here in integer cents. This array is only
 // the SEED data: the live, editable menu lives in the menu_items SQLite
 // table (see src/lib/menu-store.ts) and is seeded from SEED_MENU below the
 // first time the database is empty. Admins edit prices/availability/specials
@@ -12,6 +15,9 @@ export type Category =
   | 'Plates'
   | 'Burgers'
   | 'Sandwiches'
+  | 'Buddha Bowls'
+  | 'Poke Bowls'
+  | 'Wraps'
   | 'Salads'
   | 'Desserts'
   | 'Pizzas & Foldovers'
@@ -41,7 +47,7 @@ export type Meal = {
   prepMinutes?: number; // editable estimated kitchen preparation time before buffer
 };
 
-export const SEED_MENU: Meal[] = [
+const LEGACY_MENU: Meal[] = [
   // ---- All-Day Breakfast ----
   { id: 'smashed-avo', name: 'Smashed Avo', description: 'Smashed avo on sourdough with carrot crisps, pickled red onion, Parmesan, smoked feta whip and salsa verde. Vegan option: swap cheeses for smoky hummus (+0).', category: 'All-Day Breakfast', price: 12000, diet: ['vegetarian'], symbol: '🥑' },
   { id: 'brekkie-bun', name: 'Brekkie Bun', description: 'Toasted brioche bun with crispy bacon, a fried egg topped with chilli crisp, fresh tomato, lettuce and American mayonnaise. Vegan option: tofu scramble and grilled aubergine (+12).', category: 'All-Day Breakfast', price: 9500, symbol: '🥪' },
@@ -217,16 +223,44 @@ export const SEED_MENU: Meal[] = [
   { id: 'addon-protein-powder', name: 'Add-On — Protein Powder', description: 'On any smoothie.', category: 'Sides, Sauces & Add-Ons', price: 3000, symbol: '🌱' },
 ];
 
+const BEVERAGE_CATEGORIES = new Set<Category>([
+  'Coffee',
+  'Tea & Steamers',
+  'Cold Brew & Iced',
+  'Smoothies',
+  'Cold Bar & Juice',
+]);
+const BEVERAGE_ADDON_IDS = new Set([
+  'addon-milklab',
+  'addon-extra-shot',
+  'addon-decaf',
+  'addon-syrup',
+  'addon-ginger',
+  'addon-maca',
+  'addon-collagen',
+  'addon-protein-powder',
+]);
+
+// The 2026-09-21 document replaces the food range only. Keep the separate
+// beverage catalogue and its add-ons until an updated drinks menu is supplied.
+export const SEED_MENU: Meal[] = [
+  ...PUBLISHED_FOOD_MENU,
+  ...LEGACY_MENU.filter((item) => BEVERAGE_CATEGORIES.has(item.category) || BEVERAGE_ADDON_IDS.has(item.id)),
+];
+
+export { PUBLISHED_FOOD_MENU } from './published-food-menu';
+
 export const categories: Category[] = [
   'All-Day Breakfast',
-  'The Grill',
-  'Plates',
-  'Burgers',
   'Sandwiches',
-  'Salads',
-  'Desserts',
+  'Burgers',
+  'Buddha Bowls',
+  'The Grill',
   'Pizzas & Foldovers',
-  'Tapas',
+  'Poke Bowls',
+  'Salads',
+  'Plates',
+  'Wraps',
   'Coffee',
   'Tea & Steamers',
   'Cold Brew & Iced',
