@@ -5,7 +5,11 @@ test('super admin owns provider settings while named admin can manage operations
   const bootstrap = await request.post('/api/admin/login', { data: { code: process.env.FOND_ADMIN_CODE } });
   expect(bootstrap.ok()).toBe(true);
   const superHeaders = { Cookie: bootstrap.headers()['set-cookie'].split(';')[0] };
-  expect((await request.get('/api/admin/provider-credentials', { headers: superHeaders })).status()).toBe(200);
+  const providerResponse=await request.get('/api/admin/provider-credentials', { headers: superHeaders });
+  expect(providerResponse.status()).toBe(200);
+  const providers=await providerResponse.json();
+  expect(providers.sms).toEqual({accountSid:'',sender:''});
+  expect(providers.smsWebhookUrl).toMatch(/\/api\/webhooks\/twilio\/sms$/);
   const username = `manager.${randomUUID().slice(0, 8)}`;
   const created = await request.post('/api/admin/manage/team', { headers: superHeaders, data: { name: 'Test admin', username, role: 'manager', active: true, password: 'manager-password-123' } });
   expect(created.ok()).toBe(true);

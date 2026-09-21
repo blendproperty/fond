@@ -44,6 +44,7 @@ export function getDb(): DatabaseSync {
       company TEXT,
       building TEXT,
       whatsapp_opt_in INTEGER NOT NULL DEFAULT 0,
+      sms_opt_in INTEGER NOT NULL DEFAULT 0,
       payment_method TEXT NOT NULL DEFAULT 'pay_at_collection',
       payment_required INTEGER NOT NULL DEFAULT 0,
       estimated_prep_minutes INTEGER NOT NULL DEFAULT 20
@@ -93,6 +94,7 @@ export function getDb(): DatabaseSync {
     ['company', `ALTER TABLE orders ADD COLUMN company TEXT`],
     ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
     ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
+    ['sms_opt_in', `ALTER TABLE orders ADD COLUMN sms_opt_in INTEGER NOT NULL DEFAULT 0`],
     ['user_id', `ALTER TABLE orders ADD COLUMN user_id TEXT`],
     ['customer_email', `ALTER TABLE orders ADD COLUMN customer_email TEXT`],
     ['pos_required', `ALTER TABLE orders ADD COLUMN pos_required INTEGER NOT NULL DEFAULT 0`],
@@ -134,6 +136,8 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS yoco_checkouts (order_id TEXT PRIMARY KEY, checkout_id TEXT UNIQUE, redirect_url TEXT, status TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS webhook_receipts (id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS notification_jobs (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, template TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, next_at INTEGER NOT NULL, updated_at TEXT NOT NULL, UNIQUE(order_id, template));
+    CREATE TABLE IF NOT EXISTS sms_jobs (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, template TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, provider_id TEXT, last_error TEXT, next_at INTEGER NOT NULL, updated_at TEXT NOT NULL, UNIQUE(order_id, template));
+    CREATE UNIQUE INDEX IF NOT EXISTS sms_provider_id ON sms_jobs(provider_id) WHERE provider_id IS NOT NULL;
   `);
   instance = db;
   return db;

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       company: typeof body.company === 'string' ? body.company : null,
       building: typeof body.building === 'string' ? body.building : null,
       whatsappOptIn: !!body.whatsappOptIn,
+      smsOptIn: !!body.smsOptIn,
       userId: user?.id,
       customerEmail: user?.email,
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',

@@ -22,14 +22,14 @@ export const DEFAULT_SETTINGS = {
   deliveryArea:'Midpoint Hub',
   collectionSlots:['As soon as possible','Breakfast collection','Lunch collection','After-work collection'],
   closedMessage:'Online ordering is currently closed. Please contact FOND.',
-  contactPhone:'', whatsappEnabled:false, onlinePaymentsEnabled:false,
+  contactPhone:'', whatsappEnabled:false, smsEnabled:false, onlinePaymentsEnabled:false,
 };
 export type TradingSettings=typeof DEFAULT_SETTINGS;
 export const settings=():TradingSettings=>({...DEFAULT_SETTINGS,...document('trading',DEFAULT_SETTINGS)});
 export function validateSettings(input:unknown):TradingSettings {
   const s=input as TradingSettings;
   if(!s || typeof s!=='object')throw new Error('Provide trading settings.');
-  for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','onlinePaymentsEnabled','allowTestPayments'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
+  for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','smsEnabled','onlinePaymentsEnabled','allowTestPayments'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
   for(const k of ['openingTime','closingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
   if(s.openingTime>=s.closingTime)throw new Error('Closing time must be after opening time. Overnight trading is not supported.');
   if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');

@@ -39,6 +39,7 @@ export type OrderRecord = {
   company: string | null;
   building: string | null;
   whatsappOptIn: boolean;
+  smsOptIn: boolean;
   userId: string | null;
   customerEmail: string | null;
   posRequired: boolean;
@@ -77,6 +78,7 @@ type OrderRow = {
   company: string | null;
   building: string | null;
   whatsapp_opt_in: number;
+  sms_opt_in: number;
   user_id: string | null;
   customer_email: string | null;
   pos_required: number;
@@ -106,6 +108,7 @@ function fromRow(row: OrderRow): OrderRecord {
     company: row.company,
     building: row.building,
     whatsappOptIn: !!row.whatsapp_opt_in,
+    smsOptIn: !!row.sms_opt_in,
     userId: row.user_id,
     customerEmail: row.customer_email,
     posRequired: !!row.pos_required,
@@ -132,6 +135,7 @@ export function createOrder(input: {
   company?: string | null;
   building?: string | null;
   whatsappOptIn?: boolean;
+  smsOptIn?: boolean;
   actor?: string;
   userId?: string | null;
   customerEmail?: string | null;
@@ -152,7 +156,8 @@ export function createOrder(input: {
         phone: input.contactNumber ?? null,
         company: input.company ?? null,
         building: input.building ?? null,
-        optIn: input.whatsappOptIn ?? false,
+        whatsappOptIn: input.whatsappOptIn ?? false,
+        smsOptIn: input.smsOptIn ?? false,
         userId: input.userId ?? null,
         paymentMethod:input.paymentMethod??'pay_at_collection',
       }),
@@ -193,6 +198,7 @@ export function createOrder(input: {
       if (company && company.length > 150) throw new Error('Company name is too long.');
     }
     const whatsappOptIn = !!input.whatsappOptIn && !!contactNumber;
+    const smsOptIn = !!input.smsOptIn && !!contactNumber;
     // throws on unknown/unavailable items, bad quantities or modifiers - priced against the live admin-editable menu
     const priced = quoteCart(input.lines, getAvailableMenu());
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
@@ -228,6 +234,7 @@ export function createOrder(input: {
       company,
       building,
       whatsappOptIn,
+      smsOptIn,
       userId: input.userId ?? null,
       customerEmail: input.customerEmail ?? null,
       posRequired: true,
@@ -239,8 +246,8 @@ export function createOrder(input: {
       paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -258,6 +265,7 @@ export function createOrder(input: {
       record.company,
       record.building,
       record.whatsappOptIn ? 1 : 0,
+      record.smsOptIn ? 1 : 0,
       record.userId,
       record.customerEmail,
       1,

@@ -113,10 +113,12 @@ test('defaults to collection, and delivery requires a contact number and buildin
     company: 'Blend Property',
     building: 'OnPoint 2nd floor',
     whatsappOptIn: true,
+    smsOptIn: true,
   });
   assert.equal(delivery.fulfillment, 'delivery');
   assert.equal(delivery.building, 'OnPoint 2nd floor');
   assert.equal(delivery.whatsappOptIn, true);
+  assert.equal(delivery.smsOptIn, true);
 });
 
 test('collection requires a valid contact number', () => {
