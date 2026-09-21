@@ -26,6 +26,12 @@ async function send(to: string, subject: string, text: string, idempotencyKey: s
   const result = await response.json() as { id?: string };
   return result.id ?? null;
 }
+export async function sendControlledEmailTest(to: string) {
+  const recipient = to.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid test email address.');
+  const providerId = await send(recipient, 'FOND email test', 'This is a controlled email test from FOND staging. Transactional email is configured.', `fond-email-test-${Date.now()}`);
+  return { recipient, providerId };
+}
 export async function requestVerification(user: { id: string; email: string }) {
   const db = getDb(), now = Date.now();
   const verified = db.prepare('SELECT email_verified_at FROM users WHERE id=?').get(user.id) as { email_verified_at: string | null } | undefined;

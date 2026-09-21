@@ -4,7 +4,7 @@ import { getDb, resetDbForTests } from '../src/lib/db';
 import { signUp, resolveSession } from '../src/lib/auth';
 import { saveDocument } from '../src/lib/management';
 import { saveProviderSecret } from '../src/lib/provider-secrets';
-import { deliverOrderEmail, requestVerification, validEmailSender, verifyEmail } from '../src/lib/email';
+import { deliverOrderEmail, requestVerification, sendControlledEmailTest, validEmailSender, verifyEmail } from '../src/lib/email';
 import { createOrder } from '../src/lib/orders';
 
 process.env.FOND_DB_PATH = ':memory:';
@@ -14,6 +14,25 @@ test('email sender is restricted to the verified FOND subdomain', () => {
   assert.equal(validEmailSender(' Orders@FOND.MID-POINT.CO.ZA '), true);
   assert.equal(validEmailSender('orders@fond.co.za'), false);
   assert.equal(validEmailSender('orders@mid-point.co.za'), false);
+});
+test('controlled email test uses the configured sender without creating an account', async () => {
+  process.env.FOND_CREDENTIALS_KEY = 'd'.repeat(64);
+  const originalFetch = globalThis.fetch;
+  let message: { to: string[]; subject: string; text: string } | undefined;
+  globalThis.fetch = (async (_url: string | URL | Request, options?: RequestInit) => {
+    message = JSON.parse(String(options?.body));
+    return new Response(JSON.stringify({ id: 'resend-test' }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    saveProviderSecret('email-api', 're_test_example', 'shared-admin');
+    saveDocument('email-from', 'orders@fond.mid-point.co.za', 'shared-admin');
+    const result = await sendControlledEmailTest(' ACCOUNT@EXAMPLE.TEST ');
+    assert.equal(result.recipient, 'account@example.test');
+    assert.equal(result.providerId, 'resend-test');
+    assert.deepEqual(message?.to, ['account@example.test']);
+    assert.equal(message?.subject, 'FOND email test');
+    assert.match(message?.text ?? '', /controlled email test from FOND staging/i);
+  } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });
 test('verified accounts get one receipt per order while unverified accounts get none', async () => {
   process.env.FOND_CREDENTIALS_KEY = 'd'.repeat(64);
