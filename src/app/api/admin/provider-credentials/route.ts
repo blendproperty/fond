@@ -2,7 +2,7 @@ import {cookies} from 'next/headers';
 import {ADMIN_COOKIE,adminRole} from '@/lib/admin-auth';
 import {providerSecretStatus,saveProviderSecret,type ProviderName} from '@/lib/provider-secrets';
 import {teamSession} from '@/lib/team';
-import {emailSender} from '@/lib/email';
+import {emailSender,validEmailSender} from '@/lib/email';
 import {saveDocument} from '@/lib/management';
 import {metaConfig,twilioConfig,validateMetaConfig,validateTwilioConfig} from '@/lib/whatsapp';
 import {validRequestOrigin} from '@/lib/request-origin';
@@ -22,7 +22,7 @@ export async function POST(request:Request){const who=await actor();if(!who)retu
   else if(b.name==='meta-whatsapp-config')saveDocument('meta-whatsapp-config',validateMetaConfig(b.value),who);
   else if(typeof b.value!=='string')throw new Error('Invalid setting.');
   else if(b.name==='email-from'){
-   if(!/^[a-z0-9._+-]+@fond\.co\.za$/i.test(b.value.trim()))throw new Error('Use a sender address on the verified fond.co.za domain.');
+   if(!validEmailSender(b.value))throw new Error('Use a sender address on the verified fond.mid-point.co.za domain.');
    saveDocument('email-from',b.value.trim().toLowerCase(),who);
   } else if(names.includes(b.name)) saveProviderSecret(b.name,b.value,who);
   else throw new Error('Invalid setting.');

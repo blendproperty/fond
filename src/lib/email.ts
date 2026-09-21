@@ -5,6 +5,7 @@ import { providerSecret } from './provider-secrets';
 import type { OrderRecord } from './orders';
 
 export const emailSender = () => document('email-from', '');
+export const validEmailSender = (value: string) => /^[a-z0-9._+-]+@fond\.mid-point\.co\.za$/i.test(value.trim());
 export function emailConfigured() {
   try { return !!providerSecret('email-api') && !!emailSender(); } catch { return false; }
 }

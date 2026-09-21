@@ -4,11 +4,17 @@ import { getDb, resetDbForTests } from '../src/lib/db';
 import { signUp, resolveSession } from '../src/lib/auth';
 import { saveDocument } from '../src/lib/management';
 import { saveProviderSecret } from '../src/lib/provider-secrets';
-import { deliverOrderEmail, requestVerification, verifyEmail } from '../src/lib/email';
+import { deliverOrderEmail, requestVerification, validEmailSender, verifyEmail } from '../src/lib/email';
 import { createOrder } from '../src/lib/orders';
 
 process.env.FOND_DB_PATH = ':memory:';
 beforeEach(resetDbForTests);
+test('email sender is restricted to the verified FOND subdomain', () => {
+  assert.equal(validEmailSender('orders@fond.mid-point.co.za'), true);
+  assert.equal(validEmailSender(' Orders@FOND.MID-POINT.CO.ZA '), true);
+  assert.equal(validEmailSender('orders@fond.co.za'), false);
+  assert.equal(validEmailSender('orders@mid-point.co.za'), false);
+});
 test('verified accounts get one receipt per order while unverified accounts get none', async () => {
   process.env.FOND_CREDENTIALS_KEY = 'd'.repeat(64);
   const originalFetch = globalThis.fetch;
@@ -19,7 +25,7 @@ test('verified accounts get one receipt per order while unverified accounts get 
   }) as typeof fetch;
   try {
     saveProviderSecret('email-api', 're_test_example', 'shared-admin');
-    saveDocument('email-from', 'orders@fond.co.za', 'shared-admin');
+    saveDocument('email-from', 'orders@fond.mid-point.co.za', 'shared-admin');
     const { token, user } = signUp('account@example.test', 'long-password-123');
     const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email });
     assert.equal(await deliverOrderEmail(order, 'received'), false);

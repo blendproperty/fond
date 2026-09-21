@@ -29,7 +29,7 @@ Opted-in status events persist in a queue processed by staff-tablet polling, so 
 
 ## Customer accounts and emails
 
-Customers can create an account at `/account`; orders placed while signed in appear there. Guest orders remain trackable with their reference. An account email is unverified until its owner confirms a six digit code. Order receipts and accepted/ready/completed emails are sent only for verified signed-in accounts. In Resend, verify the FOND domain with its required DNS records, then enter the `re_` API key and an `@fond.co.za` sender address in super-admin Settings. An unconfigured email provider does not block orders. Email attempts and failed jobs appear in Marketing & CMS, where admins can retry. API acceptance is not inbox delivery proof. [Resend sending domains](https://resend.com/docs/dashboard/domains/introduction), [Email API](https://resend.com/docs/api-reference/emails/send-email).
+Customers can create an account at `/account`; orders placed while signed in appear there. Guest orders remain trackable with their reference. An account email is unverified until its owner confirms a six digit code. Order receipts and accepted/ready/completed emails are sent only for verified signed-in accounts. In Resend, verify `fond.mid-point.co.za` with its required DNS records, then enter the restricted `re_` API key and an `@fond.mid-point.co.za` sender address in super-admin Settings. An unconfigured email provider does not block orders. Email attempts and failed jobs appear in Marketing & CMS, where admins can retry. API acceptance is not inbox delivery proof. [Resend sending domains](https://resend.com/docs/dashboard/domains/introduction), [Email API](https://resend.com/docs/api-reference/emails/send-email).
 
 ## Backup and recovery
 
