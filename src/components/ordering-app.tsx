@@ -63,6 +63,8 @@ export function OrderingApp() {
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
   }, []);
 
+  useEffect(()=>{if(store?.settings.whatsappEnabled===false)setWhatsappOptIn(false);},[store?.settings.whatsappEnabled]);
+
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
@@ -145,7 +147,7 @@ export function OrderingApp() {
     setSubmitting(true);
     try {
       const paymentMethod=fulfillment==='delivery'||payOnline?'yoco_online':'pay_at_collection';
-      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn,smsOptIn});
+      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn});
       const key = await submissionKey(payload);
       const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -224,9 +226,9 @@ export function OrderingApp() {
             <label className="field">Company (optional)<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Blend Property" /></label>
             <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
             {store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={(e) => setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()} /> SMS me when my order is accepted and ready</label>}
-            <label className="field-check"><input type="checkbox" checked={whatsappOptIn} onChange={(e) => setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()} /> WhatsApp me when my order is accepted and ready</label>
+            <label className={`field-check${store?.settings.whatsappEnabled?'':' notification-unavailable'}`}><input type="checkbox" checked={whatsappOptIn} onChange={(e) => setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()||!store?.settings.whatsappEnabled} /> {store?.settings.whatsappEnabled?'WhatsApp me when my order is accepted and ready':'WhatsApp notifications unavailable — setup pending'}</label>
           </>}
-          {fulfillment==='collection'&&<><label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>{store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={e=>setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> SMS me when my order is accepted and ready</label>}<label className="field-check"><input type="checkbox" checked={whatsappOptIn} onChange={e=>setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> WhatsApp me when my order is accepted and ready</label></>}
+          {fulfillment==='collection'&&<><label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>{store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={e=>setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> SMS me when my order is accepted and ready</label>}<label className={`field-check${store?.settings.whatsappEnabled?'':' notification-unavailable'}`}><input type="checkbox" checked={whatsappOptIn} onChange={e=>setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()||!store?.settings.whatsappEnabled}/> {store?.settings.whatsappEnabled?'WhatsApp me when my order is accepted and ready':'WhatsApp notifications unavailable — setup pending'}</label></>}
           {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
           {store?.onlinePayments?<fieldset className="payment-choice"><legend>Payment</legend>{store.paymentMode==='sandbox'&&<p className="sandbox-payment-warning"><strong>Test checkout only.</strong> No real payment will be taken. FOND staff will see this as a test payment.</p>}<label className="field-check"><input type="radio" name="payment" checked={payOnline} onChange={()=>setPayOnline(true)}/> {store.paymentMode==='sandbox'?'Use Yoco TEST checkout':'Pay securely now with Yoco'}</label>{fulfillment==='collection'&&<label className="field-check"><input type="radio" name="payment" checked={!payOnline} onChange={()=>setPayOnline(false)}/> Pay at FOND when collecting</label>}{fulfillment==='delivery'&&<p className="small">Delivery orders must be paid online before FOND can prepare them.</p>}</fieldset>:<p className="notice">Online payment is currently unavailable. Collection orders can be paid at FOND. Delivery ordering will open when secure online payment is enabled.</p>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>

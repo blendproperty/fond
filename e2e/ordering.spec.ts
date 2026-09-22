@@ -10,6 +10,7 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByLabel('Preferred collection').selectOption('Lunch collection');
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
+ await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByRole('button',{name:'Send order to FOND'}).click();
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
  await expect(page.getByRole('dialog')).toContainText(/240/);

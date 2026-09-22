@@ -19,6 +19,7 @@ button,select,input{font:inherit}
 button,a{touch-action:manipulation}
 button{cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
+.field-check.notification-unavailable{opacity:.5;color:var(--slate);cursor:not-allowed}.field-check.notification-unavailable input{cursor:not-allowed}
 a{color:inherit;text-decoration:none}
 button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--oxblood);outline-offset:3px}
 h1,h2,h3,p{margin-top:0}
