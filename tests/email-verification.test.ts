@@ -51,7 +51,7 @@ test('verified accounts get one receipt per order while unverified accounts get 
     saveProviderSecret('email-api', 're_test_example', 'shared-admin');
     saveDocument('email-from', 'orders@fond.mid-point.co.za', 'shared-admin');
     const { token, user } = signUp('account@example.test', 'long-password-123');
-    const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email });
+    const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email, emailOptIn: true });
     assert.equal(await deliverOrderEmail(order, 'received'), false);
     assert.equal(messages.length, 0);
     await requestVerification(user);
@@ -73,5 +73,8 @@ test('verified accounts get one receipt per order while unverified accounts get 
     assert.match(messages[1].html, /R 32,00/);
     assert.match(messages[1].text, new RegExp(order.reference));
     assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${order.id}:received`) as { status: string }).status, 'sent');
+    const optedOut = createOrder({ customerName: 'No email', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email, emailOptIn: false });
+    assert.equal(await deliverOrderEmail(optedOut, 'received'), false);
+    assert.equal((getDb().prepare('SELECT count(*) AS n FROM email_jobs WHERE order_id=?').get(optedOut.id) as { n: number }).n, 0);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });

@@ -45,6 +45,7 @@ export function getDb(): DatabaseSync {
       building TEXT,
       whatsapp_opt_in INTEGER NOT NULL DEFAULT 0,
       sms_opt_in INTEGER NOT NULL DEFAULT 0,
+      email_opt_in INTEGER NOT NULL DEFAULT 1,
       payment_method TEXT NOT NULL DEFAULT 'pay_at_collection',
       payment_required INTEGER NOT NULL DEFAULT 0,
       estimated_prep_minutes INTEGER NOT NULL DEFAULT 20
@@ -95,6 +96,7 @@ export function getDb(): DatabaseSync {
     ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
     ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
     ['sms_opt_in', `ALTER TABLE orders ADD COLUMN sms_opt_in INTEGER NOT NULL DEFAULT 0`],
+    ['email_opt_in', `ALTER TABLE orders ADD COLUMN email_opt_in INTEGER NOT NULL DEFAULT 1`],
     ['user_id', `ALTER TABLE orders ADD COLUMN user_id TEXT`],
     ['customer_email', `ALTER TABLE orders ADD COLUMN customer_email TEXT`],
     ['pos_required', `ALTER TABLE orders ADD COLUMN pos_required INTEGER NOT NULL DEFAULT 0`],

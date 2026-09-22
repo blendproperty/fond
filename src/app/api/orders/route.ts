@@ -29,12 +29,13 @@ export async function POST(request: Request) {
       building: typeof body.building === 'string' ? body.building : null,
       whatsappOptIn: !!body.whatsappOptIn,
       smsOptIn: !!body.smsOptIn,
+      emailOptIn: !!body.emailOptIn && !!user?.emailVerified,
       userId: user?.id,
       customerEmail: user?.email,
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
     const redirectUrl=order.paymentMethod==='yoco_online'?await createCustomerCheckout(order.reference):null;
-    if (user?.emailVerified) await deliverOrderEmail(order, 'received').catch(() => false);
+    if (order.emailOptIn) await deliverOrderEmail(order, 'received').catch(() => false);
     return NextResponse.json(
       {
         reference: order.reference,
