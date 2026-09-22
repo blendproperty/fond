@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:
 import { DatabaseSync } from 'node:sqlite';
 
 if (process.env.FOND_IMPORT_TARGET !== 'production') throw new Error('Production import guard is missing.');
-const publicHost = new URL(process.env.FOND_PUBLIC_URL ?? 'https://invalid.local').hostname.toLowerCase();
+const publicHost = (process.env.FOND_IMPORT_HOST ?? '').toLowerCase();
 if (publicHost !== 'fond.mid-point.co.za') throw new Error(`Refusing configuration import for ${publicHost}.`);
 const keyValue = process.env.FOND_CREDENTIALS_KEY;
 if (!/^[a-f0-9]{64}$/i.test(keyValue ?? '')) throw new Error('Production credential vault is unavailable.');

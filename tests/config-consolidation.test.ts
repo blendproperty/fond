@@ -63,7 +63,7 @@ test('operational consolidation copies configuration and preserves production sa
 
     const exported = spawnSync(process.execPath,[join(root,'scripts/export-operational-config.mjs')],{env:{...process.env,FOND_DB_PATH:sourcePath,FOND_CREDENTIALS_KEY:sourceKey},encoding:'utf8'});
     assert.equal(exported.status,0,exported.stderr);
-    const imported = spawnSync(process.execPath,[join(root,'scripts/import-operational-config.mjs')],{env:{...process.env,FOND_DB_PATH:targetPath,FOND_CREDENTIALS_KEY:targetKey,FOND_PUBLIC_URL:'https://fond.mid-point.co.za',FOND_IMPORT_TARGET:'production'},input:exported.stdout,encoding:'utf8'});
+    const imported = spawnSync(process.execPath,[join(root,'scripts/import-operational-config.mjs')],{env:{...process.env,FOND_DB_PATH:targetPath,FOND_CREDENTIALS_KEY:targetKey,FOND_IMPORT_HOST:'fond.mid-point.co.za',FOND_IMPORT_TARGET:'production'},input:exported.stdout,encoding:'utf8'});
     assert.equal(imported.status,0,imported.stderr);
     const result=JSON.parse(imported.stdout);
     assert.deepEqual(result.productionSafety,{onlinePaymentsEnabled:false,smsEnabled:true,whatsappEnabled:false,sandboxPaymentsDisabled:true});

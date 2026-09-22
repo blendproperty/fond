@@ -57,5 +57,5 @@ jobs:
             docker exec "$staging_container" node -e 'const {DatabaseSync}=require("node:sqlite");const fs=require("node:fs");fs.mkdirSync("/app/data/backups",{recursive:true});const db=new DatabaseSync(process.env.FOND_DB_PATH);db.prepare("VACUUM INTO ?").run("/app/data/backups/pre-config-export-'"$stamp"'.sqlite");db.close();'
             docker cp /opt/fond-test/scripts/export-operational-config.mjs "$staging_container:/tmp/export-operational-config.mjs"
             docker cp /opt/fond/scripts/import-operational-config.mjs "$production_container:/tmp/import-operational-config.mjs"
-            docker exec "$staging_container" node /tmp/export-operational-config.mjs | docker exec -i -e FOND_IMPORT_TARGET=production "$production_container" node /tmp/import-operational-config.mjs
+            docker exec "$staging_container" node /tmp/export-operational-config.mjs | docker exec -i -e FOND_IMPORT_TARGET=production -e FOND_IMPORT_HOST=fond.mid-point.co.za "$production_container" node /tmp/import-operational-config.mjs
             docker exec "$production_container" wget -qO- http://127.0.0.1:3000/api/health
