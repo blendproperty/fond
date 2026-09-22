@@ -1,0 +1,61 @@
+name: Consolidate FOND Production Configuration
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Exact deployed revision whose staging configuration will be consolidated
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: fond-production
+  cancel-in-progress: false
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm this exact revision passed staging deployment
+        uses: actions/github-script@v7
+        env:
+          CONFIG_SHA: ${{ inputs.sha }}
+        with:
+          script: |
+            const sha = process.env.CONFIG_SHA;
+            if (!/^[0-9a-f]{40}$/.test(sha)) {
+              core.setFailed('A full 40-character commit SHA is required.');
+              return;
+            }
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy.yml',
+              head_sha: sha,
+              status: 'completed',
+            });
+            if (!data.workflow_runs.some(run => run.conclusion === 'success')) core.setFailed(`Revision ${sha} has no successful staging deployment.`);
+      - name: Back up and consolidate operational configuration
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          CONFIG_SHA: ${{ inputs.sha }}
+        with:
+          envs: CONFIG_SHA
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            test "$(git -C /opt/fond rev-parse HEAD)" = "$CONFIG_SHA"
+            test "$(git -C /opt/fond-test rev-parse HEAD)" = "$CONFIG_SHA"
+            production_container=$(cd /opt/fond && docker compose ps -q fond)
+            staging_container=$(cd /opt/fond-test && docker compose -f compose.test.yaml -f compose.traefik.yaml ps -q fond)
+            test -n "$production_container"
+            test -n "$staging_container"
+            stamp=$(date -u +%Y%m%dT%H%M%SZ)
+            docker exec "$production_container" node -e 'const {DatabaseSync}=require("node:sqlite");const fs=require("node:fs");fs.mkdirSync("/app/data/backups",{recursive:true});const db=new DatabaseSync(process.env.FOND_DB_PATH);db.prepare("VACUUM INTO ?").run("/app/data/backups/pre-config-consolidation-'"$stamp"'.sqlite");db.close();'
+            docker exec "$staging_container" node -e 'const {DatabaseSync}=require("node:sqlite");const fs=require("node:fs");fs.mkdirSync("/app/data/backups",{recursive:true});const db=new DatabaseSync(process.env.FOND_DB_PATH);db.prepare("VACUUM INTO ?").run("/app/data/backups/pre-config-export-'"$stamp"'.sqlite");db.close();'
+            docker cp /opt/fond-test/scripts/export-operational-config.mjs "$staging_container:/tmp/export-operational-config.mjs"
+            docker cp /opt/fond/scripts/import-operational-config.mjs "$production_container:/tmp/import-operational-config.mjs"
+            docker exec "$staging_container" node /tmp/export-operational-config.mjs | docker exec -i -e FOND_IMPORT_TARGET=production "$production_container" node /tmp/import-operational-config.mjs
+            docker exec "$production_container" wget -qO- http://127.0.0.1:3000/api/health
