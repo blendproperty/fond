@@ -21,6 +21,8 @@ test('browse, adjust basket, place order and track it',async({page})=>{
 });
 test('PWA manifest and order API validation',async({request})=>{
  const manifest=await request.get('/manifest.webmanifest');expect(manifest.ok()).toBeTruthy();expect((await manifest.json()).display).toBe('standalone');
+ const staffManifest=await request.get('/staff/manifest.webmanifest');expect(staffManifest.ok()).toBeTruthy();expect(await staffManifest.json()).toMatchObject({name:'FOND Staff',start_url:'/staff',scope:'/staff'});
+ const testStaffManifest=await request.get('/staff/manifest.webmanifest',{headers:{host:'fond-test.mid-point.co.za'}});expect(testStaffManifest.ok()).toBeTruthy();expect(await testStaffManifest.json()).toMatchObject({name:'FOND Staff TEST',short_name:'STAFF TEST',start_url:'/staff'});
  const result=await request.post('/api/orders',{data:{amount:1}});expect(result.status()).toBe(400);
  for(const path of ['/icons/icon-192.png','/icons/icon-512.png','/sw.js','/offline.html'])expect((await request.get(path)).ok()).toBeTruthy();
 });

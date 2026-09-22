@@ -1,5 +1,11 @@
 # FOND operating handover
 
+## Release environments and tablet installation
+
+`fond-test.mid-point.co.za` is the isolated UAT environment and `fond.mid-point.co.za` is production. They run the same application code but retain separate databases, orders, sessions and provider configuration. Every successful push to `main` deploys the exact verified revision to staging only. Production promotion is a separate `Promote FOND Production` workflow and requires the full commit SHA; it refuses a revision that has no successful staging deployment.
+
+For staff UAT, open `https://fond-test.mid-point.co.za/staff` before installing. The staging app is named `FOND Staff TEST`, opens directly at `/staff` and carries a persistent TEST banner. After sign-off, uninstall that test app from the operational tablet and install `https://fond.mid-point.co.za/staff`, named `FOND Staff`. Never use the production queue for training or test orders. A production deployment copies application code only; it does not copy staging orders, settings or provider credentials.
+
 ## Management
 
 Create a named super admin in Settings using the existing shared admin code. Sign in as that named account and enroll 2FA; once enabled, the shared admin code stops working. Save the one-use recovery codes outside FOND. Named admins manage operations but cannot change provider credentials, provider switches or team access. Staff work orders on the tablet. The shared staff code can be rotated in super-admin Settings, invalidating old tablet sessions. Trading hours enforcement remains off by default; collection choices are preferences, not reserved slots.

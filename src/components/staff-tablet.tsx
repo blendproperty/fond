@@ -43,7 +43,7 @@ function timeAgo(iso: string): string {
   return `${minutes} min ago`;
 }
 
-export function StaffTablet() {
+export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boolean }) {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
@@ -72,6 +72,7 @@ export function StaffTablet() {
   const [orderAudit,setOrderAudit]=useState<OrderAudit|null>(null);
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
     fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
     const timer=setInterval(()=>setNow(Date.now()),15000);
@@ -195,7 +196,7 @@ export function StaffTablet() {
     return (
       <div className="staff-lock admin-login">
         <form onSubmit={submitCode} className="admin-login-card staff-login-card">
-          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">STAFF PORTAL</span></div>
+          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">{testEnvironment?'STAFF PORTAL · TEST':'STAFF PORTAL'}</span></div>
           <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
           <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
           <h1>Ready for service.</h1>
@@ -214,10 +215,11 @@ export function StaffTablet() {
 
   return (
     <div className="staff-app">
+      {testEnvironment&&<div className="staff-test-banner" role="status">TEST ENVIRONMENT · ORDERS AND PAYMENTS HERE ARE NOT LIVE</div>}
       <header className="staff-header">
         <div>
           <p className="eyebrow">FOND · MIDPOINT SERVICE</p>
-          <div className="staff-title-row"><h1>Live order board</h1><span className="staff-live"><i/> Live</span></div>
+          <div className="staff-title-row"><h1>{testEnvironment?'Test order board':'Live order board'}</h1><span className={testEnvironment?'staff-live staff-live-test':'staff-live'}><i/> {testEnvironment?'Test':'Live'}</span></div>
           <p className="staff-sync">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}` : 'Connecting'} · refreshes every 5 seconds</p>
           {queueError && <p role="alert" className="staff-connection-error">{queueError}</p>}
         </div>

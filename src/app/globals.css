@@ -161,10 +161,12 @@ footer span:last-child{margin-left:auto}
 .admin-login-foot{text-align:center;font-size:11px;color:#738884;margin:18px 0 0}
 @media(max-width:520px){.admin-login{padding:20px 14px}.admin-login-card{padding:28px 24px;border-radius:18px}.admin-login-top{margin-bottom:30px}.admin-login-card h1{font-size:30px}}
 .staff-app{min-height:100vh;background:#f2f6f5;padding:24px 28px 18px}
+.staff-test-banner{margin:-24px -28px 24px;padding:10px 18px;background:#8d3f00;color:#fff;text-align:center;font-size:12px;font-weight:900;letter-spacing:.08em}
 .staff-header{display:flex;justify-content:space-between;align-items:center;margin:-24px -28px 18px;padding:22px 28px;background:var(--paper);border-top:4px solid var(--ink);border-bottom:1px solid #dce6e3;box-shadow:0 3px 14px #082c2608}
 .staff-header h1{font-size:26px;color:var(--ink)}
 .staff-header-actions{display:flex;gap:10px;align-items:center}
 .staff-title-row{display:flex;align-items:center;gap:14px}.staff-title-row h1{margin:0}.staff-live{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:20px;background:#e7f7ef;color:#08704c;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.staff-live i{width:7px;height:7px;border-radius:50%;background:#13a56f;box-shadow:0 0 0 4px #13a56f1f}.staff-sync{margin:5px 0 0;color:#718581;font-size:11px}.staff-connection-error{margin:7px 0 0;color:#a52e24;font-size:12px;font-weight:700}
+.staff-live-test{background:#fff0d2;color:#8d3f00}.staff-live-test i{background:#d06a00;box-shadow:0 0 0 4px #d06a0022}
 .staff-summary{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px;margin:0 0 18px}.staff-summary>div{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1px solid #dce6e3;border-radius:10px;background:#fff;box-shadow:0 3px 12px #082c2605}.staff-summary span{font-size:11px;color:#6a7e7a;font-weight:700}.staff-summary strong{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
 .staff-queue-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:-10px 0 12px;color:var(--slate);font-size:12px}
 .staff-queue-controls button{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer}

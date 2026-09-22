@@ -1,4 +1,4 @@
-name: Deploy FOND
+name: Deploy FOND Staging
 on:
   workflow_run:
     workflows: [Verify FOND]
@@ -7,38 +7,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: fond-production
+  group: fond-staging
   cancel-in-progress: false
 jobs:
-  deploy:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
-        with:
-          envs: VERIFIED_SHA
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            cd /opt/fond
-            git fetch origin
-            test "$(git rev-parse origin/main)" = "$VERIFIED_SHA" || exit 0
-            git checkout main
-            git reset --hard "$VERIFIED_SHA"
-            docker compose build
-            docker compose exec -T fond node -e 'const {DatabaseSync}=require("node:sqlite");const fs=require("node:fs");fs.mkdirSync("/app/data/backups",{recursive:true});const db=new DatabaseSync(process.env.FOND_DB_PATH);db.prepare("VACUUM INTO ?").run("/app/data/backups/pre-deploy-"+Date.now()+".sqlite");db.close();'
-            docker compose up -d
-            sleep 5
-            docker compose ps
-            docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health
   deploy-staging:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
-    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Deploy isolated staging over SSH
@@ -55,7 +28,7 @@ jobs:
             cd /opt/fond-test
             git remote set-url origin https://github.com/blendproperty/fond.git
             git fetch origin
-            test "$(git rev-parse origin/main)" = "$VERIFIED_SHA" || exit 0
+            test "$(git rev-parse origin/main)" = "$VERIFIED_SHA"
             git checkout main
             git reset --hard "$VERIFIED_SHA"
             test -f compose.test.yaml
