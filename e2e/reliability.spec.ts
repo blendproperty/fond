@@ -20,7 +20,10 @@ test('HTTP retry, access boundaries and audited lifecycle',async({request})=>{
   const id=matching[0].id;
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'received',status:'accepted'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).status()).toBe(409);
-  expect((await request.post(`/api/staff/orders/${id}/pos-entry`,{headers:staffHeaders,data:{posReference:'YOCO-E2E-1'}})).ok()).toBeTruthy();
+  const yocoReference=`YOCO-${order.reference}`;
+  expect((await request.post(`/api/staff/orders/${id}/pos-entry`,{headers:staffHeaders,data:{posReference:yocoReference}})).ok()).toBeTruthy();
+  const second=await request.post('/api/staff/orders',{headers:{...staffHeaders,'Idempotency-Key':randomUUID()},data:{customerName:'Duplicate reference test',contactNumber:'0827654321',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}]}});expect(second.ok()).toBeTruthy();const secondOrder=(await second.json()).order;
+  const duplicate=await request.post(`/api/staff/orders/${secondOrder.id}/pos-entry`,{headers:staffHeaders,data:{posReference:` ${yocoReference.toLowerCase()} `}});expect(duplicate.status()).toBe(409);expect((await duplicate.json()).message).toMatch(new RegExp(`already recorded against ${order.reference}`));
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).ok()).toBeTruthy();
   expect((await request.post(`/api/staff/orders/${id}/payment`,{headers:staffHeaders,data:{method:'cash'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'ready',status:'completed'}})).ok()).toBeTruthy();

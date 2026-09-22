@@ -16,6 +16,9 @@ test('a signed-in order is visible only to its own account and POS entry is audi
   assert.throws(() => updateOrderStatus(order.id, 'ready'), /Yoco/);
   assert.equal(recordPosEntry(order.id, 'POS-1', 'staff').posReference, 'POS-1');
   assert.throws(() => recordPosEntry(order.id, 'POS-2', 'staff'), /already/);
+  const second = createOrder({ customerName: 'Second customer', collectionTime: 'ASAP', source: 'staff', contactNumber: '0827654321', lines: [{ id: 'espresso-single', quantity: 1 }] });
+  assert.throws(() => recordPosEntry(second.id, ' pos-1 ', 'staff'), new RegExp(`already recorded against ${order.reference}`));
+  assert.equal((getDb().prepare('SELECT pos_reference FROM orders WHERE id=?').get(second.id) as {pos_reference:string|null}).pos_reference, null);
   updateOrderStatus(order.id, 'ready');
   assert.equal(getOrderEvents(order.id).find(event => event.to_status === 'pos-recorded')?.actor, 'staff');
   assert.equal((getDb().prepare('SELECT pos_reference FROM orders WHERE id=?').get(order.id) as { pos_reference: string }).pos_reference, 'POS-1');

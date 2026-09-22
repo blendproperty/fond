@@ -6,7 +6,7 @@ test('analytics dashboard has honest empty states, filters and real order charts
  await page.getByLabel('Report from').fill('2040-01-01');await page.getByLabel('Report to').fill('2040-01-02');await expect(page.getByText('Your reporting dashboard is ready.')).toBeVisible();await expect(page.getByText('Slow movers (on menu)')).toHaveCount(0);await page.screenshot({path:testInfo.outputPath('analytics-empty.png'),fullPage:true});
  const login=await request.post('/api/staff/login',{data:{code:process.env.FOND_STAFF_CODE}});const headers={Cookie:login.headers()['set-cookie'].split(';')[0]};
  const created=await request.post('/api/staff/orders',{headers:{...headers,'Idempotency-Key':randomUUID()},data:{customerName:'Analytics visual fixture',contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:2}]}});expect(created.ok()).toBe(true);const {order}=await created.json();
- expect((await request.post('/api/staff/orders/'+order.id+'/pos-entry',{headers,data:{posReference:'YOCO-ANALYTICS-E2E'}})).ok()).toBe(true);
+ expect((await request.post('/api/staff/orders/'+order.id+'/pos-entry',{headers,data:{posReference:`YOCO-${order.reference}`}})).ok()).toBe(true);
  expect((await request.patch('/api/staff/orders/'+order.id,{headers,data:{status:'ready'}})).ok()).toBe(true);
  expect((await request.post('/api/staff/orders/'+order.id+'/payment',{headers,data:{method:'cash'}})).ok()).toBe(true);
  expect((await request.patch('/api/staff/orders/'+order.id,{headers,data:{status:'completed'}})).ok()).toBe(true);

@@ -21,10 +21,11 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await expect(card.getByRole('button', { name: 'Start preparing' })).toHaveCount(0);
   await card.getByRole('button', { name: 'Record Yoco entry' }).click();
   const posDialog=page.getByRole('dialog',{name:'Confirm Yoco POS entry'});
-  await posDialog.getByLabel('Yoco POS receipt / order number').fill('YOCO-BROWSER-1');
+  const yocoReference=`YOCO-${reference}`;
+  await posDialog.getByLabel('Yoco POS receipt / order number').fill(yocoReference);
   await posDialog.getByRole('button', { name: 'Confirm POS entry' }).click();
   await expect(page.getByRole('region',{name:'Added to Yoco system'}).locator('.staff-card').filter({hasText:reference})).toBeVisible();
-  await expect(card.getByText('Entered in Yoco · YOCO-BROWSER-1')).toBeVisible();
+  await expect(card.getByText(`Entered in Yoco · ${yocoReference}`)).toBeVisible();
   await card.getByRole('button', { name: 'Start preparing' }).click();
   await expect(page.getByRole('region',{name:'Preparing'}).locator('.staff-card').filter({hasText:reference})).toBeVisible();
   await card.getByRole('button', { name: 'Ready for collection' }).click();
