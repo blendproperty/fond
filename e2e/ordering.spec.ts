@@ -84,6 +84,24 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await expect(page.getByText('Search Customer')).toBeVisible();
 });
 
+test('staff tickets turn item modifications and customer notes into prominent instructions',async({page})=>{
+ await page.route(/\/api\/staff\/orders$/,route=>route.request().method()==='GET'?route.fulfill({json:{orders:[{id:'changes-fixture',reference:'FOND-INTERNAL-CHANGES',displayReference:'FOND-7K3P-9Q8R',customerName:'Kitchen Changes',note:'Severe nut allergy',lines:[{id:'smashed-avo',quantity:1,name:'Smashed Avo',modifierIds:['swap','remove'],modifiers:[{name:'Vegan swap: smoky hummus instead of cheese'},{name:'No pickled red onion'}]}],collectionTime:'As soon as possible',totalCents:12000,status:'preparing',source:'customer',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),fulfillment:'collection',contactNumber:'0821234567',company:null,building:null,posRequired:false,posRecordedAt:null,posReference:null,estimatedPrepMinutes:13,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:12000,paymentMethod:'cash',checkout:null}}]}}):route.continue());
+ await page.goto('/staff');
+ const accessCode=page.getByLabel('Staff access code');
+ if(await accessCode.isVisible()){
+  await accessCode.fill(process.env.FOND_STAFF_CODE ?? '000000');
+  await page.getByRole('button',{name:'Open order queue'}).click();
+ }
+ const ticket=page.locator('.staff-card').filter({hasText:'Kitchen Changes'});
+ await expect(ticket.getByText('CHANGES TO MAKE')).toBeVisible();
+ await expect(ticket.getByText('SWAP',{exact:true})).toBeVisible();
+ await expect(ticket.getByText('Smoky hummus instead of cheese')).toBeVisible();
+ await expect(ticket.getByText('REMOVE',{exact:true})).toBeVisible();
+ await expect(ticket.getByText('Pickled red onion')).toBeVisible();
+ await expect(ticket.getByText('CUSTOMER NOTE')).toBeVisible();
+ await expect(ticket.getByText('Severe nut allergy')).toBeVisible();
+});
+
 test('menu add-ons update the basket and collection needs a contact number',async({page,request})=>{
  await page.goto('/');
  await page.getByRole('tab',{name:'Smoothies'}).click();
