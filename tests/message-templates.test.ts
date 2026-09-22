@@ -33,7 +33,7 @@ test('published templates customise distinct ready email and ready-only upsell w
  const order=createOrder({customerName:'Brett & Co',source:'customer',contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}]});
  const delivery={...order,fulfillment:'delivery' as const,building:'Midpoint',company:'Blend'};
  const ready=buildOrderEmail(delivery,'ready');
- assert.equal(ready.subject,`Ready to go · ${order.reference}`);
+ assert.equal(ready.subject,`Ready to go · ${order.displayReference}`);
  assert.match(ready.html,/ORDER READY/);
  assert.match(ready.html,/Lunch is ready for delivery/);
  assert.match(ready.html,/Driver handoff next/);

@@ -1,4 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
 process.env.FOND_ADMIN_CODE ||= 'e2e-admin-code';
 process.env.FOND_STAFF_CODE ||= 'e2e-staff-code';
-export default defineConfig({testDir:'./e2e',use:{baseURL:'http://127.0.0.1:3100'},projects:[{name:'desktop',use:{...devices['Desktop Chrome']}},{name:'mobile',use:{...devices['iPhone 13'],defaultBrowserType:'chromium'}}],webServer:{command:'npm run start -- --port 3100',url:'http://127.0.0.1:3100',reuseExistingServer:!process.env.CI}});
+export default defineConfig({testDir:'./e2e',use:{baseURL:'http://127.0.0.1:3100'},projects:[{name:'desktop',use:{...devices['Desktop Chrome']}},{name:'mobile',use:{...devices['iPhone 13'],defaultBrowserType:'chromium'}}],webServer:{command:'npm run start -- --port 3100',url:'http://127.0.0.1:3100',reuseExistingServer:!process.env.CI,env:{...process.env,FOND_DB_PATH:':memory:'}}});

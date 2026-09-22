@@ -38,7 +38,7 @@ export const DEFAULT_MESSAGE_TEMPLATES:MessageTemplateConfig={
   },
 };
 
-export const SAMPLE_MESSAGE_VALUES={customerName:'Brett',reference:'FOND-123456',prepMinutes:'20',collectionTime:'As soon as possible',destination:'Midpoint Hub',total:'R 120,00'};
+export const SAMPLE_MESSAGE_VALUES={customerName:'Brett',reference:'FOND-7K3P-9Q8R',prepMinutes:'20',collectionTime:'As soon as possible',destination:'Midpoint Hub',total:'R 120,00'};
 const ALLOWED_TOKENS=new Set(Object.keys(SAMPLE_MESSAGE_VALUES));
 const tokenPattern=/\{([a-zA-Z]+)\}/g;
 

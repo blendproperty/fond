@@ -11,19 +11,23 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
 
-type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment;estimatedPrepMinutes:number };
-type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; paymentMethod?:'yoco_online'|'pay_at_collection';fulfillment?:Fulfillment;reference: string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number };
+type Confirmation = { reference: string; displayReference:string; total: number; collection: string; fulfillment: Fulfillment;estimatedPrepMinutes:number };
+type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; paymentMethod?:'yoco_online'|'pay_at_collection';fulfillment?:Fulfillment;reference: string;displayReference:string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number;updatedAt:string;estimatedArrivalAt:string|null };
 type Fulfillment = 'collection' | 'delivery';
 type CustomerSession = { email: string };
 
-const STATUS_LABEL: Record<string, string> = {
-  received: 'Received — waiting for FOND to accept',
-  accepted: 'Accepted — being prepared',
-  preparing: 'Preparing in the kitchen',
-  ready: 'Ready for collection',
-  completed: 'Collected',
-  cancelled: 'Cancelled',
-};
+function statusLabel(order:TrackedOrder){
+  if(order.status==='ready')return order.fulfillment==='delivery'?'Ready for delivery — waiting for dispatch':'Ready for collection';
+  if(order.status==='out_for_delivery')return 'Out for delivery';
+  if(order.status==='completed')return order.fulfillment==='delivery'?'Delivered':'Collected';
+  return ({received:'Received — waiting for FOND to accept',accepted:'Accepted — being prepared',preparing:'Preparing in the kitchen',cancelled:'Cancelled'} as Record<string,string>)[order.status]??order.status;
+}
+function timingLabel(order:TrackedOrder){
+  if(order.status==='out_for_delivery'&&order.estimatedArrivalAt)return `Expected by ${new Date(order.estimatedArrivalAt).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}`;
+  if(order.status==='ready')return order.fulfillment==='delivery'?'Your order is packed; the delivery ETA starts when it leaves FOND.':`Ready now · ${order.collectionTime}`;
+  if(['completed','cancelled'].includes(order.status))return order.fulfillment==='delivery'?'Delivery update':'Collection update';
+  return `${order.collectionTime} · approx. ${order.estimatedPrepMinutes} min preparation`;
+}
 
 export function OrderingApp() {
   const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean;paymentMode?:'live'|'sandbox'|'none'}|null>(null);
@@ -48,7 +52,7 @@ export function OrderingApp() {
   const [smsOptIn, setSmsOptIn] = useState(true);
   const [emailOptIn, setEmailOptIn] = useState(true);
   const [note, setNote] = useState('');
-  const [placedReferences, setPlacedReferences] = useState<string[]>([]);
+  const [placedReferences, setPlacedReferences] = useState<{lookup:string;label:string}[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -160,8 +164,8 @@ export function OrderingApp() {
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
       clearSubmission(key);
       if(data.redirectUrl){location.assign(data.redirectUrl);return;}
-      setConfirmation({ reference: data.reference, total: data.totalCents, collection, fulfillment,estimatedPrepMinutes:data.estimatedPrepMinutes });
-      setPlacedReferences((current) => [data.reference, ...current]);
+      setConfirmation({ reference: data.reference, displayReference:data.displayReference, total: data.totalCents, collection, fulfillment,estimatedPrepMinutes:data.estimatedPrepMinutes });
+      setPlacedReferences((current) => [{lookup:data.reference,label:data.displayReference}, ...current]);
       setCart([]);
       setNote('');
       if(payOnline)await pay(data.reference);
@@ -213,12 +217,12 @@ export function OrderingApp() {
       <header><div><p className="eyebrow">FOND · MIDPOINT</p><h2>{panel === 'basket' ? 'Your basket' : 'Track your order'}</h2></div><button autoFocus className="icon-button" aria-label="Close" onClick={() => setPanel(null)}><X /></button></header>
       <div className="drawer-scroll">
         {panel === 'track' ? <>
-          <label className="field">Order reference<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-XXXXXX" /></label>
+          <label className="field">Order number<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-7K3P-9Q8R" /></label>
           <button className="primary full" onClick={() => lookupOrder(trackInput)}><Search size={18} /> Check status</button>
           {trackError && <p role="alert">{trackError}</p>}
-          {tracked && <div className="notice" style={{ marginTop: 16 }}><strong>{tracked.reference}</strong><p>{STATUS_LABEL[tracked.status] ?? tracked.status}</p><p>{tracked.collectionTime} · {money(tracked.totalCents)} · approx. {tracked.estimatedPrepMinutes} min preparation</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?(store?.paymentMode==='sandbox'?"Paid in Yoco test mode":"Paid online"):tracked.paymentMethod==='yoco_online'?"Waiting for confirmed Yoco payment":"Payment due at collection"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>{store.paymentMode==='sandbox'?'Open Yoco TEST payment':'Pay securely with Yoco'}</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
-          {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((ref) => <button key={ref} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(ref)}>{ref}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="reference">{confirmation.reference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+          {tracked && <div className="notice order-tracking-result" style={{ marginTop: 16 }}><span className="tracking-order-label">YOUR ORDER NUMBER</span><strong>{tracked.displayReference}</strong><p className="tracking-status">{statusLabel(tracked)}</p><p>{timingLabel(tracked)} · {money(tracked.totalCents)}</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?(store?.paymentMode==='sandbox'?"Paid in Yoco test mode":"Paid online"):tracked.paymentMethod==='yoco_online'?"Waiting for confirmed Yoco payment":"Payment due at collection"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>{store.paymentMode==='sandbox'?'Open Yoco TEST payment':'Pay securely with Yoco'}</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
+          {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((order) => <button key={order.lookup} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(order.lookup)}>{order.label}</button>)}</div>}
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="small">Quote this order number</p><p className="reference">{confirmation.displayReference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">{confirmation.fulfillment==='delivery'?'Your secure payment and delivery status will appear in Track order.':'Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.'}</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
             <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>

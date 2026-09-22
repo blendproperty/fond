@@ -23,6 +23,7 @@ type AdminOrder = {
   note:string|null;
   id: string;
   reference: string;
+  displayReference:string;
   customerName: string;
   status: string;
   fulfillment: 'collection' | 'delivery';
@@ -380,7 +381,9 @@ function OrdersAdmin() {
           <option value="">All statuses</option>
           <option value="received">Received</option>
           <option value="accepted">Accepted</option>
+          <option value="preparing">Preparing</option>
           <option value="ready">Ready</option>
+          <option value="out_for_delivery">Out for delivery</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
         </select>
@@ -389,7 +392,7 @@ function OrdersAdmin() {
           <option value="collection">Collection only</option>
           <option value="delivery">Delivery only</option>
         </select>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search reference or name" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search order number, name, mobile or location" />
         <button className="quiet" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
       </div>
       {loading ? <p className="staff-empty">Loading orders…</p> : orders.length === 0 ? <p className="staff-empty">No orders match.</p> : (
@@ -397,10 +400,10 @@ function OrdersAdmin() {
           {historyError&&<p role="alert">{historyError}</p>}
           {orders.map((o) => (
             <div className="admin-order-row" key={o.id}>
-              <span className="staff-ref">{o.reference}</span>
+              <span className="staff-ref">{o.displayReference}</span>
               <strong>{o.customerName}</strong>
               <span>{o.fulfillment === 'delivery' ? `Delivery · ${o.building ?? ''}` : o.collectionTime}</span>
-              <span className={`admin-status admin-status-${o.status}`}>{o.status}</span>
+              <span className={`admin-status admin-status-${o.status}`}>{o.status.replaceAll('_',' ')}</span>
               <strong>{money(o.totalCents)}</strong>
               <span className="admin-order-time">{new Date(o.createdAt).toLocaleString('en-ZA')}</span>
               <details className="admin-order-details" onToggle={e=>{if(e.currentTarget.open&&!history[o.id])void loadHistory(o.id);}}><summary>Order details &amp; history</summary><p>{o.contactNumber} {o.company} {o.note}</p>{o.lines.map((l,i)=><p key={i}>{l.quantity} × {l.name??l.id}{l.modifiers?.length?' · '+l.modifiers.map(m=>m.name).join(', '):''}</p>)}{history[o.id]?.map((e,i)=><p key={i}>{e.to_status} · {e.actor} · {new Date(e.created_at).toLocaleString()}</p>)}</details>

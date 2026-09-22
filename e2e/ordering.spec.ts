@@ -39,6 +39,18 @@ test('available email and SMS notifications are preselected while WhatsApp stays
  await expect(sms).toBeChecked();await expect(sms).toBeEnabled();
  await expect(email).toBeChecked();
 });
+test('delivery tracking shows dispatch status and arrival time without a preparation estimate',async({page})=>{
+ await page.route('**/api/orders?reference=*',route=>route.fulfill({json:{reference:'FOND-43E48401AA7044188B6DA071832E84AE',displayReference:'FOND-7K3P-9Q8R',status:'out_for_delivery',fulfillment:'delivery',totalCents:12000,collectionTime:'As soon as possible',estimatedPrepMinutes:13,updatedAt:'2026-09-22T09:00:00.000Z',estimatedArrivalAt:'2026-09-22T09:10:00.000Z',paymentMethod:'yoco_online',payment:{paidCents:12000,checkout:'paid'}}}));
+ await page.goto('/');
+ await page.getByRole('button',{name:'Track order'}).click();
+ await page.getByLabel('Order number').fill('FOND-7K3P-9Q8R');
+ await page.getByRole('button',{name:'Check status'}).click();
+ await expect(page.getByRole('dialog')).toContainText('FOND-7K3P-9Q8R');
+ await expect(page.getByRole('dialog')).toContainText('Out for delivery');
+ await expect(page.getByRole('dialog')).toContainText(/Expected by/);
+ await expect(page.getByRole('dialog')).not.toContainText('Ready for collection');
+ await expect(page.getByRole('dialog')).not.toContainText('13 min preparation');
+});
 test('PWA manifest and order API validation',async({request})=>{
  const manifest=await request.get('/manifest.webmanifest');expect(manifest.ok()).toBeTruthy();expect((await manifest.json()).display).toBe('standalone');
  const staffManifest=await request.get('/staff/manifest.webmanifest');expect(staffManifest.ok()).toBeTruthy();expect(await staffManifest.json()).toMatchObject({name:'FOND Staff',start_url:'/staff',scope:'/staff'});
@@ -64,6 +76,12 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
  await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
+ await page.route(/\/api\/staff\/orders\?query=/,route=>route.fulfill({json:{search:true,orders:[{id:'search-fixture',reference:'FOND-43E48401AA7044188B6DA071832E84AE',displayReference:'FOND-7K3P-9Q8R',customerName:'Search Customer',note:null,lines:[{id:'espresso-single',quantity:1,name:'Espresso (Single)'}],collectionTime:'As soon as possible',totalCents:3200,status:'completed',source:'customer',createdAt:'2026-09-22T09:00:00.000Z',updatedAt:'2026-09-22T09:20:00.000Z',fulfillment:'collection',contactNumber:'0821234567',company:null,building:null,posRequired:true,posRecordedAt:'2026-09-22T09:02:00.000Z',posReference:'Y-123',estimatedPrepMinutes:4,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:3200,paymentMethod:'cash',checkout:null}}]}}));
+ await page.getByPlaceholder('Order number, name, mobile, company or building').fill('FOND-7K3P-9Q8R');
+ await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Search results'})).toBeVisible();
+ await expect(page.getByText('FOND-7K3P-9Q8R')).toBeVisible();
+ await expect(page.getByText('Search Customer')).toBeVisible();
 });
 
 test('menu add-ons update the basket and collection needs a contact number',async({page,request})=>{

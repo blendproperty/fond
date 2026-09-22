@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 type User = { id: string; email: string; emailVerified: boolean };
-type Order = { reference: string; status: string; createdAt: string; collectionTime: string; totalCents: number; lines: { name: string; quantity: number; subtotalCents: number }[]; payment: { paidCents: number } };
+type Order = { reference: string;displayReference:string; status: string; createdAt: string; collectionTime: string; totalCents: number; lines: { name: string; quantity: number; subtotalCents: number }[]; payment: { paidCents: number } };
 export function CustomerAccount() {
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -52,7 +52,7 @@ export function CustomerAccount() {
       <p>Orders placed while signed in appear here. Guest orders can still be tracked using their reference on the menu page.</p>
       {!user.emailVerified && <section className="staff-card" style={{ marginBottom: 20 }}><h2>Verify your email</h2><p>Verify your address to confirm ownership of this account. You can still enter an email address for order updates at checkout.</p><button className="outline" onClick={sendCode}>Send verification code</button><form onSubmit={confirmCode}><label className="field">Six digit code<input value={code} onChange={event => setCode(event.target.value)} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} /></label><button className="primary" type="submit">Verify email</button></form>{verificationMessage && <p role="status">{verificationMessage}</p>}</section>}
       {orders.length ? orders.map(order => <article key={order.reference} className="staff-card" style={{ marginBottom: 16 }}>
-        <h2>{order.reference}</h2><p>{new Date(order.createdAt).toLocaleString()} · {order.status} · {order.collectionTime}</p>
+        <h2>{order.displayReference}</h2><p>{new Date(order.createdAt).toLocaleString()} · {order.status.replaceAll('_',' ')} · {order.collectionTime}</p>
         <ul>{order.lines.map((line, index) => <li key={index}>{line.quantity}× {line.name}</li>)}</ul>
         <strong>R{(order.totalCents / 100).toFixed(2)}</strong><p>{order.payment?.paidCents >= order.totalCents ? 'Paid' : 'Payment due or pending'}</p>
       </article>) : <p>You have not placed an order while signed in yet.</p>}

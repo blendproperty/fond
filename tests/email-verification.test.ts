@@ -20,6 +20,7 @@ test('automatic customer email policy sends only received and ready events',()=>
   assert.equal(automaticOrderEmailEvent('accepted'),null);
   assert.equal(automaticOrderEmailEvent('preparing'),null);
   assert.equal(automaticOrderEmailEvent('ready'),'ready');
+  assert.equal(automaticOrderEmailEvent('out_for_delivery'),null);
   assert.equal(automaticOrderEmailEvent('completed'),null);
   assert.equal(automaticOrderEmailEvent('cancelled'),null);
 });
@@ -63,7 +64,7 @@ test('opted-in guest and verified account orders receive email while opted-out o
     assert.equal(await deliverOrderEmail(guest, 'received'), true);
     assert.equal(messages.length, 1);
     assert.equal(messages[0].to[0], 'guest@example.test');
-    assert.equal(messages[0].subject, `Order received · ${guest.reference}`);
+    assert.equal(messages[0].subject, `Order received · ${guest.displayReference}`);
     assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${guest.id}:received`) as { status: string }).status, 'sent');
     const optedOut = createOrder({ customerName: 'No email', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], customerEmail: 'no-email@example.test', emailOptIn: false });
     assert.equal(await deliverOrderEmail(optedOut, 'received'), false);
@@ -82,12 +83,12 @@ test('opted-in guest and verified account orders receive email while opted-out o
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(messages.length, 3);
-    assert.equal(messages[2].subject, `Order received · ${order.reference}`);
+    assert.equal(messages[2].subject, `Order received · ${order.displayReference}`);
     assert.match(messages[2].html, /Your order details/);
     assert.match(messages[2].html, /Amount due/);
     assert.match(messages[2].html, /Espresso \(Single\)/);
     assert.match(messages[2].html, /R 32,00/);
-    assert.match(messages[2].text, new RegExp(order.reference));
+    assert.match(messages[2].text, new RegExp(order.displayReference));
     assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${order.id}:received`) as { status: string }).status, 'sent');
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });

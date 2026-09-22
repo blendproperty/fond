@@ -5,19 +5,21 @@ import { teamSession } from '@/lib/team';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
-import { SubmissionConflictError, createOrder, listActiveOrders } from '@/lib/orders';
+import { SubmissionConflictError, createOrder, listActiveOrders, searchOrders } from '@/lib/orders';
 
 async function requireStaff() {
   const store = await cookies();
   return isValidStaffToken(store.get(STAFF_COOKIE)?.value);
 }
 
-export async function GET() {
+export async function GET(request:Request) {
   if (!(await requireStaff())) {
     return NextResponse.json({ code: 'STAFF_AUTH_REQUIRED', message: 'Enter the staff access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   after(processNotifications);
-  return NextResponse.json({ orders: listActiveOrders().map(o=>({...o,payment:paymentStatus(o.id)})) }, { headers: { 'Cache-Control': 'no-store' } });
+  const query=new URL(request.url).searchParams.get('query')?.trim();
+  const orders=query?searchOrders({query,limit:50}):listActiveOrders();
+  return NextResponse.json({ orders: orders.map(o=>({...o,payment:paymentStatus(o.id)})),search:!!query }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // Manual order entry from the facility tablet - walk-ins and phone orders

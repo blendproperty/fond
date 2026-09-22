@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { generateOrderNumber } from './order-number';
 
 // Durable storage boundary for orders, accounts and configuration.
 // Node's built-in SQLite is used deliberately so the Alpine production image
@@ -30,6 +31,7 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       reference TEXT NOT NULL,
+      display_reference TEXT,
       customer_name TEXT NOT NULL,
       note TEXT,
       lines_json TEXT NOT NULL,
@@ -106,10 +108,28 @@ export function getDb(): DatabaseSync {
     ['estimated_prep_minutes', `ALTER TABLE orders ADD COLUMN estimated_prep_minutes INTEGER NOT NULL DEFAULT 20`],
     ['payment_method', `ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'pay_at_collection'`],
     ['payment_required', `ALTER TABLE orders ADD COLUMN payment_required INTEGER NOT NULL DEFAULT 0`],
+    ['display_reference', `ALTER TABLE orders ADD COLUMN display_reference TEXT`],
   ];
   for (const [column, sql] of orderMigrations) {
     if (!existingOrderColumns.has(column)) db.exec(sql);
   }
+  // Customer-facing order numbers are deliberately short enough to quote at
+  // the counter. The original UUID reference remains the internal payment and
+  // webhook identifier. Existing orders are backfilled once on first deploy.
+  const ordersWithoutDisplayReference = db.prepare('SELECT id FROM orders WHERE display_reference IS NULL').all() as {id:string}[];
+  if (ordersWithoutDisplayReference.length) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      for (const order of ordersWithoutDisplayReference) {
+        let candidate = '';
+        do candidate = generateOrderNumber();
+        while (db.prepare('SELECT 1 FROM orders WHERE display_reference=?').get(candidate));
+        db.prepare('UPDATE orders SET display_reference=? WHERE id=?').run(candidate, order.id);
+      }
+      db.exec('COMMIT');
+    } catch (error) { db.exec('ROLLBACK'); throw error; }
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS order_display_reference ON orders(display_reference)');
   const userColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map(column => column.name));
   if (!userColumns.has('email_verified_at')) db.exec('ALTER TABLE users ADD COLUMN email_verified_at TEXT');
   // Modifiers (2026-09-15 addition) - "add this / remove this" options such

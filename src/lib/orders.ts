@@ -5,6 +5,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
 import { getAvailableMenu } from './menu-store';
+import { generateOrderNumber } from './order-number';
 
 // Orders track kitchen fulfilment. Optional hosted payment is managed separately
 // in payments.ts; neither payment mode changes the staff acceptance workflow.
@@ -15,7 +16,7 @@ import { getAvailableMenu } from './menu-store';
 // trail, with an optional expectedStatus guard against a stale tablet
 // racing another device's update.
 
-export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'out_for_delivery' | 'completed' | 'cancelled';
 export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
 export type PaymentMethod = 'yoco_online' | 'pay_at_collection';
@@ -25,6 +26,7 @@ export type PricedLine = CartLine & { name: string; unitPriceCents: number; subt
 export type OrderRecord = {
   id: string;
   reference: string;
+  displayReference: string;
   customerName: string;
   note: string | null;
   lines: PricedLine[];
@@ -52,12 +54,13 @@ export type OrderRecord = {
   paymentRequired:boolean;
 };
 
-const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready'];
+const ACTIVE_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery'];
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   received: ['accepted', 'cancelled'],
   accepted: ['preparing', 'ready', 'cancelled'],
   preparing: ['ready', 'cancelled'],
-  ready: ['completed', 'cancelled'],
+  ready: ['out_for_delivery', 'completed', 'cancelled'],
+  out_for_delivery: ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
 };
@@ -65,6 +68,7 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 type OrderRow = {
   id: string;
   reference: string;
+  display_reference: string | null;
   customer_name: string;
   note: string | null;
   lines_json: string;
@@ -96,6 +100,7 @@ function fromRow(row: OrderRow): OrderRecord {
   return {
     id: row.id,
     reference: row.reference,
+    displayReference: row.display_reference ?? row.reference,
     customerName: row.customer_name,
     note: row.note,
     lines: JSON.parse(row.lines_json) as PricedLine[],
@@ -125,6 +130,15 @@ function fromRow(row: OrderRow): OrderRecord {
 }
 
 export class SubmissionConflictError extends Error {}
+
+function createDisplayReference() {
+  const db=getDb();
+  for(let attempt=0;attempt<20;attempt++){
+    const candidate=generateOrderNumber();
+    if(!db.prepare('SELECT 1 FROM orders WHERE display_reference=?').get(candidate))return candidate;
+  }
+  throw new Error('Could not allocate an order number. Please try again.');
+}
 
 export function createOrder(input: {
   submissionKey?: string;
@@ -229,6 +243,7 @@ export function createOrder(input: {
     const record: OrderRecord = {
       id: randomUUID(),
       reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
+      displayReference: createDisplayReference(),
       customerName,
       note,
       lines,
@@ -256,11 +271,12 @@ export function createOrder(input: {
       paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
+      record.displayReference,
       record.customerName,
       record.note,
       JSON.stringify(record.lines),
@@ -302,7 +318,7 @@ export function createOrder(input: {
 }
 
 export function getOrderByReference(reference: string): OrderRecord | null {
-  const row = getDb().prepare(`SELECT * FROM orders WHERE reference = ?`).get(reference) as OrderRow | undefined;
+  const row = getDb().prepare(`SELECT * FROM orders WHERE reference = ? COLLATE NOCASE OR display_reference = ? COLLATE NOCASE`).get(reference,reference) as OrderRow | undefined;
   return row ? fromRow(row) : null;
 }
 
@@ -321,8 +337,8 @@ export function recordPosEntry(id: string, posReference: string, actor: string):
     const order = fromRow(row);
     if (order.status !== 'accepted') throw new OrderTransitionError('Accept the order before recording it in Yoco.');
     if (order.posRecordedAt) throw new OrderTransitionError('Yoco entry was already recorded.');
-    const duplicate = db.prepare('SELECT reference FROM orders WHERE id <> ? AND pos_reference = ? COLLATE NOCASE').get(id, reference) as {reference:string}|undefined;
-    if (duplicate) throw new OrderTransitionError(`You cannot use this Yoco reference. It has already been used for order ${duplicate.reference}. Check the receipt and enter a different Yoco receipt or order number.`);
+    const duplicate = db.prepare('SELECT display_reference FROM orders WHERE id <> ? AND pos_reference = ? COLLATE NOCASE').get(id, reference) as {display_reference:string}|undefined;
+    if (duplicate) throw new OrderTransitionError(`You cannot use this Yoco reference. It has already been used for order ${duplicate.display_reference}. Check the receipt and enter a different Yoco receipt or order number.`);
     const now = new Date().toISOString();
     db.prepare('UPDATE orders SET pos_recorded_at = ?, pos_recorded_by = ?, pos_reference = ?, updated_at = ? WHERE id = ?').run(now, actor, reference, now, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, order.status, 'pos-recorded', actor, now);
@@ -345,16 +361,17 @@ export function listRecentOrders(limit = 50): OrderRecord[] {
 }
 
 // Full order history for the admin panel, with optional filters — status,
-// fulfillment type and a free-text search across reference/customer name.
+// fulfillment type and a free-text search across customer-facing order number,
+// internal reference and operational customer/delivery details.
 export function searchOrders(filters: { status?: OrderStatus; fulfillment?: FulfillmentType; query?: string; limit?: number } = {}): OrderRecord[] {
   const clauses: string[] = [];
   const params: (string | number)[] = [];
   if (filters.status) { clauses.push('status = ?'); params.push(filters.status); }
   if (filters.fulfillment) { clauses.push('fulfillment = ?'); params.push(filters.fulfillment); }
   if (filters.query) {
-    clauses.push('(reference LIKE ? OR customer_name LIKE ?)');
+    clauses.push('(reference LIKE ? OR display_reference LIKE ? OR customer_name LIKE ? OR contact_number LIKE ? OR company LIKE ? OR building LIKE ? OR pos_reference LIKE ?)');
     const like = `%${filters.query}%`;
-    params.push(like, like);
+    params.push(like, like, like, like, like, like, like);
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   const limit = Math.min(Math.max(filters.limit ?? 200, 1), 1000);
@@ -381,6 +398,8 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
       const paid = db.prepare("SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ? AND method = 'yoco'").get(id) as {n:number};
       if ((current.paymentRequired||checkout && ['creating','pending'].includes(checkout.status)) && paid.n < current.totalCents) throw new OrderTransitionError('Await signed Yoco payment confirmation before accepting this order.');
     }
+    if (nextStatus === 'out_for_delivery' && current.fulfillment !== 'delivery') throw new OrderTransitionError('Only delivery orders can be sent out for delivery.');
+    if (nextStatus === 'completed' && current.fulfillment === 'delivery' && current.status !== 'out_for_delivery') throw new OrderTransitionError('Mark the order out for delivery before marking it delivered.');
     if (nextStatus === 'completed') {
       const paid = db.prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id = ?').get(id) as {n:number};
       if (paid.n < current.totalCents) throw new OrderTransitionError('Record full payment before completing this order.');

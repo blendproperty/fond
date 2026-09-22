@@ -14,7 +14,7 @@ export function enqueueNotification(orderId:string,status:string){
 // Staff polling drives this durable queue. No separate background process required.
 export async function processNotifications(){
   const flags=settings(),db=getDb(),now=Date.now();
-  if(flags.whatsappEnabled){const jobs=db.prepare("SELECT j.*,o.customer_name,o.reference,o.contact_number,o.status AS order_status FROM notification_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';customer_name:string;reference:string;contact_number:string;order_status:string}[];
+  if(flags.whatsappEnabled){const jobs=db.prepare("SELECT j.*,o.customer_name,o.display_reference AS reference,o.contact_number,o.status AS order_status FROM notification_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';customer_name:string;reference:string;contact_number:string;order_status:string}[];
   for(const j of jobs){
     const claim=db.prepare("UPDATE notification_jobs SET status='sending',attempts=attempts+1,updated_at=? WHERE id=? AND status='pending'").run(new Date().toISOString(),j.id);
     if(!claim.changes)continue;
@@ -27,7 +27,7 @@ export async function processNotifications(){
   // An interrupted network send is ambiguous: require human reconciliation, not an automatic duplicate.
   db.prepare("UPDATE notification_jobs SET status='unknown',last_error='Interrupted send; check provider before retrying' WHERE status='sending' AND updated_at<?").run(new Date(now-120000).toISOString());
   }
-  if(flags.smsEnabled){const jobs=db.prepare("SELECT j.*,o.customer_name,o.reference,o.contact_number,o.fulfillment,o.status AS order_status FROM sms_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';customer_name:string;reference:string;contact_number:string;fulfillment:'collection'|'delivery';order_status:string}[];
+  if(flags.smsEnabled){const jobs=db.prepare("SELECT j.*,o.customer_name,o.display_reference AS reference,o.contact_number,o.fulfillment,o.status AS order_status FROM sms_jobs j JOIN orders o ON o.id=j.order_id WHERE j.status='pending' AND j.next_at<=? ORDER BY j.next_at LIMIT 3").all(now) as {id:string;attempts:number;template:'order_accepted'|'order_ready';customer_name:string;reference:string;contact_number:string;fulfillment:'collection'|'delivery';order_status:string}[];
   for(const j of jobs){
     const claim=db.prepare("UPDATE sms_jobs SET status='sending',attempts=attempts+1,updated_at=? WHERE id=? AND status='pending'").run(new Date().toISOString(),j.id);if(!claim.changes)continue;
     if(['completed','cancelled'].includes(j.order_status)||(j.template==='order_accepted'&&j.order_status==='ready')){db.prepare("UPDATE sms_jobs SET status='superseded',updated_at=? WHERE id=?").run(new Date().toISOString(),j.id);continue;}

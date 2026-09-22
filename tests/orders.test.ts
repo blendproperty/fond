@@ -27,6 +27,8 @@ test('customer orders start at received; staff orders start at accepted', () => 
   assert.equal(customer.estimatedPrepMinutes, 4);
   assert.equal(customer.lines[0].prepMinutes, 3);
   assert.match(customer.reference, /^FOND-/);
+  assert.match(customer.displayReference, /^FOND-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/);
+  assert.notEqual(customer.displayReference,customer.reference);
   assert.throws(() => createOrder({ customerName: 'Table 5', lines, collectionTime: 'ASAP', source: 'staff' }), /contact number/);
   const staff = createOrder({ customerName: 'Table 4', lines, collectionTime: 'ASAP', source: 'staff', contactNumber: '0821234567' });
   assert.equal(staff.status, 'accepted');
@@ -42,6 +44,7 @@ test('rejects missing name, collection time or an empty/invalid basket', () => {
 test('an order can be looked up by reference and only active orders are listed', () => {
   const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   assert.equal(getOrderByReference(order.reference)?.id, order.id);
+  assert.equal(getOrderByReference(order.displayReference)?.id, order.id);
   assert.equal(getOrderByReference('FOND-NOPE'), null);
   assert.equal(listActiveOrders().length, 1);
   updateOrderStatus(order.id, 'accepted');
@@ -121,6 +124,18 @@ test('defaults to collection, and delivery requires a contact number and buildin
   assert.equal(delivery.smsOptIn, true);
 });
 
+test('delivery has an explicit dispatch stage before it can be completed',()=>{
+  const order=createOrder({customerName:'Jane',lines,collectionTime:'ASAP',source:'customer',fulfillment:'delivery',paymentMethod:'yoco_online',contactNumber:'0821234567',building:'OnPoint'});
+  getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run('p-delivery',order.id,order.totalCents,'yoco','yoco:delivery','fixture',new Date().toISOString());
+  updateOrderStatus(order.id,'accepted');
+  recordPosEntry(order.id,'YOCO-DELIVERY','fixture');
+  updateOrderStatus(order.id,'preparing');
+  updateOrderStatus(order.id,'ready');
+  assert.throws(()=>updateOrderStatus(order.id,'completed'),/out for delivery/i);
+  assert.equal(updateOrderStatus(order.id,'out_for_delivery').status,'out_for_delivery');
+  assert.equal(updateOrderStatus(order.id,'completed').status,'completed');
+});
+
 test('collection requires a valid contact number', () => {
   assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer' }), /contact number/);
   assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: 'abc123' }), /valid contact number/);
@@ -141,5 +156,8 @@ test('orders can be searched by status, fulfillment and free text', () => {
   createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', paymentMethod:'yoco_online', contactNumber: '0821234567', building: 'OnPoint' });
   assert.equal(searchOrders({ fulfillment: 'delivery' }).length, 1);
   assert.equal(searchOrders({ query: 'Alice' }).length, 1);
+  const delivery=searchOrders({ fulfillment:'delivery' })[0];
+  assert.equal(searchOrders({query:delivery.displayReference}).length,1);
+  assert.equal(searchOrders({query:'OnPoint'}).length,1);
   assert.equal(searchOrders({}).length, 2);
 });

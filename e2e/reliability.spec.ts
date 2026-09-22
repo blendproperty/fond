@@ -9,6 +9,7 @@ test('HTTP retry, access boundaries and audited lifecycle',async({request})=>{
   const headers={'Idempotency-Key':randomUUID()};
   const first=await request.post('/api/orders',{data,headers});expect(first.status()).toBe(201);
   const order=await first.json();
+  expect(order.displayReference).toMatch(/^FOND-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/);
   expect(await (await request.post('/api/orders',{data,headers})).json()).toEqual(order);
   expect((await request.post('/api/orders',{data:{...data,customerName:'Changed'},headers})).status()).toBe(409);
   const login=await request.post('/api/staff/login',{data:{code:process.env.FOND_STAFF_CODE}});expect(login.ok()).toBeTruthy();
@@ -18,12 +19,14 @@ test('HTTP retry, access boundaries and audited lifecycle',async({request})=>{
   const queue=await (await request.get('/api/staff/orders',{headers:staffHeaders})).json();
   const matching=queue.orders.filter((o:{reference:string})=>o.reference===order.reference);expect(matching).toHaveLength(1);
   const id=matching[0].id;
+  const search=await (await request.get(`/api/staff/orders?query=${order.displayReference}`,{headers:staffHeaders})).json();expect(search.orders).toHaveLength(1);expect(search.orders[0].displayReference).toBe(order.displayReference);
+  const publicLookup=await (await request.get(`/api/orders?reference=${order.displayReference}`)).json();expect(publicLookup.reference).toBe(order.reference);expect(publicLookup.displayReference).toBe(order.displayReference);
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'received',status:'accepted'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).status()).toBe(409);
   const yocoReference=`YOCO-${order.reference}`;
   expect((await request.post(`/api/staff/orders/${id}/pos-entry`,{headers:staffHeaders,data:{posReference:yocoReference}})).ok()).toBeTruthy();
   const second=await request.post('/api/staff/orders',{headers:{...staffHeaders,'Idempotency-Key':randomUUID()},data:{customerName:'Duplicate reference test',contactNumber:'0827654321',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}]}});expect(second.ok()).toBeTruthy();const secondOrder=(await second.json()).order;
-  const duplicate=await request.post(`/api/staff/orders/${secondOrder.id}/pos-entry`,{headers:staffHeaders,data:{posReference:` ${yocoReference.toLowerCase()} `}});expect(duplicate.status()).toBe(409);expect((await duplicate.json()).message).toMatch(new RegExp(`cannot use this Yoco reference.*already been used for order ${order.reference}`));
+  const duplicate=await request.post(`/api/staff/orders/${secondOrder.id}/pos-entry`,{headers:staffHeaders,data:{posReference:` ${yocoReference.toLowerCase()} `}});expect(duplicate.status()).toBe(409);expect((await duplicate.json()).message).toMatch(new RegExp(`cannot use this Yoco reference.*already been used for order ${order.displayReference}`));
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'accepted',status:'ready'}})).ok()).toBeTruthy();
   expect((await request.post(`/api/staff/orders/${id}/payment`,{headers:staffHeaders,data:{method:'cash'}})).ok()).toBeTruthy();
   expect((await request.patch(`/api/staff/orders/${id}`,{headers:staffHeaders,data:{expectedStatus:'ready',status:'completed'}})).ok()).toBeTruthy();

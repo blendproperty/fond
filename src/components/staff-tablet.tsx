@@ -1,16 +1,17 @@
 'use client';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
+import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueTargets } from '@/lib/staff-queue';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
-type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'out_for_delivery' | 'completed' | 'cancelled';
 type StaffOrder = {
   payment?: {paidCents:number;paymentMethod:string|null;checkout:string|null;checkoutUpdatedAt?:string|null};
   id: string;
   reference: string;
+  displayReference:string;
   customerName: string;
   note: string | null;
   lines: (CartLine & {name?: string; modifiers?: {name:string}[]})[];
@@ -43,6 +44,13 @@ function timeAgo(iso: string): string {
   return `${minutes} min ago`;
 }
 
+function staffStatus(order:StaffOrder){
+  if(order.status==='ready')return order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection';
+  if(order.status==='out_for_delivery')return 'Out for delivery';
+  if(order.status==='completed')return order.fulfillment==='delivery'?'Delivered':'Collected';
+  return order.status.charAt(0).toUpperCase()+order.status.slice(1);
+}
+
 export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boolean }) {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
@@ -72,11 +80,14 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [lastUpdated,setLastUpdated]=useState<Date|null>(null);
   const [historyOrderId,setHistoryOrderId]=useState<string|null>(null);
   const [orderAudit,setOrderAudit]=useState<OrderAudit|null>(null);
+  const [searchQuery,setSearchQuery]=useState('');
+  const [searchResults,setSearchResults]=useState<StaffOrder[]|null>(null);
+  const [searching,setSearching]=useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
-    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setPaymentMode(data.paymentMode??'none');setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
+    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setPaymentMode(data.paymentMode??'none');setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,out:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
     const timer=setInterval(()=>setNow(Date.now()),15000);
     return ()=>clearInterval(timer);
   }, []);
@@ -112,7 +123,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     const incoming=seenOrders.current ? current.filter(o=>o.status==='received'&&!seenOrders.current!.has(o.id)) : [];
     if (incoming.length && soundEnabled) playOrderSound();
     if (incoming.length && notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      incoming.forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.reference}` }));
+      incoming.forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.displayReference}` }));
     }
     seenOrders.current = new Set(current.map(o => o.id));
     setOrders(current);
@@ -155,6 +166,20 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       if(!response.ok)throw new Error(data.message??'Could not load order history.');
       setOrderAudit(data);
     }catch(error){setHistoryOrderId(null);setQueueError(error instanceof Error?error.message:'Could not load order history.');}
+  }
+
+  async function searchOrder(event?:React.FormEvent){
+    event?.preventDefault();
+    const query=searchQuery.trim();
+    if(!query){setSearchResults(null);return;}
+    setSearching(true);setQueueError('');
+    try{
+      const response=await fetch(`/api/staff/orders?query=${encodeURIComponent(query)}`,{cache:'no-store'});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.message??'Could not search orders.');
+      setSearchResults(data.orders??[]);
+    }catch(error){setQueueError(error instanceof Error?error.message:'Could not search orders.');}
+    finally{setSearching(false);}
   }
 
   useEffect(() => {
@@ -234,6 +259,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
         </div>
       </header>
       {paymentMode==='sandbox'&&<div className="staff-sandbox-banner" role="status"><strong>YOCO TEST MODE</strong><span>Test payment confirmations use no real money. Treat these as test orders and exclude them from live takings.</span></div>}
+      <form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find any order</span></label><input id="staff-order-search" value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
+      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):order.collectionTime}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map(line=><li key={`${order.id}-${line.id}`}>{line.quantity}× {line.name??line.id}</li>)}</ul><button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}
       <div className="staff-summary" aria-label="Queue summary"><div><span>Active orders</span><strong>{orders.length}</strong></div><div><span>Need attention</span><strong>{orders.filter(order=>laneTiming(order,now,queueTargets).delayed).length}</strong></div><div><span>Ready now</span><strong>{orders.filter(order=>order.status==='ready').length}</strong></div><div><span>Payment pending</span><strong>{orders.filter(order=>queueLane(order)==='payment').length}</strong></div></div>
       <div className="staff-queue-controls"><span>Swipe or use arrows to move through stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
       <div className="staff-columns" ref={queueRef}>
@@ -254,12 +281,12 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                   : paymentState === 'pending'
                     ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
                     : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
-                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' && fullyPaid ? {next:'completed' as const,label:order.fulfillment==='delivery'?'Mark delivered':'Mark collected'} : null;
+                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' && order.fulfillment==='delivery' && fullyPaid ? {next:'out_for_delivery' as const,label:'Send out for delivery'} : order.status==='ready' && order.fulfillment==='collection' && fullyPaid ? {next:'completed' as const,label:'Mark collected'} : order.status==='out_for_delivery' && fullyPaid ? {next:'completed' as const,label:'Mark delivered'} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
                       <strong>{order.customerName}</strong>
-                      <span className="staff-ref">{order.reference}</span>
+                      <span className="staff-ref">{order.displayReference}</span>
                     </div>
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>

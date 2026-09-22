@@ -3,7 +3,7 @@ import type { OrderRecord } from './orders';
 export type QueueOrder = Pick<OrderRecord,'status'|'fulfillment'|'posRecordedAt'|'posRequired'|'createdAt'|'updatedAt'|'totalCents'|'estimatedPrepMinutes'> & {paymentRequired?:boolean;
   payment?: {paidCents:number;checkout:string|null;checkoutUpdatedAt?:string|null};
 };
-export type QueueLane = 'new'|'payment'|'yoco'|'preparing'|'delivery'|'collection';
+export type QueueLane = 'new'|'payment'|'yoco'|'preparing'|'delivery'|'out'|'collection';
 export type QueueTargets = Record<QueueLane,number>;
 
 export const QUEUE_LANES: {key:QueueLane;title:string;targetMinutes:number}[] = [
@@ -12,10 +12,12 @@ export const QUEUE_LANES: {key:QueueLane;title:string;targetMinutes:number}[] = 
   {key:'yoco',title:'Added to Yoco system',targetMinutes:5},
   {key:'preparing',title:'Preparing',targetMinutes:20},
   {key:'delivery',title:'Ready for delivery',targetMinutes:10},
+  {key:'out',title:'Out for delivery',targetMinutes:10},
   {key:'collection',title:'Ready for collection',targetMinutes:10},
 ];
 
 export function queueLane(order: QueueOrder): QueueLane {
+  if (order.status === 'out_for_delivery') return 'out';
   if (order.status === 'ready') return order.fulfillment === 'delivery' ? 'delivery' : 'collection';
   if (order.status === 'preparing') return 'preparing';
   if (order.status === 'accepted') return order.posRecordedAt ? 'yoco' : 'new';
