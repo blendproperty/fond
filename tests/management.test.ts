@@ -8,10 +8,10 @@ import {isValidAdminToken} from '../src/lib/admin-auth';
 import {isValidStaffToken} from '../src/lib/staff-auth';
 import {saveCustomer,customers,customerHistory,importCustomerFromOrder,recordPayment,finance,csv} from '../src/lib/business-data';
 import {createOrder,updateOrderStatus,getOrderEvents} from '../src/lib/orders';
-import {processPaymentEvent,verifyYocoSignature,createCheckout} from '../src/lib/payments';
+import {processPaymentEvent,verifyYocoSignature,createCheckout,customerCheckoutMode} from '../src/lib/payments';
 import {processNotifications} from '../src/lib/notifications';
 process.env.FOND_DB_PATH=':memory:';
-beforeEach(()=>{resetDbForTests();delete process.env.YOCO_SECRET_KEY;delete process.env.YOCO_WEBHOOK_SECRET;delete process.env.FOND_WHATSAPP_TOKEN;delete process.env.FOND_ALLOW_TEST_PAYMENTS;});
+beforeEach(()=>{resetDbForTests();delete process.env.YOCO_SECRET_KEY;delete process.env.YOCO_WEBHOOK_SECRET;delete process.env.FOND_WHATSAPP_TOKEN;delete process.env.FOND_ALLOW_TEST_PAYMENTS;delete process.env.FOND_PUBLIC_URL;delete process.env.FOND_HOST;});
 const order=()=>createOrder({submissionKey:randomUUID(),customerName:'Test customer',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567',whatsappOptIn:true});
 test('named roles enforce admin boundary, revoke on edit and logout',()=>{
  const id=saveMember({name:'Counter',username:'counter',password:'test-password-long',role:'staff',active:true},'shared-admin');
@@ -82,6 +82,14 @@ test('signed Yoco callbacks match amount/currency/mode and credit only once',()=
  assert.equal(finance('2020-01-01','2099-01-01').summary.netReceipts,o.totalCents);
 });
 test('unconfigured online checkout fails closed',async()=>{await assert.rejects(()=>createCheckout(order().reference),/not available/);});
+test('customer sandbox checkout is explicitly gated to approved FOND domains',()=>{
+ process.env.YOCO_SECRET_KEY='sk_test_fixture';process.env.YOCO_WEBHOOK_SECRET='whsec_fixture';
+ saveDocument('trading',{...settings(),allowTestPayments:true},'admin');
+ process.env.FOND_PUBLIC_URL='https://fond.mid-point.co.za';assert.equal(customerCheckoutMode(),'sandbox');
+ process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';assert.equal(customerCheckoutMode(),'sandbox');
+ process.env.FOND_PUBLIC_URL='https://other.example';assert.equal(customerCheckoutMode(),'none');
+ process.env.FOND_PUBLIC_URL='https://fond.mid-point.co.za';saveDocument('trading',{...settings(),allowTestPayments:false},'admin');assert.equal(customerCheckoutMode(),'none');
+});
 test('notification jobs are durable and unconfigured provider is visible without blocking statuses',async()=>{
  const o=order();updateOrderStatus(o.id,'accepted','received','team:test');
  assert.equal(getOrderEvents(o.id)[1].actor,'team:test');

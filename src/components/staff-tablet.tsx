@@ -62,6 +62,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const queueRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(Date.now());
   const [queueTargets, setQueueTargets] = useState<QueueTargets>(DEFAULT_QUEUE_TARGETS);
+  const [paymentMode,setPaymentMode]=useState<'live'|'sandbox'|'none'>('none');
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
   const [paymentOrderId,setPaymentOrderId]=useState<string|null>(null);
@@ -74,7 +75,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
-    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
+    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setPaymentMode(data.paymentMode??'none');setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
     const timer=setInterval(()=>setNow(Date.now()),15000);
     return ()=>clearInterval(timer);
   }, []);
@@ -230,6 +231,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
+      {paymentMode==='sandbox'&&<div className="staff-sandbox-banner" role="status"><strong>YOCO TEST MODE</strong><span>Test payment confirmations use no real money. Treat these as test orders and exclude them from live takings.</span></div>}
       <div className="staff-summary" aria-label="Queue summary"><div><span>Active orders</span><strong>{orders.length}</strong></div><div><span>Need attention</span><strong>{orders.filter(order=>laneTiming(order,now,queueTargets).delayed).length}</strong></div><div><span>Ready now</span><strong>{orders.filter(order=>order.status==='ready').length}</strong></div><div><span>Payment pending</span><strong>{orders.filter(order=>queueLane(order)==='payment').length}</strong></div></div>
       <div className="staff-queue-controls"><span>Swipe or use arrows to move through stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
       <div className="staff-columns" ref={queueRef}>

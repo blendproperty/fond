@@ -5,6 +5,7 @@ import {providerSecret,saveProviderSecret} from './provider-secrets';
 import {publicBaseUrl} from './public-url';
 const yocoKey=()=>providerSecret('yoco-secret')??process.env.YOCO_SECRET_KEY;
 const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SECRET;
+const SANDBOX_CUSTOMER_HOSTS=new Set(['fond-test.mid-point.co.za','fond.mid-point.co.za']);
 export function onlinePaymentsConfigured(){
   try {
     const key=yocoKey();
@@ -28,7 +29,7 @@ export function customerCheckoutMode(){
   try{
     const mode=yocoCredentialMode(),s=settings(),base=publicBaseUrl();
     if(mode==='live'&&s.onlinePaymentsEnabled&&onlinePaymentsConfigured())return 'live' as const;
-    if(mode==='test'&&s.allowTestPayments&&!!webhookKey()&&!!base&&new URL(base).hostname==='fond-test.mid-point.co.za')return 'sandbox' as const;
+    if(mode==='test'&&s.allowTestPayments&&!!webhookKey()&&!!base&&SANDBOX_CUSTOMER_HOSTS.has(new URL(base).hostname.toLowerCase()))return 'sandbox' as const;
   }catch{/* fail closed */}
   return 'none' as const;
 }
