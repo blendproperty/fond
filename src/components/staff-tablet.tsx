@@ -65,6 +65,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [paymentMode,setPaymentMode]=useState<'live'|'sandbox'|'none'>('none');
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
+  const [posError, setPosError] = useState('');
   const [paymentOrderId,setPaymentOrderId]=useState<string|null>(null);
   const [paymentMethod,setPaymentMethod]=useState<'cash'|'card'>('card');
   const [paymentReference,setPaymentReference]=useState('');
@@ -126,13 +127,14 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   }
 
   async function recordYoco(id: string) {
+    setPosError('');
     try {
       const res = await fetch(`/api/staff/orders/${id}/pos-entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posReference }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not record Yoco entry.');
-      setPosOrderId(null); setPosReference('');
+      setPosOrderId(null); setPosReference(''); setPosError('');
       await refresh();
-    } catch (error) { setQueueError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
+    } catch (error) { setPosError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
   }
 
   async function recordInPersonPayment(id:string) {
@@ -280,7 +282,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     <div className="staff-card-bottom">
                       <strong>{money(order.totalCents)}</strong>
                       <div className="staff-card-actions">
-                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');}}>Record Yoco entry</button>}
+                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');setPosError('');}}>Record Yoco entry</button>}
                         {order.status==='ready'&&!fullyPaid&&order.paymentMethod==='pay_at_collection'&&<button className="primary staff-payment-action" onClick={()=>{setPaymentOrderId(order.id);setPaymentMethod('card');setPaymentReference('');}}>Take payment</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
                         {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
@@ -293,7 +295,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           </section>
         ))}
       </div>
-      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p>Enter the receipt or order number shown on the restaurant Yoco system. This confirms the kitchen order was entered manually.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>setPosReference(event.target.value)} placeholder="Example: YOCO-12345"/></label><div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
+      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
       {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed.</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
       {manualOpen && <ManualOrderPanel menu={menu} onClose={() => setManualOpen(false)} onCreated={refresh} />}
     </div>

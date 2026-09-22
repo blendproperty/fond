@@ -322,7 +322,7 @@ export function recordPosEntry(id: string, posReference: string, actor: string):
     if (order.status !== 'accepted') throw new OrderTransitionError('Accept the order before recording it in Yoco.');
     if (order.posRecordedAt) throw new OrderTransitionError('Yoco entry was already recorded.');
     const duplicate = db.prepare('SELECT reference FROM orders WHERE id <> ? AND pos_reference = ? COLLATE NOCASE').get(id, reference) as {reference:string}|undefined;
-    if (duplicate) throw new OrderTransitionError(`This Yoco reference is already recorded against ${duplicate.reference}. Check the receipt and use the unique Yoco order number.`);
+    if (duplicate) throw new OrderTransitionError(`You cannot use this Yoco reference. It has already been used for order ${duplicate.reference}. Check the receipt and enter a different Yoco receipt or order number.`);
     const now = new Date().toISOString();
     db.prepare('UPDATE orders SET pos_recorded_at = ?, pos_recorded_by = ?, pos_reference = ?, updated_at = ? WHERE id = ?').run(now, actor, reference, now, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, order.status, 'pos-recorded', actor, now);
