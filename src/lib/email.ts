@@ -62,9 +62,7 @@ export function verifyEmail(userId: string, code: string) {
   } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
 export async function deliverOrderEmail(order: OrderRecord, event: 'received' | 'accepted' | 'ready' | 'completed') {
-  if (!order.emailOptIn || !order.userId || !order.customerEmail || !emailConfigured()) return false;
-  const verified = getDb().prepare('SELECT email_verified_at FROM users WHERE id=?').get(order.userId) as { email_verified_at: string | null } | undefined;
-  if (!verified?.email_verified_at) return false;
+  if (!order.emailOptIn || !order.customerEmail || !emailConfigured()) return false;
   const id = `${order.id}:${event}`, db = getDb(), now = new Date().toISOString();
   db.prepare("INSERT OR IGNORE INTO email_jobs (id,order_id,event,recipient,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)").run(id, order.id, event, order.customerEmail, 'pending', now, now);
   const job = db.prepare('SELECT status FROM email_jobs WHERE id=?').get(id) as { status: string };

@@ -6,6 +6,7 @@ test('lost order response can be retried with the same submission key',async({pa
  await page.getByRole('button',{name:'Basket',exact:true}).click();
  await page.getByLabel(/Your name/).fill('Retry browser test');
  await page.getByLabel('Contact number').fill('0821234567');
+ await page.getByLabel('Email address').fill('retry@example.test');
  const keys:string[]=[];const references:string[]=[];
  await page.route('**/api/orders',async route=>{
    if(route.request().method()!=='POST')return route.continue();

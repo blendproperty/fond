@@ -14,7 +14,7 @@ import type { TradingSettings,SiteContent } from '@/lib/management';
 type Confirmation = { reference: string; total: number; collection: string; fulfillment: Fulfillment;estimatedPrepMinutes:number };
 type TrackedOrder = { payment?: {paidCents:number;checkout:string|null}; paymentMethod?:'yoco_online'|'pay_at_collection';fulfillment?:Fulfillment;reference: string; status: string; totalCents: number; collectionTime: string;estimatedPrepMinutes:number };
 type Fulfillment = 'collection' | 'delivery';
-type CustomerSession = { email: string; emailVerified: boolean };
+type CustomerSession = { email: string };
 
 const STATUS_LABEL: Record<string, string> = {
   received: 'Received — waiting for FOND to accept',
@@ -43,10 +43,10 @@ export function OrderingApp() {
   const [contactNumber, setContactNumber] = useState('');
   const [company, setCompany] = useState('');
   const [building, setBuilding] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [smsOptIn, setSmsOptIn] = useState(true);
   const [emailOptIn, setEmailOptIn] = useState(true);
-  const [account, setAccount] = useState<CustomerSession | null>(null);
   const [note, setNote] = useState('');
   const [placedReferences, setPlacedReferences] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -61,7 +61,7 @@ export function OrderingApp() {
 
   useEffect(() => {
     fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection(data.settings.collectionSlots[0]);if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
-    fetch('/api/auth/session').then(r=>r.json()).then(data=>{const user=data.user as CustomerSession|null;setAccount(user);setEmailOptIn(!!user?.emailVerified);}).catch(()=>{setAccount(null);setEmailOptIn(false);});
+    fetch('/api/auth/session').then(r=>r.json()).then(data=>{const user=data.user as CustomerSession|null;if(user?.email)setCustomerEmail(user.email);setEmailOptIn(true);}).catch(()=>setEmailOptIn(true));
 
     const params=new URLSearchParams(location.search);if(params.has('payment')&&params.get('reference')){setPanel('track');setTrackInput(params.get('reference')!);void lookupOrder(params.get('reference')!);}
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
@@ -139,6 +139,8 @@ export function OrderingApp() {
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
       if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
+      const normalizedEmail=customerEmail.trim().toLowerCase();
+      if(emailOptIn&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address for order updates, or turn email updates off.');
       if (fulfillment === 'delivery') {
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
         if(!store?.onlinePayments)throw new Error('Delivery requires secure online payment, which is not available right now.');
@@ -151,7 +153,7 @@ export function OrderingApp() {
     setSubmitting(true);
     try {
       const paymentMethod=fulfillment==='delivery'||payOnline?'yoco_online':'pay_at_collection';
-      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn:!!account?.emailVerified&&emailOptIn});
+      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,customerEmail:customerEmail.trim()||null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn});
       const key = await submissionKey(payload);
       const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -231,8 +233,9 @@ export function OrderingApp() {
             <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
           </>}
           {fulfillment==='collection'&&<label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>}
+          <label className="field">Email address<input type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)} placeholder="For receipts and order-ready updates" autoComplete="email" required={emailOptIn}/></label>
           {store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={e=>setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> SMS me when my order is accepted and ready</label>}
-          <label className={`field-check${account?.emailVerified?'':' notification-unavailable'}`}><input type="checkbox" checked={!!account?.emailVerified&&emailOptIn} onChange={e=>setEmailOptIn(e.target.checked)} disabled={!account?.emailVerified}/> {account?.emailVerified?`Email me when my order is accepted and ready (${account.email})`:account?.email?'Email notifications unavailable — verify your email in My account':'Email notifications unavailable — sign in and verify your email'}</label>
+          <label className="field-check"><input type="checkbox" checked={emailOptIn} onChange={e=>setEmailOptIn(e.target.checked)}/> Email me when my order is accepted and ready</label>
           <label className={`field-check${store?.settings.whatsappEnabled?'':' notification-unavailable'}`}><input type="checkbox" checked={whatsappOptIn} onChange={e=>setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()||!store?.settings.whatsappEnabled}/> {store?.settings.whatsappEnabled?'WhatsApp me when my order is accepted and ready':'WhatsApp notifications unavailable — setup pending'}</label>
           {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
           {store?.onlinePayments?<fieldset className="payment-choice"><legend>Payment</legend>{store.paymentMode==='sandbox'&&<p className="sandbox-payment-warning"><strong>Test checkout only.</strong> No real payment will be taken. FOND staff will see this as a test payment.</p>}<label className="field-check"><input type="radio" name="payment" checked={payOnline} onChange={()=>setPayOnline(true)}/> {store.paymentMode==='sandbox'?'Use Yoco TEST checkout':'Pay securely now with Yoco'}</label>{fulfillment==='collection'&&<label className="field-check"><input type="radio" name="payment" checked={!payOnline} onChange={()=>setPayOnline(false)}/> Pay at FOND when collecting</label>}{fulfillment==='delivery'&&<p className="small">Delivery orders must be paid online before FOND can prepare them.</p>}</fieldset>:<p className="notice">Online payment is currently unavailable. Collection orders can be paid at FOND. Delivery ordering will open when secure online payment is enabled.</p>}

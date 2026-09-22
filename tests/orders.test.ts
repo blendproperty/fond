@@ -128,6 +128,14 @@ test('collection requires a valid contact number', () => {
   assert.equal(order.whatsappOptIn, true);
 });
 
+test('guest email updates require and normalize a valid address', () => {
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567', emailOptIn: true }), /valid email address/);
+  assert.throws(() => createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567', customerEmail: 'not-an-email', emailOptIn: true }), /valid email address/);
+  const order = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567', customerEmail: ' GUEST@EXAMPLE.TEST ', emailOptIn: true });
+  assert.equal(order.customerEmail, 'guest@example.test');
+  assert.equal(order.emailOptIn, true);
+});
+
 test('orders can be searched by status, fulfillment and free text', () => {
   createOrder({ customerName: 'Alice', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });
   createOrder({ customerName: 'Bob', lines, collectionTime: 'ASAP', source: 'customer', fulfillment: 'delivery', paymentMethod:'yoco_online', contactNumber: '0821234567', building: 'OnPoint' });

@@ -39,7 +39,7 @@ test('controlled email test uses the configured sender without creating an accou
     assert.match(message?.html ?? '', /Browse the FOND menu/);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });
-test('verified accounts get one receipt per order while unverified accounts get none', async () => {
+test('opted-in guest and verified account orders receive email while opted-out orders do not', async () => {
   process.env.FOND_CREDENTIALS_KEY = 'd'.repeat(64);
   const originalFetch = globalThis.fetch;
   const messages: { from: string; to: string[]; text: string; html: string; subject: string }[] = [];
@@ -50,31 +50,36 @@ test('verified accounts get one receipt per order while unverified accounts get 
   try {
     saveProviderSecret('email-api', 're_test_example', 'shared-admin');
     saveDocument('email-from', 'orders@fond.mid-point.co.za', 'shared-admin');
+    const guest = createOrder({ customerName: 'Guest', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], customerEmail: 'guest@example.test', emailOptIn: true });
+    assert.equal(await deliverOrderEmail(guest, 'received'), true);
+    assert.equal(await deliverOrderEmail(guest, 'received'), true);
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].to[0], 'guest@example.test');
+    assert.equal(messages[0].subject, `FOND has received ${guest.reference}`);
+    assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${guest.id}:received`) as { status: string }).status, 'sent');
+    const optedOut = createOrder({ customerName: 'No email', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], customerEmail: 'no-email@example.test', emailOptIn: false });
+    assert.equal(await deliverOrderEmail(optedOut, 'received'), false);
+    assert.equal((getDb().prepare('SELECT count(*) AS n FROM email_jobs WHERE order_id=?').get(optedOut.id) as { n: number }).n, 0);
     const { token, user } = signUp('account@example.test', 'long-password-123');
-    const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email, emailOptIn: true });
-    assert.equal(await deliverOrderEmail(order, 'received'), false);
-    assert.equal(messages.length, 0);
     await requestVerification(user);
-    assert.equal(messages[0].to[0], user.email);
-    assert.equal(messages[0].subject, 'Your FOND verification code');
-    assert.match(messages[0].html, /Your verification code/);
-    const code = messages[0].text.match(/\b\d{6}\b/)?.[0];
+    assert.equal(messages[1].to[0], user.email);
+    assert.equal(messages[1].subject, 'Your FOND verification code');
+    assert.match(messages[1].html, /Your verification code/);
+    const code = messages[1].text.match(/\b\d{6}\b/)?.[0];
     assert.ok(code);
     assert.throws(() => verifyEmail(user.id, String((Number(code) + 1) % 1000000).padStart(6, '0')));
     verifyEmail(user.id, code);
     assert.equal(resolveSession(token)?.emailVerified, true);
+    const order = createOrder({ customerName: 'Account', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email, emailOptIn: true });
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(await deliverOrderEmail(order, 'received'), true);
-    assert.equal(messages.length, 2);
-    assert.equal(messages[1].subject, `FOND has received ${order.reference}`);
-    assert.match(messages[1].html, /Your order details/);
-    assert.match(messages[1].html, /Amount due/);
-    assert.match(messages[1].html, /Espresso \(Single\)/);
-    assert.match(messages[1].html, /R 32,00/);
-    assert.match(messages[1].text, new RegExp(order.reference));
+    assert.equal(messages.length, 3);
+    assert.equal(messages[2].subject, `FOND has received ${order.reference}`);
+    assert.match(messages[2].html, /Your order details/);
+    assert.match(messages[2].html, /Amount due/);
+    assert.match(messages[2].html, /Espresso \(Single\)/);
+    assert.match(messages[2].html, /R 32,00/);
+    assert.match(messages[2].text, new RegExp(order.reference));
     assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${order.id}:received`) as { status: string }).status, 'sent');
-    const optedOut = createOrder({ customerName: 'No email', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], userId: user.id, customerEmail: user.email, emailOptIn: false });
-    assert.equal(await deliverOrderEmail(optedOut, 'received'), false);
-    assert.equal((getDb().prepare('SELECT count(*) AS n FROM email_jobs WHERE order_id=?').get(optedOut.id) as { n: number }).n, 0);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });

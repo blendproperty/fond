@@ -10,7 +10,9 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByLabel('Preferred collection').selectOption('Lunch collection');
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
- await expect(page.getByLabel('Email notifications unavailable — sign in and verify your email')).toBeDisabled();
+ await page.getByLabel('Email address').fill('guest@example.test');
+ await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeChecked();
+ await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByRole('button',{name:'Send order to FOND'}).click();
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
@@ -23,13 +25,14 @@ test('browse, adjust basket, place order and track it',async({page})=>{
 });
 test('available email and SMS notifications are preselected while WhatsApp stays unavailable',async({page})=>{
  await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.settings.smsEnabled=true;body.settings.whatsappEnabled=false;await route.fulfill({response,json:body});});
- await page.route('**/api/auth/session',route=>route.fulfill({json:{user:{id:'verified-customer',email:'customer@example.test',emailVerified:true}}}));
+ await page.route('**/api/auth/session',route=>route.fulfill({json:{user:{id:'unverified-customer',email:'customer@example.test',emailVerified:false}}}));
  await page.goto('/');
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
  const sms=page.getByLabel('SMS me when my order is accepted and ready');
- const email=page.getByLabel('Email me when my order is accepted and ready (customer@example.test)');
+ const email=page.getByLabel('Email me when my order is accepted and ready');
  await expect(sms).toBeChecked();await expect(sms).toBeDisabled();
+ await expect(page.getByLabel('Email address')).toHaveValue('customer@example.test');
  await expect(email).toBeChecked();await expect(email).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByLabel('Contact number').fill('0821234567');

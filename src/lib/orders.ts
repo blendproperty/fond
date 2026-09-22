@@ -147,6 +147,8 @@ export function createOrder(input: {
 }): OrderRecord {
   const db = getDb();
   const key = input.submissionKey;
+  const customerEmail = input.customerEmail?.trim().toLowerCase() || null;
+  if (input.emailOptIn && (!customerEmail || customerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail))) throw new Error('Enter a valid email address for order updates, or turn email updates off.');
   if (key !== undefined && !/^[0-9a-f-]{36}$/i.test(key)) throw new Error('Provide a valid submission key.');
   const fingerprint = createHash('sha256')
     .update(
@@ -163,6 +165,7 @@ export function createOrder(input: {
         whatsappOptIn: input.whatsappOptIn ?? false,
         smsOptIn: input.smsOptIn ?? false,
         emailOptIn: input.emailOptIn ?? false,
+        customerEmail,
         userId: input.userId ?? null,
         paymentMethod:input.paymentMethod??'pay_at_collection',
       }),
@@ -204,7 +207,7 @@ export function createOrder(input: {
     }
     const whatsappOptIn = !!input.whatsappOptIn && !!contactNumber;
     const smsOptIn = !!input.smsOptIn && !!contactNumber;
-    const emailOptIn = !!input.emailOptIn && !!input.userId && !!input.customerEmail;
+    const emailOptIn = !!input.emailOptIn && !!customerEmail;
     // throws on unknown/unavailable items, bad quantities or modifiers - priced against the live admin-editable menu
     const priced = quoteCart(input.lines, getAvailableMenu());
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
@@ -243,7 +246,7 @@ export function createOrder(input: {
       smsOptIn,
       emailOptIn,
       userId: input.userId ?? null,
-      customerEmail: input.customerEmail ?? null,
+      customerEmail,
       posRequired: true,
       posRecordedAt: null,
       posRecordedBy: null,

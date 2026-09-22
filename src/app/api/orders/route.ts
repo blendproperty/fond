@@ -29,9 +29,9 @@ export async function POST(request: Request) {
       building: typeof body.building === 'string' ? body.building : null,
       whatsappOptIn: !!body.whatsappOptIn,
       smsOptIn: !!body.smsOptIn,
-      emailOptIn: !!body.emailOptIn && !!user?.emailVerified,
+      emailOptIn: !!body.emailOptIn,
       userId: user?.id,
-      customerEmail: user?.email,
+      customerEmail: body.emailOptIn ? (typeof body.customerEmail === 'string' ? body.customerEmail : user?.email) : user?.email,
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
     const redirectUrl=order.paymentMethod==='yoco_online'?await createCustomerCheckout(order.reference):null;
