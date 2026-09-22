@@ -212,7 +212,7 @@ export function OrderingApp() {
     </main>
     <footer><a className="wordmark" href="/">fond.</a><span>Good food. Everyday.</span><span>Midpoint Hub</span>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
-    <button className="mobile-basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
+    <button className="mobile-basket" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
     {panel && <div className="overlay" onClick={() => setPanel(null)}><section className="drawer" role="dialog" aria-modal="true" aria-label={panel === 'basket' ? 'Your basket' : 'Track your order'} onClick={(e) => e.stopPropagation()}>
       <header><div><p className="eyebrow">FOND · MIDPOINT</p><h2>{panel === 'basket' ? 'Your basket' : 'Track your order'}</h2></div><button autoFocus className="icon-button" aria-label="Close" onClick={() => setPanel(null)}><X /></button></header>
       <div className="drawer-scroll">

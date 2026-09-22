@@ -12,7 +12,28 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:30px}
 @media(max-width:600px){html{scroll-behavior:auto;scroll-padding-bottom:110px}}
-@media(max-width:560px){.drawer-scroll{padding-bottom:120px;scroll-padding-bottom:100px}}
+/* Customer PWA: prevent the desktop header's min-content width from forcing
+   narrow Android screens into a scaled-down 413px layout. */
+@media(max-width:560px){
+body{overflow-x:clip}
+.header{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 12px;width:100%;max-width:100%;padding:14px 16px 0;overflow:hidden}
+.header .wordmark{align-self:center;font-size:28px}
+.header .location{min-width:0;justify-self:end}
+.header nav{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;width:calc(100% + 32px);min-width:0;margin:0 -16px;border-top:1px solid var(--line)}
+.header nav>.quiet{min-width:0;min-height:48px;justify-content:center;padding:10px 8px;border-radius:0;font-size:12px;text-align:center}
+.header nav>.quiet+.quiet{border-left:1px solid var(--line)}
+.header nav>.basket-button{display:none}
+.hero-copy,.menu-section,.install,footer{max-width:100%}
+.hero-foot{flex-wrap:wrap;row-gap:6px}
+.category-navigation,.category-navigation .tabs{max-width:100%}
+.mobile-basket{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:none;min-width:0;padding:14px 16px}
+.drawer{width:100%;max-width:100vw}
+.drawer-scroll,.cart-line,.cart-line>div{min-width:0}
+.cart-line p{overflow-wrap:anywhere}
+footer{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.drawer-scroll{padding-bottom:120px;scroll-padding-bottom:100px}
+}
+@media(max-width:360px){.hero-copy h1{font-size:36px}.hero-copy{padding-left:18px;padding-right:18px}.menu-section{padding-left:16px;padding-right:16px}}
 body{margin:0;background:var(--mist);color:var(--ink);font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:15px}
 button,a,select,input{-webkit-tap-highlight-color:transparent}
 button,select,input{font:inherit}
