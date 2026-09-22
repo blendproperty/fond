@@ -16,8 +16,8 @@ test('customer can sign up, place an order, then see it in their own account', a
   await page.getByLabel(/Your name/).fill('Account browser test');
   await page.getByLabel('Contact number').fill('0821234567');
   await expect(page.getByLabel('Email address')).toHaveValue(email);
-  await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeChecked();
-  await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeEnabled();
+  await expect(page.getByLabel('Email me when my order is received and ready')).toBeChecked();
+  await expect(page.getByLabel('Email me when my order is received and ready')).toBeEnabled();
   await page.getByRole('button', { name: 'Send order to FOND' }).click();
   await expect(page.getByText('Order sent to FOND.')).toBeVisible();
   await page.goto('/account');

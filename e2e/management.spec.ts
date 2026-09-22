@@ -36,3 +36,19 @@ test('new management APIs and webhook reject anonymous or forged requests',async
  expect((await request.post('/api/payments/webhook',{data:{type:'payment.succeeded'}})).status()).toBe(401);
  expect((await request.post('/api/admin/yoco/test-checkout')).status()).toBe(403);
 });
+
+test('messaging studio shows the two-message journey and a distinct ready upsell preview',async({page})=>{
+ await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();
+ await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ await expect(page.getByText(/sends an order receipt first, then one ready email/i)).toBeVisible();
+ const stages=page.getByLabel('Order stage');
+ await expect(stages.locator('option')).toHaveCount(3);
+ await expect(stages.locator('option')).toHaveText(['Order received','Ready · collection','Ready · delivery']);
+ await stages.selectOption('readyDelivery');
+ await expect(page.locator('.email-mini-status.is-ready')).toContainText('ORDER READY');
+ await expect(page.locator('.email-mini-status.is-ready')).toContainText('ready for delivery');
+ await expect(page.locator('.email-mini-banner')).toContainText(/Order again from FOND|See the menu/);
+ await stages.selectOption('received');
+ await expect(page.locator('.email-mini-status.is-ready')).toHaveCount(0);
+ await expect(page.locator('.email-mini-banner')).toHaveCount(0);
+});

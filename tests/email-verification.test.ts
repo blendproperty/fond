@@ -4,7 +4,7 @@ import { getDb, resetDbForTests } from '../src/lib/db';
 import { signUp, resolveSession } from '../src/lib/auth';
 import { saveDocument } from '../src/lib/management';
 import { saveProviderSecret } from '../src/lib/provider-secrets';
-import { deliverOrderEmail, requestVerification, sendControlledEmailTest, validEmailSender, verifyEmail } from '../src/lib/email';
+import { automaticOrderEmailEvent,deliverOrderEmail,requestVerification,sendControlledEmailTest,validEmailSender,verifyEmail } from '../src/lib/email';
 import { createOrder } from '../src/lib/orders';
 
 process.env.FOND_DB_PATH = ':memory:';
@@ -14,6 +14,14 @@ test('email sender is restricted to the verified FOND subdomain', () => {
   assert.equal(validEmailSender(' Orders@FOND.MID-POINT.CO.ZA '), true);
   assert.equal(validEmailSender('orders@fond.co.za'), false);
   assert.equal(validEmailSender('orders@mid-point.co.za'), false);
+});
+test('automatic customer email policy sends only received and ready events',()=>{
+  assert.equal(automaticOrderEmailEvent('received'),'received');
+  assert.equal(automaticOrderEmailEvent('accepted'),null);
+  assert.equal(automaticOrderEmailEvent('preparing'),null);
+  assert.equal(automaticOrderEmailEvent('ready'),'ready');
+  assert.equal(automaticOrderEmailEvent('completed'),null);
+  assert.equal(automaticOrderEmailEvent('cancelled'),null);
 });
 test('controlled email test uses the configured sender without creating an account', async () => {
   process.env.FOND_CREDENTIALS_KEY = 'd'.repeat(64);
@@ -36,7 +44,7 @@ test('controlled email test uses the configured sender without creating an accou
     assert.match(message?.html ?? '', /Your FOND email updates are ready/);
     assert.match(message?.html ?? '', /Your email details/);
     assert.match(message?.html ?? '', /account@example\.test/);
-    assert.match(message?.html ?? '', /Browse the FOND menu/);
+    assert.match(message?.html ?? '', /Order again from FOND/);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });
 test('opted-in guest and verified account orders receive email while opted-out orders do not', async () => {
@@ -55,7 +63,7 @@ test('opted-in guest and verified account orders receive email while opted-out o
     assert.equal(await deliverOrderEmail(guest, 'received'), true);
     assert.equal(messages.length, 1);
     assert.equal(messages[0].to[0], 'guest@example.test');
-    assert.equal(messages[0].subject, `FOND has received ${guest.reference}`);
+    assert.equal(messages[0].subject, `Order received · ${guest.reference}`);
     assert.equal((getDb().prepare('SELECT status FROM email_jobs WHERE id=?').get(`${guest.id}:received`) as { status: string }).status, 'sent');
     const optedOut = createOrder({ customerName: 'No email', source: 'customer', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }], customerEmail: 'no-email@example.test', emailOptIn: false });
     assert.equal(await deliverOrderEmail(optedOut, 'received'), false);
@@ -74,7 +82,7 @@ test('opted-in guest and verified account orders receive email while opted-out o
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(await deliverOrderEmail(order, 'received'), true);
     assert.equal(messages.length, 3);
-    assert.equal(messages[2].subject, `FOND has received ${order.reference}`);
+    assert.equal(messages[2].subject, `Order received · ${order.reference}`);
     assert.match(messages[2].html, /Your order details/);
     assert.match(messages[2].html, /Amount due/);
     assert.match(messages[2].html, /Espresso \(Single\)/);

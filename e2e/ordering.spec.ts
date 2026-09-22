@@ -11,8 +11,8 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
  await page.getByLabel('Email address').fill('guest@example.test');
- await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeChecked();
- await expect(page.getByLabel('Email me when my order is accepted and ready')).toBeEnabled();
+ await expect(page.getByLabel('Email me when my order is received and ready')).toBeChecked();
+ await expect(page.getByLabel('Email me when my order is received and ready')).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByRole('button',{name:'Send order to FOND'}).click();
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
@@ -30,7 +30,7 @@ test('available email and SMS notifications are preselected while WhatsApp stays
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
  const sms=page.getByLabel('SMS me when my order is accepted and ready');
- const email=page.getByLabel('Email me when my order is accepted and ready');
+ const email=page.getByLabel('Email me when my order is received and ready');
  await expect(sms).toBeChecked();await expect(sms).toBeDisabled();
  await expect(page.getByLabel('Email address')).toHaveValue('customer@example.test');
  await expect(email).toBeChecked();await expect(email).toBeEnabled();

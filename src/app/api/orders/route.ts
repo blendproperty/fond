@@ -1,7 +1,7 @@
 import { createCustomerCheckout,customerCheckoutMode,paymentStatus } from '@/lib/payments';
 import { cookies } from 'next/headers';
 import { SESSION_COOKIE, resolveSession } from '@/lib/auth';
-import { deliverOrderEmail } from '@/lib/email';
+import { automaticOrderEmailEvent,deliverOrderEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 import { SubmissionConflictError, createOrder, getOrderByReference } from '@/lib/orders';
 
@@ -35,7 +35,8 @@ export async function POST(request: Request) {
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
     const redirectUrl=order.paymentMethod==='yoco_online'?await createCustomerCheckout(order.reference):null;
-    if (order.emailOptIn) await deliverOrderEmail(order, 'received').catch(() => false);
+    const emailEvent=automaticOrderEmailEvent(order.status);
+    if (order.emailOptIn&&emailEvent) await deliverOrderEmail(order,emailEvent).catch(() => false);
     return NextResponse.json(
       {
         reference: order.reference,

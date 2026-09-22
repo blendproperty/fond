@@ -2,10 +2,13 @@ import { createHmac, randomInt } from 'node:crypto';
 import { getDb } from './db';
 import { document } from './management';
 import { providerSecret } from './provider-secrets';
-import type { OrderRecord } from './orders';
+import type { OrderRecord,OrderStatus } from './orders';
 import { buildControlledTestEmail, buildOrderEmail, buildVerificationEmail, type EmailMessage } from './email-template';
 
 export const emailSender = () => document('email-from', '');
+export function automaticOrderEmailEvent(status:OrderStatus):'received'|'ready'|null{
+  return status==='received'||status==='ready'?status:null;
+}
 export const validEmailSender = (value: string) => /^[a-z0-9._+-]+@fond\.mid-point\.co\.za$/i.test(value.trim());
 export function emailConfigured() {
   try { return !!providerSecret('email-api') && !!emailSender(); } catch { return false; }
