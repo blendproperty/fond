@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
-import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueTargets } from '@/lib/staff-queue';
+import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
@@ -74,6 +74,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
   const queueRef = useRef<HTMLDivElement>(null);
+  const [activeLane, setActiveLane] = useState<QueueLane>('new');
   const [now, setNow] = useState(Date.now());
   const [queueTargets, setQueueTargets] = useState<QueueTargets>(DEFAULT_QUEUE_TARGETS);
   const [paymentMode,setPaymentMode]=useState<'live'|'sandbox'|'none'>('none');
@@ -150,6 +151,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not record Yoco entry.');
       setPosOrderId(null); setPosReference(''); setPosError('');
+      setActiveLane('yoco');
       await refresh();
     } catch (error) { setPosError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
   }
@@ -208,13 +210,14 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     await refresh();
   }
 
-  async function setStatus(id: string, status: OrderStatus) {
+  async function setStatus(id: string, status: OrderStatus, focusLane?: QueueLane) {
     setQueueError('');
     try {
       const expectedStatus = orders.find(o => o.id === id)?.status;
       const res = await fetch(`/api/staff/orders/${id}`, {method:'PATCH', headers:{'Content-Type':'application/json'},body:JSON.stringify({status, expectedStatus})});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not update this order.');
+      if (focusLane) setActiveLane(focusLane);
       await refresh();
     } catch (error) { setQueueError(error instanceof Error ? error.message : 'Connection lost. Refresh before trying again.'); }
   }
@@ -222,6 +225,23 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   async function logout() {
     await fetch('/api/staff/logout', { method: 'POST' });
     setLocked(true);
+  }
+
+  const laneCounts = Object.fromEntries(QUEUE_LANES.map(lane => [lane.key, orders.filter(order => queueLane(order) === lane.key).length])) as Record<QueueLane, number>;
+  const laneDelayedCounts = Object.fromEntries(QUEUE_LANES.map(lane => [lane.key, orders.filter(order => queueLane(order) === lane.key && laneTiming(order, now, queueTargets).delayed).length])) as Record<QueueLane, number>;
+  const activeLaneIndex = QUEUE_LANES.findIndex(lane => lane.key === activeLane);
+
+  function selectLane(lane: QueueLane) {
+    setActiveLane(lane);
+    requestAnimationFrame(() => {
+      const column = queueRef.current?.querySelector<HTMLElement>(`[data-lane="${lane}"]`);
+      if (column && queueRef.current) queueRef.current.scrollTo({ left: Math.max(0, column.offsetLeft - queueRef.current.offsetLeft), behavior: 'smooth' });
+    });
+  }
+
+  function moveLane(offset: -1 | 1) {
+    const nextLane = QUEUE_LANES[activeLaneIndex + offset];
+    if (nextLane) selectLane(nextLane.key);
   }
 
   if (checking) return null;
@@ -268,12 +288,19 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       <form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find any order</span></label><input id="staff-order-search" value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
       {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):order.collectionTime}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}
       <div className="staff-summary" aria-label="Queue summary"><div><span>Active orders</span><strong>{orders.length}</strong></div><div><span>Need attention</span><strong>{orders.filter(order=>laneTiming(order,now,queueTargets).delayed).length}</strong></div><div><span>Ready now</span><strong>{orders.filter(order=>order.status==='ready').length}</strong></div><div><span>Payment pending</span><strong>{orders.filter(order=>queueLane(order)==='payment').length}</strong></div></div>
-      <div className="staff-queue-controls"><span>Swipe or use arrows to move through stages</span><button type="button" aria-label="Previous order stages" onClick={() => queueRef.current?.scrollBy({left:-320,behavior:'smooth'})}><ChevronLeft size={19}/></button><button type="button" aria-label="Next order stages" onClick={() => queueRef.current?.scrollBy({left:320,behavior:'smooth'})}><ChevronRight size={19}/></button></div>
+      <nav className="staff-stage-navigation" aria-label="Order stages">
+        <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
+        <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
+          {QUEUE_LANES.map(lane => <button className="staff-stage-tab" type="button" role="tab" aria-selected={activeLane===lane.key} aria-controls={`staff-lane-${lane.key}`} data-lane={lane.key} data-active={activeLane===lane.key} key={lane.key} onClick={() => selectLane(lane.key)}><span>{lane.title}</span><strong>{laneCounts[lane.key]}</strong>{laneDelayedCounts[lane.key]>0&&<em>{laneDelayedCounts[lane.key]} delayed</em>}</button>)}
+        </div>
+        <button className="staff-stage-arrow" type="button" aria-label="Next order stage" disabled={activeLaneIndex===QUEUE_LANES.length-1} onClick={() => moveLane(1)}><ChevronRight size={22}/></button>
+      </nav>
       <div className="staff-columns" ref={queueRef}>
         {QUEUE_LANES.map((col) => (
-          <section className="staff-column" data-lane={col.key} key={col.key} aria-label={col.title}>
-            <h2>{col.title} <span>{orders.filter((o) => queueLane(o) === col.key).length}</span></h2>
-            {orders.filter((o) => queueLane(o) === col.key).length === 0 && <p className="staff-empty">Nothing here.</p>}
+          <section className="staff-column" id={`staff-lane-${col.key}`} data-lane={col.key} data-active={activeLane===col.key} key={col.key} aria-label={col.title}>
+            <h2>{col.title} <span>{laneCounts[col.key]}</span></h2>
+            <div className="staff-column-orders">
+            {laneCounts[col.key] === 0 && <p className="staff-empty">No orders in this stage.</p>}
             {orders
               .filter((o) => queueLane(o) === col.key)
               .map((order) => {
@@ -287,7 +314,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                   : paymentState === 'pending'
                     ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
                     : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
-                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order'} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing'} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection'} : order.status==='ready' && order.fulfillment==='delivery' && fullyPaid ? {next:'out_for_delivery' as const,label:'Send out for delivery'} : order.status==='ready' && order.fulfillment==='collection' && fullyPaid ? {next:'completed' as const,label:'Mark collected'} : order.status==='out_for_delivery' && fullyPaid ? {next:'completed' as const,label:'Mark delivered'} : null;
+                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order',lane:'new' as QueueLane} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing',lane:'preparing' as QueueLane} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection',lane:(order.fulfillment==='delivery'?'delivery':'collection') as QueueLane} : order.status==='ready' && order.fulfillment==='delivery' && fullyPaid ? {next:'out_for_delivery' as const,label:'Send out for delivery',lane:'out' as QueueLane} : order.status==='ready' && order.fulfillment==='collection' && fullyPaid ? {next:'completed' as const,label:'Mark collected',lane:'collection' as QueueLane} : order.status==='out_for_delivery' && fullyPaid ? {next:'completed' as const,label:'Mark delivered',lane:'out' as QueueLane} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
@@ -318,13 +345,14 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                         {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');setPosError('');}}>Record Yoco entry</button>}
                         {order.status==='ready'&&!fullyPaid&&order.paymentMethod==='pay_at_collection'&&<button className="primary staff-payment-action" onClick={()=>{setPaymentOrderId(order.id);setPaymentMethod('card');setPaymentReference('');}}>Take payment</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
-                        {step && <button className="primary" onClick={() => setStatus(order.id, step.next)}><Check size={16} /> {step.label}</button>}
+                        {step && <button className="primary" onClick={() => setStatus(order.id, step.next, step.lane)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>
                       </div>
                     </div>
                   </article>
                 );
               })}
+            </div>
           </section>
         ))}
       </div>

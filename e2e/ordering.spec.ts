@@ -84,6 +84,39 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await expect(page.getByText('Search Customer')).toBeVisible();
 });
 
+test('staff landscape tablet has large direct stage controls and a focused work area',async({page},testInfo)=>{
+ await page.setViewportSize({width:1180,height:820});
+ await page.goto('/staff');
+ const accessCode=page.getByLabel('Staff access code');
+ await expect(accessCode).toBeVisible();
+ await accessCode.fill(process.env.FOND_STAFF_CODE ?? '000000');
+ await page.getByRole('button',{name:'Open order queue'}).click();
+ await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
+ const tabletOrders=['Kitchen One','Kitchen Two'].map((customerName,index)=>({id:`tablet-${index}`,reference:`FOND-INTERNAL-${index}`,displayReference:`FOND-TAB${index}-TEST`,customerName,note:index?'No onion':null,lines:[{id:'smashed-avo',quantity:1,name:'Smashed Avo',modifierIds:[],modifiers:[]}],collectionTime:'As soon as possible',totalCents:12000,status:'preparing',source:'customer',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),fulfillment:'collection',contactNumber:`082123456${index}`,company:null,building:null,posRequired:false,posRecordedAt:null,posReference:null,estimatedPrepMinutes:13,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:0,paymentMethod:null,checkout:null}}));
+ await page.route(/\/api\/staff\/orders$/,route=>route.request().method()==='GET'?route.fulfill({json:{orders:tabletOrders}}):route.continue());
+ await page.reload();
+ const preparingTab=page.getByRole('tab',{name:/^Preparing/});
+ await expect(preparingTab).toBeVisible();
+ const tabBox=await preparingTab.boundingBox();
+ expect(tabBox?.height).toBeGreaterThanOrEqual(58);
+ expect(tabBox?.width).toBeGreaterThanOrEqual(90);
+ await preparingTab.click();
+ await expect(preparingTab).toHaveAttribute('aria-selected','true');
+ const preparingLane=page.getByRole('region',{name:'Preparing'});
+ await expect(preparingLane).toBeVisible();
+ await expect(page.getByRole('region',{name:'New'})).toBeHidden();
+ const cards=preparingLane.locator('.staff-card');
+ await expect(cards).toHaveCount(2);
+ const firstCard=await cards.nth(0).boundingBox(),secondCard=await cards.nth(1).boundingBox();
+ expect(firstCard?.width).toBeGreaterThan(400);
+ expect(Math.abs((firstCard?.y??0)-(secondCard?.y??0))).toBeLessThan(3);
+ expect(secondCard?.x).toBeGreaterThan((firstCard?.x??0)+(firstCard?.width??0));
+ await page.screenshot({path:testInfo.outputPath('staff-landscape-tablet.png'),fullPage:true});
+ await page.getByRole('button',{name:'Next order stage'}).click();
+ await expect(page.getByRole('tab',{name:/^Ready for delivery/})).toHaveAttribute('aria-selected','true');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
 test('staff tickets turn item modifications and customer notes into prominent instructions',async({page})=>{
  await page.route(/\/api\/staff\/orders$/,route=>route.request().method()==='GET'?route.fulfill({json:{orders:[{id:'changes-fixture',reference:'FOND-INTERNAL-CHANGES',displayReference:'FOND-7K3P-9Q8R',customerName:'Kitchen Changes',note:'Severe nut allergy',lines:[{id:'smashed-avo',quantity:1,name:'Smashed Avo',modifierIds:['swap','remove'],modifiers:[{name:'Vegan swap: smoky hummus instead of cheese'},{name:'No pickled red onion'}]}],collectionTime:'As soon as possible',totalCents:12000,status:'preparing',source:'customer',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),fulfillment:'collection',contactNumber:'0821234567',company:null,building:null,posRequired:false,posRecordedAt:null,posReference:null,estimatedPrepMinutes:13,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:12000,paymentMethod:'cash',checkout:null}}]}}):route.continue());
  await page.goto('/staff');
@@ -92,6 +125,7 @@ test('staff tickets turn item modifications and customer notes into prominent in
   await accessCode.fill(process.env.FOND_STAFF_CODE ?? '000000');
   await page.getByRole('button',{name:'Open order queue'}).click();
  }
+ await page.getByRole('tab',{name:/^Preparing/}).click();
  const ticket=page.locator('.staff-card').filter({hasText:'Kitchen Changes'});
  await expect(ticket.getByText('CHANGES TO MAKE')).toBeVisible();
  await expect(ticket.getByText('SWAP',{exact:true})).toBeVisible();

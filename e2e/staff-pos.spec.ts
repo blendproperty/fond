@@ -11,7 +11,10 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await page.goto('/staff');
   await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);
   await page.getByRole('button', { name: 'Open order queue' }).click();
-  for (const title of ['New','Awaiting Yoco payment confirmation','Added to Yoco system','Preparing','Ready for delivery','Out for delivery','Ready for collection']) await expect(page.getByRole('region',{name:title})).toBeVisible();
+  for (const title of ['New','Awaiting Yoco payment confirmation','Added to Yoco system','Preparing','Ready for delivery','Out for delivery','Ready for collection']) {
+    await expect(page.getByRole('region',{name:title,includeHidden:true})).toBeAttached();
+    await expect(page.getByRole('tab',{name:new RegExp(`^${title}`)})).toBeVisible();
+  }
   await expect(page.getByRole('button',{name:'Enable sound'})).toBeVisible();
   const card = page.locator('.staff-card').filter({ hasText: displayReference });
   await expect(card).toBeVisible();
@@ -30,6 +33,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await posDialog.getByRole('button', { name: 'Confirm POS entry' }).click();
   await expect(page.getByRole('region',{name:'Added to Yoco system'}).locator('.staff-card').filter({hasText:displayReference})).toBeVisible();
   await expect(card.getByText(`Entered in Yoco · ${yocoReference}`)).toBeVisible();
+  await page.getByRole('tab',{name:/^New/}).click();
   const duplicateCard=page.locator('.staff-card').filter({hasText:duplicateDisplayReference});
   await duplicateCard.getByRole('button',{name:'Accept'}).click();
   await duplicateCard.getByRole('button',{name:'Record Yoco entry'}).click();
@@ -38,6 +42,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await expect(posDialog.getByRole('alert')).toContainText(`You cannot use this Yoco reference. It has already been used for order ${displayReference}.`);
   await expect(posDialog).toBeVisible();
   await posDialog.getByRole('button',{name:'Close'}).click();
+  await page.getByRole('tab',{name:/^Added to Yoco system/}).click();
   await card.getByRole('button', { name: 'Start preparing' }).click();
   await expect(page.getByRole('region',{name:'Preparing'}).locator('.staff-card').filter({hasText:displayReference})).toBeVisible();
   await card.getByRole('button', { name: 'Ready for collection' }).click();
