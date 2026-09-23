@@ -38,6 +38,16 @@ type OrderAudit = {
   payment:{checkout:{checkoutId:string|null;status:string;updatedAt:string}|null;records:{amountCents:number;method:string;reference:string;actor:string;createdAt:string}[]};
 };
 
+const STAFF_LANE_LABELS: Record<QueueLane, string> = {
+  new: 'New',
+  payment: 'Payment pending',
+  yoco: 'In Yoco',
+  preparing: 'Preparing',
+  delivery: 'Ready delivery',
+  out: 'Delivering',
+  collection: 'Ready collection',
+};
+
 function timeAgo(iso: string): string {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (minutes < 1) return 'just now';
@@ -291,7 +301,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       <nav className="staff-stage-navigation" aria-label="Order stages">
         <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
         <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
-          {QUEUE_LANES.map(lane => <button className="staff-stage-tab" type="button" role="tab" aria-selected={activeLane===lane.key} aria-controls={`staff-lane-${lane.key}`} data-lane={lane.key} data-active={activeLane===lane.key} key={lane.key} onClick={() => selectLane(lane.key)}><span>{lane.title}</span><strong>{laneCounts[lane.key]}</strong>{laneDelayedCounts[lane.key]>0&&<em>{laneDelayedCounts[lane.key]} delayed</em>}</button>)}
+          {QUEUE_LANES.map(lane => <button className="staff-stage-tab" type="button" role="tab" aria-label={`${lane.title}: ${laneCounts[lane.key]} orders`} aria-selected={activeLane===lane.key} aria-controls={`staff-lane-${lane.key}`} data-lane={lane.key} data-active={activeLane===lane.key} key={lane.key} onClick={() => selectLane(lane.key)}><span>{STAFF_LANE_LABELS[lane.key]}</span><strong>{laneCounts[lane.key]}</strong>{laneDelayedCounts[lane.key]>0&&<em>{laneDelayedCounts[lane.key]} delayed</em>}</button>)}
         </div>
         <button className="staff-stage-arrow" type="button" aria-label="Next order stage" disabled={activeLaneIndex===QUEUE_LANES.length-1} onClick={() => moveLane(1)}><ChevronRight size={22}/></button>
       </nav>

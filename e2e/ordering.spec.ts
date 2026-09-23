@@ -115,6 +115,15 @@ test('staff landscape tablet has large direct stage controls and a focused work 
  await page.getByRole('button',{name:'Next order stage'}).click();
  await expect(page.getByRole('tab',{name:/^Ready for delivery/})).toHaveAttribute('aria-selected','true');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.setViewportSize({width:734,height:700});
+ const paymentTab=page.getByRole('tab',{name:/^Awaiting Yoco payment confirmation/});
+ await paymentTab.click();
+ await expect(page.getByRole('region',{name:'Awaiting Yoco payment confirmation'})).toBeVisible();
+ await expect(paymentTab.getByText('Payment pending',{exact:true})).toBeVisible();
+ const compactLabel=await paymentTab.locator('span').boundingBox();
+ expect(compactLabel?.height).toBeLessThan(36);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('staff-compact-landscape.png'),fullPage:true});
 });
 
 test('staff tickets turn item modifications and customer notes into prominent instructions',async({page})=>{
