@@ -153,6 +153,20 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE, email TEXT, company TEXT, notes TEXT NOT NULL DEFAULT '', marketing_consent INTEGER NOT NULL DEFAULT 0, consent_note TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS admin_events (id TEXT PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS admin_change_versions (
+      id TEXT PRIMARY KEY,
+      actor TEXT NOT NULL,
+      area TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      before_json TEXT,
+      after_json TEXT,
+      reversible INTEGER NOT NULL DEFAULT 1,
+      rolled_back_by TEXT,
+      rolled_back_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS admin_change_versions_entity ON admin_change_versions(area,entity_id,created_at);
     CREATE TABLE IF NOT EXISTS payment_records (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, amount_cents INTEGER NOT NULL, method TEXT NOT NULL, reference TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE UNIQUE INDEX IF NOT EXISTS payment_reference ON payment_records(reference);
     CREATE TABLE IF NOT EXISTS yoco_checkouts (order_id TEXT PRIMARY KEY, checkout_id TEXT UNIQUE, redirect_url TEXT, status TEXT NOT NULL, updated_at TEXT NOT NULL);

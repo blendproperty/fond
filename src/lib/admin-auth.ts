@@ -31,7 +31,7 @@ export function checkAdminCode(candidate: string): string | null {
 
 export function isValidAdminToken(token: string | undefined | null): boolean {
   if (!token) return false;
-  if (token.startsWith('team_')) return ['manager','super-admin'].includes(teamSession(token)?.role??'');
+  if (token.startsWith('team_')) return ['manager','owner','super-admin'].includes(teamSession(token)?.role??'');
   if (superAdminTwoFactorActive()) return false;
   let expected: string;
   try {
@@ -44,8 +44,8 @@ export function isValidAdminToken(token: string | undefined | null): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function adminRole(token:string|undefined|null):'super-admin'|'manager'|null {
+export function adminRole(token:string|undefined|null):'super-admin'|'owner'|'manager'|null {
   if(!isValidAdminToken(token))return null;
-  if(token?.startsWith('team_'))return teamSession(token)?.role as 'super-admin'|'manager' ?? null;
+  if(token?.startsWith('team_'))return teamSession(token)?.role as 'super-admin'|'owner'|'manager' ?? null;
   return 'super-admin';
 }

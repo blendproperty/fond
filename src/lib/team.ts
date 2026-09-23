@@ -2,7 +2,7 @@ import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from
 import { getDb } from './db';
 import { audit } from './management';
 import { verifyMemberTwoFactor } from './two-factor';
-type Member={id:string;name:string;username:string;role:'super-admin'|'manager'|'staff';active:number;password_hash:string};
+type Member={id:string;name:string;username:string;role:'super-admin'|'owner'|'manager'|'staff';active:number;password_hash:string};
 const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function teamSession(token:string|undefined|null) {
   if(!token?.startsWith('team_'))return null;
@@ -33,8 +33,8 @@ export function loginMember(username:string,password:string,twoFactorCode?:strin
 }
 export function listTeam(){return getDb().prepare('SELECT id,name,username,role,active,created_at FROM team_members ORDER BY name').all();}
 export function saveMember(input:{id?:string;name:string;username:string;role:string;active:boolean;password?:string},actor:string){
-  if(typeof input.name!=='string'||!input.name.trim()||input.name.length>100||typeof input.username!=='string'||!/^[a-zA-Z0-9._@-]{3,100}$/.test(input.username)||!['super-admin','manager','staff'].includes(input.role)||typeof input.active!=='boolean')throw new Error('Provide name, unique username and valid role.');
-  if(input.role==='super-admin'&&actor!=='shared-admin'&&!actor.startsWith('super:'))throw new Error('Super admin access required.');
+  if(typeof input.name!=='string'||!input.name.trim()||input.name.length>100||typeof input.username!=='string'||!/^[a-zA-Z0-9._@-]{3,100}$/.test(input.username)||!['super-admin','owner','manager','staff'].includes(input.role)||typeof input.active!=='boolean')throw new Error('Provide name, unique username and valid role.');
+  if(['super-admin','owner'].includes(input.role)&&actor!=='shared-admin'&&!actor.startsWith('super:'))throw new Error('Super admin access required.');
   const db=getDb();const prior=input.id?db.prepare('SELECT * FROM team_members WHERE id=?').get(input.id) as Member|undefined:undefined;
   if(input.id&&!prior)throw new Error('Team member not found.');
   if((actor===`team:${input.id}`||actor===`super:${input.id}`)&&(!input.active||input.role!==prior?.role))throw new Error('You cannot remove your own access.');

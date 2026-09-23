@@ -23,6 +23,11 @@ test('admin sections save customer, publish CMS, record receipts and create name
  await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByLabel('Member name',{exact:true}).fill('Staff '+tag);await page.getByLabel('Username',{exact:true}).fill('staff'+tag);await page.getByLabel('Password (12+ characters)',{exact:true}).fill('local-test-password');
  await page.getByLabel('New order (minutes)',{exact:true}).fill('7');await page.getByRole('button',{name:'Save settings'}).click();await expect(page.getByRole('status')).toContainText('Saved');
  expect((await (await request.get('/api/store')).json()).settings.newOrderMinutes).toBe(7);
+ await expect(page.getByRole('heading',{name:'Change history & rollback'})).toBeVisible();
+ const tradingChange=page.locator('.change-record').filter({hasText:'Trading & fulfilment settings'}).first();
+ await expect(tradingChange).toContainText('Shared admin');await expect(tradingChange).toContainText('New order target');
+ page.once('dialog',dialog=>dialog.accept());await tradingChange.getByRole('button',{name:'Roll back',exact:true}).click();await expect(page.getByRole('status')).toContainText('Saved');
+ expect((await (await request.get('/api/store')).json()).settings.newOrderMinutes).not.toBe(7);
  await page.getByRole('button',{name:'Save team member'}).click();await expect(page.getByRole('button',{name:new RegExp('Staff '+tag)})).toBeVisible();
  const login=await request.post('/api/staff/login',{data:{username:'staff'+tag,password:'local-test-password'}});expect(login.status()).toBe(200);
  const headers={Cookie:login.headers()['set-cookie'].split(';')[0]};expect((await request.get('/api/staff/orders',{headers})).status()).toBe(200);expect((await request.get('/api/admin/manage/finance',{headers})).status()).toBe(401);
@@ -33,6 +38,7 @@ test('admin sections save customer, publish CMS, record receipts and create name
 test('new management APIs and webhook reject anonymous or forged requests',async({request})=>{
  for(const section of ['settings','customers','finance','marketing','history'])expect((await request.get('/api/admin/manage/'+section)).status()).toBe(401);
  expect((await request.post('/api/admin/manage/team',{data:{name:'Bad'}})).status()).toBe(401);
+ expect((await request.post('/api/admin/manage/rollback-change',{data:{id:'not-authorized'}})).status()).toBe(401);
  expect((await request.post('/api/payments/webhook',{data:{type:'payment.succeeded'}})).status()).toBe(401);
  expect((await request.post('/api/admin/yoco/test-checkout')).status()).toBe(403);
 });

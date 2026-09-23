@@ -10,6 +10,7 @@ import { getOrderByReference } from '@/lib/orders';
 import { whatsappConfigured } from '@/lib/whatsapp';
 import {smsConfigured} from '@/lib/sms';
 import {DEFAULT_MESSAGE_TEMPLATES,validateMessageTemplates} from '@/lib/message-template-config';
+import {listAdminChanges,rollbackAdminChange} from '@/lib/change-history';
 const headers={'Cache-Control':'no-store'};
 type Context={params:Promise<{section:string}>};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;return isValidAdminToken(token)?(teamSession(token)?'team:'+teamSession(token)!.id:'shared-admin'):null;}
@@ -19,7 +20,11 @@ export async function GET(request:Request,context:Context){
   if(!await actor())return Response.json({message:'Admin access required.'},{status:401,headers});
   const {section}=await context.params,u=new URL(request.url);
   try{
-    if(section==='settings')return Response.json({settings:settings(),team:(await role())==='super-admin'?listTeam():[],role:await role(),providers:{yoco:onlinePaymentsConfigured(),whatsapp:whatsappConfigured(),sms:smsConfigured()},audit:(await role())==='super-admin'?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
+    if(section==='settings'){
+      const currentRole=await role(),oversight=currentRole==='super-admin'||currentRole==='owner';
+      const team=currentRole==='super-admin'?listTeam():currentRole==='owner'?(listTeam() as {role:string}[]).filter(member=>['manager','staff'].includes(member.role)):[];
+      return Response.json({settings:settings(),team,role:currentRole,providers:{yoco:onlinePaymentsConfigured(),whatsapp:whatsappConfigured(),sms:smsConfigured()},changes:oversight?listAdminChanges():[],audit:oversight?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
+    }
     if(section==='customers'){
       const rows=customers(u.searchParams.get('q')??'');
       if(u.searchParams.get('export')==='consented')return new Response(csv((rows as Record<string,unknown>[]).filter(r=>r.marketing_consent===1&&r.archived===0)),{headers:{...headers,'Content-Type':'text/csv','Content-Disposition':'attachment; filename="fond-consented-customers.csv"'}});
@@ -46,8 +51,21 @@ export async function POST(request:Request,context:Context){
       saveDocument('trading',next,who);
     }
     else if(section==='team'){
-      if((await role())!=='super-admin')return Response.json({message:'Super admin access required.'},{status:403,headers});
-      saveMember(b,who==='shared-admin'?who:who.replace('team:','super:'));
+      const currentRole=await role();
+      if(!['super-admin','owner'].includes(currentRole??''))return Response.json({message:'Owner or super admin access required.'},{status:403,headers});
+      if(currentRole==='owner'){
+        if(!['manager','staff'].includes(String(b.role)))return Response.json({message:'Only a super admin can create or edit owner and super admin accounts.'},{status:403,headers});
+        if(typeof b.id==='string'){
+          const target=getDb().prepare('SELECT role FROM team_members WHERE id=?').get(b.id) as {role:string}|undefined;
+          if(target&&!['manager','staff'].includes(target.role))return Response.json({message:'Only a super admin can edit this account.'},{status:403,headers});
+        }
+      }
+      saveMember(b,currentRole==='super-admin'?(who==='shared-admin'?who:who.replace('team:','super:')):who);
+    }
+    else if(section==='rollback-change'){
+      if(!['super-admin','owner'].includes((await role())??''))return Response.json({message:'Owner or super admin access required.'},{status:403,headers});
+      if(typeof b.id!=='string')throw new Error('Choose a change to roll back.');
+      rollbackAdminChange(b.id,who);
     }
     else if(section==='customers'){if(b.orderId)importCustomerFromOrder(b.orderId,who);else saveCustomer(b,who);}
     else if(section==='marketing'){

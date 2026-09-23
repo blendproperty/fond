@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { isValidAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth';
 import { getFullMenu, createMenuItem, MenuValidationError } from '@/lib/menu-store';
-
-async function requireAdmin() {
-  const store = await cookies();
-  return isValidAdminToken(store.get(ADMIN_COOKIE)?.value);
-}
+import {currentAdmin} from '@/lib/admin-request';
 
 export async function GET() {
-  if (!(await requireAdmin())) {
+  if (!(await currentAdmin())) {
     return NextResponse.json({ code: 'ADMIN_AUTH_REQUIRED', message: 'Enter the admin access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   return NextResponse.json({ menu: getFullMenu() }, { headers: { 'Cache-Control': 'no-store' } });
@@ -18,7 +12,8 @@ export async function GET() {
 // Add a new menu item — e.g. a limited-time special that isn't in the
 // regular menu at all, not just an existing item marked as special.
 export async function POST(request: Request) {
-  if (!(await requireAdmin())) {
+  const admin=await currentAdmin();
+  if (!admin) {
     return NextResponse.json({ code: 'ADMIN_AUTH_REQUIRED', message: 'Enter the admin access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   const body = await request.json().catch(() => null);
@@ -35,7 +30,7 @@ export async function POST(request: Request) {
       symbol: typeof body.symbol === 'string' ? body.symbol : undefined,
       diet: Array.isArray(body.diet) ? body.diet : undefined,
       prepMinutes:typeof body.prepMinutes==='number'?body.prepMinutes:undefined,
-    });
+    },admin.actor);
     return NextResponse.json({ item }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const message = error instanceof MenuValidationError ? error.message : 'Could not add that item.';

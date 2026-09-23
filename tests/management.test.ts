@@ -32,6 +32,15 @@ test('trading hours use Johannesburg and settings reject invalid values',()=>{
  assert.throws(()=>validateSettings({...s,preparationWeightPercent:4}));
  assert.throws(()=>validateSettings({...s,preparationWeightPercent:9}));
 });
+test('owner is an admin role but cannot grant owner or super-admin access',()=>{
+ const id=saveMember({name:'Business owner',username:'owner',password:'owner-password-long',role:'owner',active:true},'shared-admin');
+ const login=loginMember('owner','owner-password-long')!;
+ assert.equal(login.role,'owner');assert.ok(isValidAdminToken(login.token));
+ assert.equal(teamSession(login.token)?.id,id);
+ assert.throws(()=>saveMember({name:'Second owner',username:'owner.two',password:'second-owner-password',role:'owner',active:true},`team:${id}`),/Super admin/);
+ assert.throws(()=>saveMember({name:'Super user',username:'super.two',password:'second-super-password',role:'super-admin',active:true},`team:${id}`),/Super admin/);
+ assert.doesNotThrow(()=>saveMember({name:'Operations manager',username:'owner.manager',password:'manager-password-long',role:'manager',active:true},`team:${id}`));
+});
 test('stored legacy settings inherit new queue targets',()=>{
  const legacy={...DEFAULT_SETTINGS} as Partial<typeof DEFAULT_SETTINGS>;
  delete legacy.newOrderMinutes;delete legacy.paymentConfirmationMinutes;delete legacy.yocoEntryMinutes;delete legacy.readyDeliveryMinutes;delete legacy.readyCollectionMinutes;

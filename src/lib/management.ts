@@ -1,6 +1,7 @@
 import { categories } from './menu';
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
+import {documentSnapshot,recordAdminChange,VERSIONED_DOCUMENT_KEYS} from './change-history';
 
 export function document<T>(key:string, fallback:T):T {
   const row=getDb().prepare('SELECT value FROM app_documents WHERE key=?').get(key) as {value:string}|undefined;
@@ -10,8 +11,13 @@ export function audit(actor:string,action:string,target:string) {
   getDb().prepare('INSERT INTO admin_events VALUES (?,?,?,?,?)').run(randomUUID(),actor,action,target,new Date().toISOString());
 }
 export function saveDocument(key:string,value:unknown,actor:string) {
-  getDb().prepare('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at').run(key,JSON.stringify(value),new Date().toISOString());
-  audit(actor,'save',key);
+  const db=getDb(),before=VERSIONED_DOCUMENT_KEYS.has(key)?documentSnapshot(key):null;
+  db.exec('SAVEPOINT save_admin_document');
+  try{
+    db.prepare('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at').run(key,JSON.stringify(value),new Date().toISOString());
+    if(VERSIONED_DOCUMENT_KEYS.has(key))recordAdminChange({actor,area:'document',entityId:key,action:before==null?'create':'update',before,after:value as never});
+    audit(actor,'save',key);db.exec('RELEASE save_admin_document');
+  }catch(error){db.exec('ROLLBACK TO save_admin_document');db.exec('RELEASE save_admin_document');throw error;}
 }
 export const DEFAULT_SETTINGS = {
   orderingEnabled:true, collectionEnabled:true, deliveryEnabled:true,

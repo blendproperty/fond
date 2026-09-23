@@ -18,7 +18,8 @@ All seven navigation sections have working screens:
 - Marketing & CMS: draft/preview/publish, previous-publication restore, announcement and scheduled promotions; notification log/retry. Item discounts live in Menu. External marketing distribution uses the consented export with an approved provider.
 - Reports: BI-style dashboard with date/fulfilment filters, prior-period KPIs, daily order-value trends, fulfilment mix, category drilldown, hourly demand, status breakdown, item rankings and CSV. Completed order value is not proof of payment; no Yoco sales feed is implied. Zero-sales items are not ranked as slow movers.
 - Finance: receipts, externally issued refund records, duplicate/overpayment guards, balances, checkout references and CSV. This is an operational ledger, not bank settlement, tax invoicing or automatic refund initiation.
-- Settings: ordering/fulfilment, Johannesburg hours, capacity, preparation estimate, contact, collection preferences, providers and named team accounts. Managers have admin access; staff use the tablet. Named sessions expire after 12 hours and are revoked on account edits/logout. Shared codes remain during transition.
+- Settings: ordering/fulfilment, Johannesburg hours, capacity, preparation estimate, contact, collection preferences, providers and named team accounts. Managers run operations; Owners can review and roll back operational changes and manage staff/manager accounts; Super Admins additionally control providers and privileged access. Staff use the tablet. Named sessions expire after 12 hours and are revoked on account edits/logout. Shared codes remain during transition.
+- Change history: named menu, trading, website-content and customer-message edits retain before/after versions. Owners and Super Admins can roll back only the latest change to an item; security, provider, customer, payment and retry actions remain in a protected activity log without passwords or provider secrets.
 
 ## Verification
 

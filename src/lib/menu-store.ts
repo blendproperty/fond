@@ -4,6 +4,7 @@ import { SEED_MENU, PUBLISHED_FOOD_MENU, type Meal, type Category, type Modifier
 import { RETIRED_FOOD_MENU_IDS } from './published-food-menu';
 import { DEFAULT_MENU_MODIFIERS } from './menu-modifier-defaults';
 import {estimatedPrepMinutes} from './preparation-estimates';
+import {menuSnapshot,recordAdminChange} from './change-history';
 
 // Live, editable menu (2026-09-14 later addition — the admin/CRM backend).
 // The menu_items table is seeded once from SEED_MENU the first time it's
@@ -192,9 +193,10 @@ function validateModifiers(modifiers: Modifier[] | undefined): string | undefine
   return JSON.stringify(modifiers);
 }
 
-export function updateMenuItem(id: string, patch: MenuItemPatch): Meal {
+export function updateMenuItem(id: string, patch: MenuItemPatch, actor?:string): Meal {
   seedIfEmpty();
   const db = getDb();
+  const before=actor?menuSnapshot(id):null;
   const row = db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow | undefined;
   if (!row) throw new MenuValidationError('Menu item not found.');
 
@@ -220,11 +222,15 @@ export function updateMenuItem(id: string, patch: MenuItemPatch): Meal {
   if(!Number.isInteger(prepMinutes)||prepMinutes<1||prepMinutes>240)throw new MenuValidationError('Preparation time must be between 1 and 240 minutes.');
   const updatedAt = new Date().toISOString();
 
-  db.prepare(
-    `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, modifiers_json = ?, prep_minutes=?, updated_at = ? WHERE id = ?`,
-  ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, modifiersJson,prepMinutes, updatedAt, id);
-
-  return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
+  if(actor)db.exec('SAVEPOINT update_menu_item');
+  try{
+    db.prepare(
+      `UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, diet_json = ?, symbol = ?, available = ?, is_special = ?, special_label = ?, special_price_cents = ?, modifiers_json = ?, prep_minutes=?, updated_at = ? WHERE id = ?`,
+    ).run(name, description, category, priceCents, dietJson, symbol, available ? 1 : 0, isSpecial ? 1 : 0, specialLabel, specialPriceCents, modifiersJson,prepMinutes, updatedAt, id);
+    if(actor)recordAdminChange({actor,area:'menu',entityId:id,action:'update',before,after:menuSnapshot(id)});
+    if(actor)db.exec('RELEASE update_menu_item');
+    return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
+  }catch(error){if(actor){db.exec('ROLLBACK TO update_menu_item');db.exec('RELEASE update_menu_item');}throw error;}
 }
 
 export function createMenuItem(input: {
@@ -236,7 +242,7 @@ export function createMenuItem(input: {
   symbol?: string;
   diet?: Meal['diet'];
   prepMinutes?:number;
-}): Meal {
+},actor?:string): Meal {
   seedIfEmpty();
   const db = getDb();
   const id = input.id.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -250,33 +256,44 @@ export function createMenuItem(input: {
   if (!Number.isInteger(input.price) || input.price < 0 || input.price > 10_000_00) throw new MenuValidationError('Enter a valid price.');
   const now = new Date().toISOString();
   const { max } = db.prepare(`SELECT COALESCE(MAX(sort_order), 0) AS max FROM menu_items WHERE category = ?`).get(input.category) as { max: number };
-  db.prepare(
-    `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, prep_minutes, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?)`,
-  ).run(id, name, description, input.category, input.price, JSON.stringify(input.diet ?? []), input.symbol || '🍽️', max + 1,input.prepMinutes??estimatedPrepMinutes({id,category:input.category}), now);
-  return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
+  if(actor)db.exec('SAVEPOINT create_menu_item');
+  try{
+    db.prepare(
+      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, prep_minutes, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?)`,
+    ).run(id, name, description, input.category, input.price, JSON.stringify(input.diet ?? []), input.symbol || '🍽️', max + 1,input.prepMinutes??estimatedPrepMinutes({id,category:input.category}), now);
+    if(actor)recordAdminChange({actor,area:'menu',entityId:id,action:'create',before:null,after:menuSnapshot(id)});
+    if(actor)db.exec('RELEASE create_menu_item');
+    return fromRow(db.prepare(`SELECT * FROM menu_items WHERE id = ?`).get(id) as MenuRow);
+  }catch(error){if(actor){db.exec('ROLLBACK TO create_menu_item');db.exec('RELEASE create_menu_item');}throw error;}
 }
 
-export function deleteMenuItem(id: string): void {
+export function deleteMenuItem(id: string,actor?:string): void {
   seedIfEmpty();
-  getDb().prepare(`DELETE FROM menu_items WHERE id = ?`).run(id);
+  const db=getDb(),before=actor?menuSnapshot(id):null;
+  if(actor)db.exec('SAVEPOINT delete_menu_item');
+  try{
+    db.prepare(`DELETE FROM menu_items WHERE id = ?`).run(id);
+    if(actor&&before)recordAdminChange({actor,area:'menu',entityId:id,action:'delete',before,after:null});
+    if(actor)db.exec('RELEASE delete_menu_item');
+  }catch(error){if(actor){db.exec('ROLLBACK TO delete_menu_item');db.exec('RELEASE delete_menu_item');}throw error;}
 }
 
 // Add a single "add this / remove this" option to an item, e.g. "Extra
 // cheese" at +R15, or "No onion" at R0 — the price can be negative for a
 // removal that should discount (rare, but the field allows it).
-export function addModifier(itemId: string, input: { name: string; price: number }): Meal {
+export function addModifier(itemId: string, input: { name: string; price: number },actor?:string): Meal {
   const item = getFullMenu().find((m) => m.id === itemId);
   if (!item) throw new MenuValidationError('Menu item not found.');
   const modifiers = [...(item.modifiers ?? []), { id: randomUUID(), name: input.name, price: input.price }];
-  return updateMenuItem(itemId, { modifiers });
+  return updateMenuItem(itemId, { modifiers },actor);
 }
 
-export function removeModifier(itemId: string, modifierId: string): Meal {
+export function removeModifier(itemId: string, modifierId: string,actor?:string): Meal {
   const item = getFullMenu().find((m) => m.id === itemId);
   if (!item) throw new MenuValidationError('Menu item not found.');
   const modifiers = (item.modifiers ?? []).filter((m) => m.id !== modifierId);
-  return updateMenuItem(itemId, { modifiers });
+  return updateMenuItem(itemId, { modifiers },actor);
 }
 
 // Aggregates quantity sold per menu item across all non-cancelled orders —
