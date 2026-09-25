@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
-import { money, quoteCart, lineKey, categories, type CartLine, type Category, type Meal } from '@/lib/menu';
+import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSection, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 
 import {CategoryNavigation} from './category-navigation';
 import {InstallApp} from './install-app';
@@ -38,6 +38,7 @@ export function OrderingApp() {
   const [paying,setPaying]=useState(false);
   const [menu, setMenu] = useState<Meal[]>([]);
   const [category, setCategory] = useState<Category>(categories[0]);
+  const [foodTruckMenu, setFoodTruckMenu] = useState<FoodTruckSection>('Build Your Plate');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
   const [panel, setPanel] = useState<'basket' | 'track' | null>(null);
@@ -192,6 +193,8 @@ export function OrderingApp() {
     setTracked(data);
   }
 
+  const visibleMenu = menu.filter((item) => item.category === category && (category !== 'Food Truck' || foodTruckSection(item) === foodTruckMenu));
+
   return <>
     <header className="header"><a href="/" className="wordmark" aria-label="FOND home">fond<span>.</span></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Collect from FOND</small></div></div><nav><a className="quiet" href="/account">My account</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
     <main id="main">
@@ -204,7 +207,9 @@ export function OrderingApp() {
       <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><CategoryNavigation value={category} onChange={setCategory}/></div>
-        <div className="meal-grid" role="tabpanel" aria-label={category}>{menu.filter((m) => m.category === category).map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
+        {category==='Food Truck'&&<div className="food-truck-intro"><span className="food-truck-intro-icon" aria-hidden="true"><Truck size={26}/></span><div><p className="eyebrow">FOND SHISA NYAMA</p><h3>Food Truck Menu</h3><p>Built for delivery or collection. Choose a complete favourite, or build a plate with separate protein, sides and sauce.</p></div></div>}
+        {category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
+        <div className="meal-grid" role="tabpanel" aria-label={category==='Food Truck'?`Food Truck · ${foodTruckMenu}`:category}>{visibleMenu.map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
           <p className="meal-prep">Approx. {Math.ceil((m.prepMinutes??10)*(1+(store?.settings.preparationWeightPercent??7)/100))} min preparation</p>{!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
           <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> Add{qty ? ` (${qty})` : ''}</button></div></div></article>; })}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>

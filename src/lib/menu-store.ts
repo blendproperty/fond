@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
-import { SEED_MENU, PUBLISHED_FOOD_MENU, type Meal, type Category, type Modifier } from './menu';
+import { SEED_MENU, PUBLISHED_FOOD_MENU, FOOD_TRUCK_MENU, type Meal, type Category, type Modifier } from './menu';
 import { RETIRED_FOOD_MENU_IDS } from './published-food-menu';
 import { DEFAULT_MENU_MODIFIERS } from './menu-modifier-defaults';
 import {estimatedPrepMinutes} from './preparation-estimates';
@@ -57,11 +57,11 @@ function seedIfEmpty() {
   if (count === 0) {
     const now = new Date().toISOString();
     const insert = db.prepare(
-      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, prep_minutes, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NULL, NULL, ?, ?)`,
+      `INSERT INTO menu_items (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, modifiers_json, prep_minutes, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, ?)`,
     );
     SEED_MENU.forEach((meal, index) => {
-      insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, estimatedPrepMinutes(meal), now);
+      insert.run(meal.id, meal.name, meal.description, meal.category, meal.price, JSON.stringify(meal.diet ?? []), meal.symbol, index, meal.available === false ? 0 : 1, JSON.stringify(meal.modifiers ?? []), estimatedPrepMinutes(meal), now);
     });
   }
   const timingMarker='menu-preparation-estimates-v1';
@@ -143,6 +143,48 @@ function seedIfEmpty() {
     } catch (error) {
       db.exec('ROLLBACK TO fond_food_menu_20260921');
       db.exec('RELEASE fond_food_menu_20260921');
+      throw error;
+    }
+  }
+
+  // Add the separately supplied Shisa Nyama food-truck catalogue once to
+  // existing databases. INSERT OR IGNORE preserves any item an administrator
+  // may already have created with the same stable id.
+  const foodTruckMarker = 'food-truck-menu-2026-09-25-v1';
+  if (!db.prepare('SELECT key FROM app_documents WHERE key = ?').get(foodTruckMarker)) {
+    db.exec('SAVEPOINT fond_food_truck_menu_20260925');
+    try {
+      const now = new Date().toISOString();
+      const insert = db.prepare(`
+        INSERT OR IGNORE INTO menu_items
+          (id, name, description, category, price_cents, diet_json, symbol, sort_order, available, is_special, special_label, special_price_cents, modifiers_json, prep_minutes, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, ?)
+      `);
+      FOOD_TRUCK_MENU.forEach((meal, index) => {
+        insert.run(
+          meal.id,
+          meal.name,
+          meal.description,
+          meal.category,
+          meal.price,
+          JSON.stringify(meal.diet ?? []),
+          meal.symbol,
+          index,
+          meal.available === false ? 0 : 1,
+          JSON.stringify(meal.modifiers ?? []),
+          estimatedPrepMinutes(meal),
+          now,
+        );
+      });
+      db.prepare('INSERT INTO app_documents (key, value, updated_at) VALUES (?, ?, ?)').run(
+        foodTruckMarker,
+        'FOND_Shisa Nyama_Truck Menu_V6_ 28 April.pdf',
+        now,
+      );
+      db.exec('RELEASE fond_food_truck_menu_20260925');
+    } catch (error) {
+      db.exec('ROLLBACK TO fond_food_truck_menu_20260925');
+      db.exec('RELEASE fond_food_truck_menu_20260925');
       throw error;
     }
   }

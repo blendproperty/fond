@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
-import { categories, lineKey, money, quoteCart, type CartLine, type Category, type Meal } from '@/lib/menu';
+import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
 
@@ -375,6 +375,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
 
 function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose: () => void; onCreated: () => void }) {
   const [category, setCategory] = useState<Category>(categories[0]);
+  const [foodTruckMenu, setFoodTruckMenu] = useState<FoodTruckSection>('Build Your Plate');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
   const [customerName, setCustomerName] = useState('');
@@ -454,11 +455,12 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
         <div className="drawer-scroll">
           <div className="tabs" role="tablist" aria-label="Menu category">
             {categories.map((c) => (
-              <button role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c}</button>
+              <button className={c==='Food Truck'?'food-truck-tab':undefined} role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c==='Food Truck'&&<Truck size={16} aria-hidden="true"/>}{c}</button>
             ))}
           </div>
+          {category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
           <div className="staff-item-grid" role="tabpanel" aria-label={category}>
-            {menu.filter((m) => m.category === category).map((m) => {
+            {menu.filter((m) => m.category === category && (category!=='Food Truck'||foodTruckSection(m)===foodTruckMenu)).map((m) => {
               const selected = pendingMods[m.id] ?? [];
               const selectedPrice = (m.modifiers ?? []).filter(mod => selected.includes(mod.id)).reduce((sum, mod) => sum + mod.price, m.price);
               return <div className="staff-item" key={m.id}>

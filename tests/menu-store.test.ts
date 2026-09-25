@@ -84,6 +84,23 @@ test('published 2026-09-21 food menu replaces legacy food once and preserves bev
   assert.equal(getFullMenu().find(item => item.id === 'smashed-avo')?.price, 12100);
 });
 
+test('food truck menu is added once to existing databases without overwriting later admin edits', () => {
+  getFullMenu();
+  const db = getDb();
+  db.prepare('DELETE FROM app_documents WHERE key = ?').run('food-truck-menu-2026-09-25-v1');
+  db.prepare('DELETE FROM menu_items WHERE id = ?').run('truck-kota-steak');
+  db.prepare('UPDATE menu_items SET price_cents = ? WHERE id = ?').run(3100, 'truck-kota-vienna');
+
+  const menu = getFullMenu();
+  const foodTruck = menu.filter(item => item.category === 'Food Truck');
+  assert.equal(foodTruck.length, 26);
+  assert.equal(menu.find(item => item.id === 'truck-kota-steak')?.price, 7000);
+  assert.equal(menu.find(item => item.id === 'truck-kota-vienna')?.price, 3100);
+  assert.equal(menu.find(item => item.id === 'truck-kota-russian')?.modifiers?.[0]?.name, 'Achar instead of chakalaka');
+  assert.equal(menu.find(item => item.id === 'truck-kota-create-your-own')?.available, false);
+  assert.equal(getAvailableMenu().find(item => item.id === 'truck-kota-create-your-own'), undefined);
+});
+
 test('unavailable items are hidden from the available menu but kept in the full menu', () => {
   const [item] = getFullMenu();
   updateMenuItem(item.id, { available: false });

@@ -1,4 +1,5 @@
 import { PUBLISHED_FOOD_MENU } from './published-food-menu';
+import { FOOD_TRUCK_MENU } from './food-truck-menu';
 
 // FOND Midpoint menu. The current food range is transcribed from
 // FOND_A3_Food_Menu_Landscape.md (supplied 2026-09-21); the separate beverage
@@ -27,7 +28,8 @@ export type Category =
   | 'Cold Brew & Iced'
   | 'Smoothies'
   | 'Cold Bar & Juice'
-  | 'Sides, Sauces & Add-Ons';
+  | 'Sides, Sauces & Add-Ons'
+  | 'Food Truck';
 
 export type Diet = 'vegan' | 'vegetarian' | 'gluten-free';
 export type Modifier = { id: string; name: string; price: number }; // price in cents, added when selected
@@ -246,9 +248,11 @@ const BEVERAGE_ADDON_IDS = new Set([
 export const SEED_MENU: Meal[] = [
   ...PUBLISHED_FOOD_MENU,
   ...LEGACY_MENU.filter((item) => BEVERAGE_CATEGORIES.has(item.category) || BEVERAGE_ADDON_IDS.has(item.id)),
+  ...FOOD_TRUCK_MENU,
 ];
 
 export { PUBLISHED_FOOD_MENU } from './published-food-menu';
+export { FOOD_TRUCK_MENU, FOOD_TRUCK_SECTIONS, foodTruckSection, type FoodTruckSection } from './food-truck-menu';
 
 export const categories: Category[] = [
   'All-Day Breakfast',
@@ -267,6 +271,7 @@ export const categories: Category[] = [
   'Smoothies',
   'Cold Bar & Juice',
   'Sides, Sauces & Add-Ons',
+  'Food Truck',
 ];
 
 export const money = (cents: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 2 }).format(cents / 100);

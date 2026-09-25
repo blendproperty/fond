@@ -39,6 +39,25 @@ test('available email and SMS notifications are preselected while WhatsApp stays
  await expect(sms).toBeChecked();await expect(sms).toBeEnabled();
  await expect(email).toBeChecked();
 });
+test('food truck menu is clearly separated and can be ordered',async({page},testInfo)=>{
+ await page.goto('/');
+ const truckTab=page.getByRole('tab',{name:'Food Truck'});
+ await truckTab.scrollIntoViewIfNeeded();
+ await expect(truckTab.locator('svg')).toBeVisible();
+ await truckTab.click();
+ await expect(page.getByRole('heading',{name:'Food Truck Menu'})).toBeVisible();
+ await expect(page.getByText('FOND SHISA NYAMA')).toBeVisible();
+ await page.getByRole('tab',{name:'Kotas',exact:true}).click();
+ const kota=page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Kota · Russian'})});
+ await expect(kota).toContainText('R 40,00');
+ await kota.getByLabel('Achar instead of chakalaka').check();
+ await kota.getByRole('button',{name:'Add Kota · Russian'}).click();
+ await page.getByRole('button',{name:/^Basket/}).click();
+ await expect(page.getByText('Achar instead of chakalaka').last()).toBeVisible();
+ await page.keyboard.press('Escape');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('food-truck-menu.png'),fullPage:true});
+});
 test('delivery tracking shows dispatch status and arrival time without a preparation estimate',async({page})=>{
  await page.route('**/api/orders?reference=*',route=>route.fulfill({json:{reference:'FOND-43E48401AA7044188B6DA071832E84AE',displayReference:'FOND-7K3P-9Q8R',status:'out_for_delivery',fulfillment:'delivery',totalCents:12000,collectionTime:'As soon as possible',estimatedPrepMinutes:13,updatedAt:'2026-09-22T09:00:00.000Z',estimatedArrivalAt:'2026-09-22T09:10:00.000Z',paymentMethod:'yoco_online',payment:{paidCents:12000,checkout:'paid'}}}));
  await page.goto('/');
