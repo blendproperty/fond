@@ -9,10 +9,13 @@ declare global {
 async function tablet(page: Page, permission: NotificationPermission = 'granted') {
   await page.addInitScript(({permission}) => {
     const probe = window.__alerts = {starts:0, peaks:[] as number[], notices:0, failNotification:false, suspend:()=>{}};
+    let interacted = false;
+    document.addEventListener('click', () => {interacted=true;}, true);
+    document.addEventListener('keydown', () => {interacted=true;}, true);
     class AudioMock {
       state = 'suspended'; currentTime = 0; destination = {}; onstatechange: (()=>void) | null = null;
-      constructor() { probe.suspend = () => {this.state='suspended';this.onstatechange?.();}; }
-      resume() { if(navigator.userActivation.isActive){this.state='running';this.onstatechange?.();} return Promise.resolve(); }
+      constructor() { probe.suspend = () => {interacted=false;this.state='suspended';this.onstatechange?.();}; }
+      resume() { if(interacted){this.state='running';this.onstatechange?.();} return Promise.resolve(); }
       suspend() { this.state='suspended';this.onstatechange?.();return Promise.resolve(); }
       close() { this.state='closed';return Promise.resolve(); }
       createOscillator() {return {type:'',frequency:{value:0},connect:()=>({connect:()=>{}}),disconnect:()=>{},start:()=>{probe.starts++;},stop:()=>{},onended:null};}
