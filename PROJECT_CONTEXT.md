@@ -1,5 +1,17 @@
 # FOND ordering PWA
 
+## 2026-09-28 - staff tablet working-area simplification
+
+Implementation: simplified the restaurant staff board around the work staff perform on a landscape tablet. Removed the four-card queue summary because the seven stage controls already expose the authoritative counts and delayed states. Reduced order search to a single compact row with a shorter visible label while retaining search by friendly order number, customer, mobile, company and building. At 701-1366 px landscape widths, removed the repeated selected-stage heading and replaced the large empty lane card with a 52 px `Stage clear` strip; populated stages now begin immediately with the order tickets and their existing payment, fulfilment, change, note and action controls. Wider multi-lane desktop views retain their lane headings, and order state logic/API behavior is unchanged.
+
+Testing: `npm run typecheck`, all 94 unit/integration tests, the optimized Next.js production build and `git diff --check` passed. The focused landscape browser check passed in both desktop and mobile browser profiles, and the final complete Playwright suite passed 56/56 serially. The landscape regression now proves the duplicate summary is absent, search stays at or below 60 px, the empty state stays at or below 60 px, the redundant lane heading is absent at tablet landscape widths, all seven stage controls remain large/direct, populated tickets remain two columns at 1180x820 and neither 1180x820 nor 734x700 overflows horizontally. Fresh screenshots were visually inspected: the full tablet view places tickets directly under the stage controls; the compact view uses one narrow empty-state strip. One preceding complete browser run inherited orders created by earlier suite cases and correctly exposed that the new empty-state assertion needed isolated queue data; the test fixture was corrected and both the focused rerun and final complete suite passed.
+
+Commit/push and merge: pending in this changeset. No pull request or merge has been created yet.
+
+Deployment/configuration: not performed yet. The change requires no database migration, environment variable, provider credential or operational-setting change.
+
+Live production verification: not performed yet. Physical restaurant-tablet refresh, touch/readability and controlled live-order handling remain operational UAT. Kiosk configuration, live Yoco, WhatsApp/provider, staff training and backup-restore gates remain open. No Asana tracker is in scope.
+
 ## 2026-09-28 - Midpoint Cafe powered by fond identity
 
 Implementation: replaced the typed `fond.` wordmarks with the supplied `Midpoint Cafe powered by fond` identity across the customer header and footer, customer account, staff sign-in and live queue, admin sign-in and desktop/mobile navigation, messaging-studio email preview, generated transactional email and offline fallback. The exact supplied SVG is the shared responsive web asset; the supplied PNG is used in email because common Outlook clients do not reliably render SVG. The wide mark has surface-specific sizing so it remains readable without displacing customer controls or restoring the large tablet-header footprint. The service worker now precaches the branded offline asset and advances its cache version. The browser favicon and 192 px, 512 px and maskable PWA launcher icons use the exact left-hand Midpoint monogram from the supplied vector on a square mist canvas, replacing the final legacy `f.` mark without squeezing the horizontal wording into a launcher tile.
