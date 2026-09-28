@@ -9,7 +9,7 @@ import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
 import { submissionKey, clearSubmission } from '@/lib/submission';
 import {weightedPrepMinutes} from '@/lib/preparation-estimates';
-import {collectionSlots,deliveryLocationValue,formatCollectionTime} from '@/lib/fulfilment';
+import {collectionSlots,deliveryLocationValue,formatCollectionTime,isBeforeDailyCutoff} from '@/lib/fulfilment';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
@@ -113,8 +113,13 @@ export function OrderingApp() {
   }
   const pricedCart = priceCart(cart);
   const total = pricedCart.reduce((n, l) => n + l.subtotal, 0);
+  const foodTruckIds=useMemo(()=>new Set(menu.filter(item=>item.category==='Food Truck').map(item=>item.id)),[menu]);
+  const hasFoodTruck=cart.some(line=>foodTruckIds.has(line.id));
+  const foodTruckClosingTime=store?.settings.foodTruckClosingTime??'15:30';
+  const orderClosingTime=hasFoodTruck?foodTruckClosingTime:(store?.settings.closingTime??'18:30');
+  const foodTruckAvailable=!store?.settings.enforceHours||isBeforeDailyCutoff(foodTruckClosingTime,store?.settings.openDays??[1,2,3,4,5]);
   const estimatedPrepMinutes=pricedCart.length?weightedPrepMinutes(Math.max(...pricedCart.map(line=>line.prepMinutes??10)),store?.settings.preparationWeightPercent??7):(store?.settings.preparationMinutes??20);
-  const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:store?.settings.closingTime??'18:30',openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,store?.settings.closingTime,store?.settings.openDays]);
+  const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:orderClosingTime,openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,orderClosingTime,store?.settings.openDays]);
   const collectionGroups=useMemo(()=>collectionOptions.reduce<{label:string;slots:typeof collectionOptions}[]>((groups,slot)=>{const group=groups.find(item=>item.label===slot.dateLabel);if(group)group.slots.push(slot);else groups.push({label:slot.dateLabel,slots:[slot]});return groups;},[]),[collectionOptions]);
   useEffect(()=>{if(!collectionOptions.some(option=>option.value===collection))setCollection(collectionOptions[0]?.value??'');},[collection,collectionOptions]);
 
@@ -153,7 +158,8 @@ export function OrderingApp() {
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
       if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
-      if(fulfillment==='collection'&&!collectionOptions.length)throw new Error(`Today's collection window has closed. The kitchen closes at ${store?.settings.closingTime??'18:30'}.`);
+      if(hasFoodTruck&&!foodTruckAvailable)throw new Error(`Food Truck ordering has closed for today. Food Truck orders close at ${foodTruckClosingTime}.`);
+      if(fulfillment==='collection'&&!collectionOptions.length)throw new Error(`Today's collection window has closed. ${hasFoodTruck?'The Food Truck':'The kitchen'} closes at ${orderClosingTime}.`);
       if(normalizedEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address, or leave the optional email field blank.');
       if (fulfillment === 'delivery') {
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
@@ -216,11 +222,11 @@ export function OrderingApp() {
       <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
         <div className="menu-toolbar"><CategoryNavigation value={category} onChange={setCategory}/></div>
-        {category==='Food Truck'&&<div className="food-truck-intro"><span className="food-truck-intro-icon" aria-hidden="true"><Truck size={26}/></span><div><p className="eyebrow">FOND SHISA NYAMA</p><h3>Food Truck Menu</h3><p>Built for delivery or collection. Choose a complete favourite, or build a plate with separate protein, sides and sauce.</p></div></div>}
+        {category==='Food Truck'&&<div className="food-truck-intro"><span className="food-truck-intro-icon" aria-hidden="true"><Truck size={26}/></span><div><p className="eyebrow">FOND SHISA NYAMA</p><h3>Food Truck Menu</h3><p>Built for delivery or collection. Choose a complete favourite, or build a plate with separate protein, sides and sauce.</p><p><strong>Food Truck orders close at {foodTruckClosingTime}.</strong></p></div></div>}
         {category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
         <div className="meal-grid" role="tabpanel" aria-label={category==='Food Truck'?`Food Truck · ${foodTruckMenu}`:category}>{visibleMenu.map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
           <p className="meal-prep">Approx. {Math.ceil((m.prepMinutes??10)*(1+(store?.settings.preparationWeightPercent??7)/100))} min preparation</p>{!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
-          <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> Add{qty ? ` (${qty})` : ''}</button></div></div></article>; })}</div>
+          <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} disabled={m.category==='Food Truck'&&!foodTruckAvailable} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> {m.category==='Food Truck'&&!foodTruckAvailable?'Closed today':`Add${qty ? ` (${qty})` : ''}`}</button></div></div></article>; })}</div>
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
 
     </main>
@@ -242,9 +248,10 @@ export function OrderingApp() {
             <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
             <button role="tab" aria-selected={fulfillment === 'delivery'} disabled={store?.settings.deliveryEnabled===false||!store?.onlinePayments} onClick={() => {setFulfillment('delivery');setPayOnline(true);}}><Truck size={16} /> Delivery</button>
           </div>
+          {hasFoodTruck&&!foodTruckAvailable&&<p className="notice" role="alert">Food Truck ordering has closed for today. Food Truck orders close at {foodTruckClosingTime}.</p>}
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
           {fulfillment === 'collection' ? (
-            <label className="field">Preferred collection time (today)<select value={collection} disabled={!collectionOptions.length} onChange={(e) => setCollection(e.target.value)}>{!collectionOptions.length&&<option value="">Today&rsquo;s collection window has closed</option>}{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select><span className="small">Today only · Kitchen closes at {store?.settings.closingTime??'18:30'}.</span></label>
+            <label className="field">Preferred collection time (today)<select value={collection} disabled={!collectionOptions.length} onChange={(e) => setCollection(e.target.value)}>{!collectionOptions.length&&<option value="">Today&rsquo;s collection window has closed</option>}{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select><span className="small">Today only · {hasFoodTruck?'Food Truck':'Kitchen'} closes at {orderClosingTime}.</span></label>
           ) : <>
             <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel" /></label>
             <label className="field">Business and building<select value={deliveryLocation} onChange={event=>{const value=event.target.value;setDeliveryLocation(value);if(value&&value!=='other'){const location=deliveryLocationValue(value);setCompany(location.business);setBuilding(location.building);}else{setCompany('');setBuilding('');}}}><option value="">Select your business and building</option>{(store?.settings.deliveryLocations??[]).map(location=><option value={location} key={location}>{deliveryLocationValue(location).business} — {deliveryLocationValue(location).building}</option>)}<option value="other">My business is not listed</option></select></label>
@@ -260,7 +267,7 @@ export function OrderingApp() {
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
           {error && <p role="alert">{error}</p>}
-          <button className="primary full" disabled={offline || submitting || store?.open===false || (fulfillment==='collection'&&!collectionOptions.length)} onClick={placeOrder}>{submitting ? 'Sending…' : payOnline?(store?.paymentMode==='sandbox'?'Continue to Yoco TEST checkout':'Continue to secure payment'):'Send order to FOND'} <ArrowRight size={18} /></button>
+          <button className="primary full" disabled={offline || submitting || store?.open===false || (hasFoodTruck&&!foodTruckAvailable) || (fulfillment==='collection'&&!collectionOptions.length)} onClick={placeOrder}>{submitting ? 'Sending…' : payOnline?(store?.paymentMode==='sandbox'?'Continue to Yoco TEST checkout':'Continue to secure payment'):'Send order to FOND'} <ArrowRight size={18} /></button>
           <p className="small center">{payOnline?(store?.paymentMode==='sandbox'?'Your test order moves forward only after Yoco confirms the test payment. No real money is charged.':'Your order moves forward only after Yoco confirms payment.'):'Payment will be due when you collect.'}</p>
         </> : <div className="empty"><ShoppingBag /><h3>A little something good?</h3><p>Your basket is waiting for its first favourite.</p><button className="primary" onClick={() => setPanel(null)}>Explore the menu <ArrowRight size={18} /></button></div>}
       </div>

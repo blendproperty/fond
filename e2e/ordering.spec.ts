@@ -54,6 +54,7 @@ test('delivery checkout uses the configured business and building directory',asy
  await expect(page.getByLabel('Building / office')).toBeVisible();
 });
 test('food truck menu is clearly separated and can be ordered',async({page},testInfo)=>{
+ await page.clock.setFixedTime(new Date('2026-09-28T10:00:00+02:00'));
  await page.goto('/');
  const truckTab=page.getByRole('tab',{name:'Food Truck'});
  await truckTab.scrollIntoViewIfNeeded();
@@ -61,6 +62,7 @@ test('food truck menu is clearly separated and can be ordered',async({page},test
  await truckTab.click();
  await expect(page.getByRole('heading',{name:'Food Truck Menu'})).toBeVisible();
  await expect(page.getByText('FOND SHISA NYAMA')).toBeVisible();
+ await expect(page.getByText('Food Truck orders close at 15:30.')).toBeVisible();
  await page.getByRole('tab',{name:'Kotas',exact:true}).click();
  const kota=page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Kota · Russian'})});
  await expect(kota).toContainText('R 40,00');
@@ -68,6 +70,8 @@ test('food truck menu is clearly separated and can be ordered',async({page},test
  await kota.getByRole('button',{name:'Add Kota · Russian'}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
  await expect(page.getByText('Achar instead of chakalaka').last()).toBeVisible();
+ await expect(page.getByText('Today only · Food Truck closes at 15:30.')).toBeVisible();
+ await expect(page.getByLabel('Preferred collection time (today)').locator('option').last()).toContainText('15:30');
  await page.keyboard.press('Escape');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:testInfo.outputPath('food-truck-menu.png'),fullPage:true});

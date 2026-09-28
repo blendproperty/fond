@@ -21,7 +21,7 @@ export function saveDocument(key:string,value:unknown,actor:string) {
 }
 export const DEFAULT_SETTINGS = {
   orderingEnabled:true, collectionEnabled:true, deliveryEnabled:true,
-  enforceHours:false, openingTime:'07:00', closingTime:'18:30', openDays:[1,2,3,4,5],
+  enforceHours:false, openingTime:'07:00', closingTime:'18:30', foodTruckClosingTime:'15:30', openDays:[1,2,3,4,5],
   maxActiveOrders:100, newOrderMinutes:5, paymentConfirmationMinutes:10,
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
   preparationWeightPercent:7,allowTestPayments:false,
@@ -39,8 +39,9 @@ export function validateSettings(input:unknown):TradingSettings {
   const s=input as TradingSettings;
   if(!s || typeof s!=='object')throw new Error('Provide trading settings.');
   for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','smsEnabled','onlinePaymentsEnabled','allowTestPayments'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
-  for(const k of ['openingTime','closingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
+  for(const k of ['openingTime','closingTime','foodTruckClosingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
   if(s.openingTime>=s.closingTime)throw new Error('Closing time must be after opening time. Overnight trading is not supported.');
+  if(s.foodTruckClosingTime<=s.openingTime||s.foodTruckClosingTime>s.closingTime)throw new Error('Food Truck closing time must be after opening and no later than the kitchen closing time.');
   if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');
   if(!Number.isInteger(s.maxActiveOrders)||s.maxActiveOrders<1||s.maxActiveOrders>1000)throw new Error('Check maximum active orders.');
   for(const k of ['newOrderMinutes','paymentConfirmationMinutes','yocoEntryMinutes','preparationMinutes','readyDeliveryMinutes','readyCollectionMinutes'] as const)if(!Number.isInteger(s[k])||s[k]<1||s[k]>240)throw new Error('Every queue target must be between 1 and 240 minutes.');

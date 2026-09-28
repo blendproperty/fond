@@ -5,6 +5,17 @@ const toMinutes=(value:string)=>{const [hour,minute]=value.split(':').map(Number
 const dateKey=(date:Date)=>new Date(date.getTime()+ZA_OFFSET_MS).toISOString().slice(0,10);
 const weekday=(date:Date)=>new Date(date.getTime()+ZA_OFFSET_MS).getUTCDay();
 
+export function isBeforeDailyCutoff(cutoffTime:string,openDays:number[],now=new Date()){
+  const local=new Date(now.getTime()+ZA_OFFSET_MS);
+  const minutes=local.getUTCHours()*60+local.getUTCMinutes();
+  return openDays.includes(local.getUTCDay())&&minutes<toMinutes(cutoffTime);
+}
+
+export function assertFoodTruckOrderingAvailable(input:{hasFoodTruck:boolean;source:'customer'|'staff';enforceHours:boolean;cutoffTime:string;openDays:number[];now?:Date}){
+  if(input.source==='staff'||!input.hasFoodTruck||!input.enforceHours)return;
+  if(!isBeforeDailyCutoff(input.cutoffTime,input.openDays,input.now))throw new Error(`Food Truck ordering has closed for today. Food Truck orders close at ${input.cutoffTime}.`);
+}
+
 export function formatCollectionTime(value:string){
   if(!value||value==='ASAP'||value==='As soon as possible')return 'As soon as possible';
   const date=new Date(value);

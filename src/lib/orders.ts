@@ -1,7 +1,7 @@
 import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
 import {weightedPrepMinutes} from './preparation-estimates';
-import {validateScheduledCollection} from './fulfilment';
+import {assertFoodTruckOrderingAvailable,validateScheduledCollection} from './fulfilment';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
@@ -224,10 +224,14 @@ export function createOrder(input: {
     const smsOptIn = !!input.smsOptIn && !!contactNumber;
     const emailOptIn = !!input.emailOptIn && !!customerEmail;
     // throws on unknown/unavailable items, bad quantities or modifiers - priced against the live admin-editable menu
-    const priced = quoteCart(input.lines, getAvailableMenu());
+    const availableMenu=getAvailableMenu();
+    const priced = quoteCart(input.lines, availableMenu);
+    const trading=settings();
+    const foodTruckIds=new Set(availableMenu.filter(item=>item.category==='Food Truck').map(item=>item.id));
+    assertFoodTruckOrderingAvailable({hasFoodTruck:input.lines.some(line=>foodTruckIds.has(line.id)),source:input.source,enforceHours:trading.enforceHours,cutoffTime:trading.foodTruckClosingTime,openDays:trading.openDays});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
-    const estimatedPrepMinutes=weightedPrepMinutes(Math.max(...priced.map(line=>line.prepMinutes??10)),settings().preparationWeightPercent);
-    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,settings());
+    const estimatedPrepMinutes=weightedPrepMinutes(Math.max(...priced.map(line=>line.prepMinutes??10)),trading.preparationWeightPercent);
+    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,closingTime:input.lines.some(line=>foodTruckIds.has(line.id))?trading.foodTruckClosingTime:trading.closingTime});
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.
