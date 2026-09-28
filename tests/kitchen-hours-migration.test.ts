@@ -18,13 +18,17 @@ test('managed hosts adopt the approved kitchen and Food Truck closes once and pr
     resetDbForTests();process.env.FOND_HOST='fond.mid-point.co.za';
     const migrated=getDb(),live=settings();
     assert.equal(live.closingTime,'18:30');assert.equal(live.foodTruckClosingTime,'15:30');assert.equal(live.enforceHours,true);
+    assert.deepEqual(live.openDays,[1,2,3,4,5,6]);assert.deepEqual(live.foodTruckOpenDays,[1,2,3,4,5]);assert.equal(live.saturdayClosingTime,'12:00');
+    assert.ok(migrated.prepare('SELECT 1 FROM app_documents WHERE key=?').get('weekly-trading-hours-2026-09-28-v1'));
     assert.ok(migrated.prepare('SELECT 1 FROM app_documents WHERE key=?').get('kitchen-hours-2026-09-28-v1'));
     assert.ok(migrated.prepare('SELECT 1 FROM app_documents WHERE key=?').get('food-truck-hours-2026-09-28-v1'));
     assert.equal((migrated.prepare("SELECT count(*) n FROM admin_change_versions WHERE actor='release:kitchen-hours-2026-09-28' AND entity_id='trading'").get() as {n:number}).n,1);
     assert.equal((migrated.prepare("SELECT count(*) n FROM admin_change_versions WHERE actor='release:food-truck-hours-2026-09-28' AND entity_id='trading'").get() as {n:number}).n,1);
 
-    migrated.prepare('UPDATE app_documents SET value=?,updated_at=? WHERE key=?').run(JSON.stringify({closingTime:'19:00',foodTruckClosingTime:'16:00',enforceHours:true}),new Date().toISOString(),'trading');
+    migrated.prepare('UPDATE app_documents SET value=?,updated_at=? WHERE key=?').run(JSON.stringify({closingTime:'19:00',foodTruckClosingTime:'16:00',enforceHours:true,saturdayClosingTime:'11:00',foodTruckOpenDays:[1,2,3,4]}),new Date().toISOString(),'trading');
     resetDbForTests();
+    assert.equal(settings().saturdayClosingTime,'11:00');assert.deepEqual(settings().foodTruckOpenDays,[1,2,3,4]);
+    assert.equal((getDb().prepare("SELECT count(*) n FROM admin_change_versions WHERE actor='release:weekly-trading-hours-2026-09-28'").get() as {n:number}).n,1);
     assert.equal(settings().closingTime,'19:00');assert.equal(settings().foodTruckClosingTime,'16:00');
     assert.equal((getDb().prepare("SELECT count(*) n FROM admin_change_versions WHERE actor='release:kitchen-hours-2026-09-28'").get() as {n:number}).n,1);
     assert.equal((getDb().prepare("SELECT count(*) n FROM admin_change_versions WHERE actor='release:food-truck-hours-2026-09-28'").get() as {n:number}).n,1);

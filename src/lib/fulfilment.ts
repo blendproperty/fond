@@ -1,3 +1,4 @@
+import {withinTradingWindow} from './trading-hours';
 export type CollectionSlot = { value:string; label:string; dateLabel:string };
 
 const ZA_OFFSET_MS=2*60*60*1000;
@@ -11,9 +12,9 @@ export function isBeforeDailyCutoff(cutoffTime:string,openDays:number[],now=new 
   return openDays.includes(local.getUTCDay())&&minutes<toMinutes(cutoffTime);
 }
 
-export function assertFoodTruckOrderingAvailable(input:{hasFoodTruck:boolean;source:'customer'|'staff';enforceHours:boolean;cutoffTime:string;openDays:number[];now?:Date}){
+export function assertFoodTruckOrderingAvailable(input:{hasFoodTruck:boolean;source:'customer'|'staff';enforceHours:boolean;cutoffTime:string;openingTime?:string;openDays:number[];now?:Date}){
   if(input.source==='staff'||!input.hasFoodTruck||!input.enforceHours)return;
-  if(!isBeforeDailyCutoff(input.cutoffTime,input.openDays,input.now))throw new Error(`Food Truck ordering has closed for today. Food Truck orders close at ${input.cutoffTime}.`);
+  if(!withinTradingWindow({openingTime:input.openingTime??'00:00',closingTime:input.cutoffTime,openDays:input.openDays},input.now))throw new Error(`Food Truck ordering is closed. Food Truck orders close at ${input.cutoffTime} on trading days.`);
 }
 
 export function formatCollectionTime(value:string){
@@ -40,8 +41,9 @@ export function collectionSlots(input:{now?:Date;prepMinutes:number;incrementMin
   return slots;
 }
 
-export function validateScheduledCollection(value:string,prepMinutes:number,settings:{collectionSlotIncrementMinutes:number;openingTime:string;closingTime:string;openDays:number[]},now=new Date()){
+export function validateScheduledCollection(value:string,prepMinutes:number,settings:{collectionSlotIncrementMinutes:number;openingTime:string;closingTime:string;openDays:number[]},now=new Date(),enforceAvailability=false){
   const available=collectionSlots({prepMinutes,now,incrementMinutes:settings.collectionSlotIncrementMinutes,openingTime:settings.openingTime,closingTime:settings.closingTime,openDays:settings.openDays});
+  if(enforceAvailability&&!available.length)throw new Error('Collection is closed for today. The basket cannot be ready before closing.');
   if(value==='ASAP'||value==='As soon as possible')return;
   const scheduled=new Date(value);
   if(!Number.isFinite(scheduled.getTime()))return;

@@ -1,3 +1,4 @@
+import {tradingWindow,withinTradingWindow} from './trading-hours';
 import { categories } from './menu';
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
@@ -21,7 +22,8 @@ export function saveDocument(key:string,value:unknown,actor:string) {
 }
 export const DEFAULT_SETTINGS = {
   orderingEnabled:true, collectionEnabled:true, deliveryEnabled:true,
-  enforceHours:false, openingTime:'07:00', closingTime:'18:30', foodTruckClosingTime:'15:30', openDays:[1,2,3,4,5],
+  enforceHours:false, openingTime:'07:00', closingTime:'18:30', foodTruckClosingTime:'15:30', openDays:[1,2,3,4,5,6],
+  saturdayClosingTime:'12:00', foodTruckOpeningTime:'07:00', foodTruckOpenDays:[1,2,3,4,5],
   maxActiveOrders:100, newOrderMinutes:5, paymentConfirmationMinutes:10,
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
   preparationWeightPercent:7,preparationParallelItems:2,preparationParallelOrders:2,allowTestPayments:false,
@@ -39,10 +41,15 @@ export function validateSettings(input:unknown):TradingSettings {
   const s=input as TradingSettings;
   if(!s || typeof s!=='object')throw new Error('Provide trading settings.');
   for(const k of ['orderingEnabled','collectionEnabled','deliveryEnabled','enforceHours','whatsappEnabled','smsEnabled','onlinePaymentsEnabled','allowTestPayments'] as const)if(typeof s[k]!=='boolean')throw new Error('Invalid switch value.');
-  for(const k of ['openingTime','closingTime','foodTruckClosingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
+  for(const k of ['openingTime','closingTime','saturdayClosingTime','foodTruckOpeningTime','foodTruckClosingTime'] as const)if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s[k]))throw new Error('Enter valid opening and closing times.');
   if(s.openingTime>=s.closingTime)throw new Error('Closing time must be after opening time. Overnight trading is not supported.');
-  if(s.foodTruckClosingTime<=s.openingTime||s.foodTruckClosingTime>s.closingTime)throw new Error('Food Truck closing time must be after opening and no later than the kitchen closing time.');
-  if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');
+  if(Array.isArray(s.openDays)&&s.openDays.includes(6)&&s.saturdayClosingTime<=s.openingTime)throw new Error('Saturday closing time must be after restaurant opening time.');
+  if(s.foodTruckOpeningTime>=s.foodTruckClosingTime)throw new Error('Food Truck closing time must be after its opening time.');
+  for(const key of ['openDays','foodTruckOpenDays'] as const)if(!Array.isArray(s[key])||s[key].some(d=>!Number.isInteger(d)||d<0||d>6)||new Set(s[key]).size!==s[key].length)throw new Error('Select valid trading days.');
+  for(const day of s.foodTruckOpenDays){
+    const close=day===6?s.saturdayClosingTime:s.closingTime;
+    if(!s.openDays.includes(day)||s.foodTruckOpeningTime<s.openingTime||s.foodTruckClosingTime>close)throw new Error('Food Truck hours must fall within restaurant hours on each selected day.');
+  }
   if(!Number.isInteger(s.maxActiveOrders)||s.maxActiveOrders<1||s.maxActiveOrders>1000)throw new Error('Check maximum active orders.');
   for(const k of ['newOrderMinutes','paymentConfirmationMinutes','yocoEntryMinutes','preparationMinutes','readyDeliveryMinutes','readyCollectionMinutes'] as const)if(!Number.isInteger(s[k])||s[k]<1||s[k]>240)throw new Error('Every queue target must be between 1 and 240 minutes.');
   if(!Number.isInteger(s.collectionSlotIncrementMinutes)||s.collectionSlotIncrementMinutes<5||s.collectionSlotIncrementMinutes>60||s.collectionSlotIncrementMinutes%5!==0)throw new Error('Collection time increments must be between 5 and 60 minutes, in steps of 5.');
@@ -56,11 +63,7 @@ export function validateSettings(input:unknown):TradingSettings {
 export function orderingAvailable(s=settings(),now=new Date()) {
   if(!s.orderingEnabled)return false;
   if(!s.enforceHours)return true;
-  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Johannesburg',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now);
-  const part=(k:string)=>parts.find(p=>p.type===k)?.value??'';
-  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(part('weekday'));
-  const time=`${part('hour')}:${part('minute')}`;
-  return s.openDays.includes(day)&&time>=s.openingTime&&time<s.closingTime;
+  return withinTradingWindow(tradingWindow(s,false,now),now);
 }
 export function assertTrading(fulfillment:string,source:string) {
   const s=settings();

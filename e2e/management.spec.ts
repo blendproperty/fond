@@ -22,8 +22,10 @@ test('admin sections save customer, publish CMS, record receipts and create name
  await page.getByLabel('Amount (R)',{exact:true}).fill(String((await res.json()).totalCents/100));await page.getByLabel('Unique receipt / reference').fill('receipt-'+tag);
  await page.getByRole('button',{name:'Record transaction'}).click();await expect(page.getByText('receipt-'+tag,{exact:false}).last()).toBeVisible();
  await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByLabel('Member name',{exact:true}).fill('Staff '+tag);await page.getByLabel('Username',{exact:true}).fill('staff'+tag);await page.getByLabel('Password (12+ characters)',{exact:true}).fill('local-test-password');
+ await expect(page.getByLabel('Restaurant Sat',{exact:true})).toBeChecked();await expect(page.getByLabel('Food Truck Sat',{exact:true})).not.toBeChecked();await expect(page.getByLabel('Restaurant Sun',{exact:true})).not.toBeChecked();await expect(page.getByLabel('Food Truck Sun',{exact:true})).not.toBeChecked();
+ await page.getByLabel('Restaurant closes on Saturday',{exact:true}).fill('11:00');await page.getByLabel('Food Truck opens',{exact:true}).fill('08:00');
  await page.getByLabel('New order (minutes)',{exact:true}).fill('7');await page.getByRole('button',{name:'Save settings'}).click();await expect(page.getByRole('status')).toContainText('Saved');
- expect((await (await request.get('/api/store')).json()).settings.newOrderMinutes).toBe(7);
+ const savedSettings=(await (await request.get('/api/store')).json()).settings;expect(savedSettings.newOrderMinutes).toBe(7);expect(savedSettings.saturdayClosingTime).toBe('11:00');expect(savedSettings.foodTruckOpeningTime).toBe('08:00');
  await expect(page.getByRole('heading',{name:'Change history & rollback'})).toBeVisible();
  const tradingChange=page.locator('.change-record').filter({hasText:'Trading & fulfilment settings'}).first();
  await expect(tradingChange).toContainText('Shared admin');await expect(tradingChange).toContainText('New order target');

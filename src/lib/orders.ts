@@ -2,6 +2,7 @@ import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
 import {basketPrepMinutes as calculateBasketPrepMinutes} from './preparation-estimates';
 import {currentKitchenDelayMinutes} from './kitchen-workload';
+import {tradingWindow} from './trading-hours';
 import {assertFoodTruckOrderingAvailable,validateScheduledCollection} from './fulfilment';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
@@ -235,12 +236,14 @@ export function createOrder(input: {
     const priced = quoteCart(input.lines, availableMenu);
     const trading=settings();
     const foodTruckIds=new Set(availableMenu.filter(item=>item.category==='Food Truck').map(item=>item.id));
-    assertFoodTruckOrderingAvailable({hasFoodTruck:input.lines.some(line=>foodTruckIds.has(line.id)),source:input.source,enforceHours:trading.enforceHours,cutoffTime:trading.foodTruckClosingTime,openDays:trading.openDays});
+    const hasFoodTruck=input.lines.some(line=>foodTruckIds.has(line.id));
+    const window=tradingWindow(trading,hasFoodTruck);
+    assertFoodTruckOrderingAvailable({hasFoodTruck,source:input.source,enforceHours:trading.enforceHours,cutoffTime:window.closingTime,openingTime:window.openingTime,openDays:window.openDays});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
     const estimatedPrepMinutes=basketPrepMinutes+queueDelayMinutes;
-    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,closingTime:input.lines.some(line=>foodTruckIds.has(line.id))?trading.foodTruckClosingTime:trading.closingTime});
+    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.

@@ -208,6 +208,7 @@ function MenuAdmin() {
           <button role="tab" aria-selected={view === 'compact'} onClick={() => setView('compact')} aria-label="Compact view"><Rows3 size={16} /></button>
         </div>
       </div>
+      <p className="small">Switch an item to Sold out to remove it from ordering. Switch it back to Available when it is ready to sell again.</p>
       <div className="admin-filters">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search menu items…" />
         <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Category | '')}>
@@ -215,9 +216,9 @@ function MenuAdmin() {
           {categories.map((c) => <option key={c}>{c}</option>)}
         </select>
         <select value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value as '' | 'available' | 'unavailable')}>
-          <option value="">Available &amp; hidden</option>
-          <option value="available">On menu only</option>
-          <option value="unavailable">Hidden only</option>
+          <option value="">All availability</option>
+          <option value="available">Available only</option>
+          <option value="unavailable">Sold out only</option>
         </select>
         <label className="field-check"><input type="checkbox" checked={specialsOnly} onChange={(e) => setSpecialsOnly(e.target.checked)} /> Specials only</label>
       </div>
@@ -305,7 +306,7 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
           {view !== 'compact' && <span>{item.description}</span>}
         </div>
         <label className="admin-price">R<input value={price} onChange={(e) => setPrice(e.target.value)} onBlur={() => onPatch({ price: Math.round(parseFloat(price || '0') * 100) })} inputMode="decimal" /></label>
-        <label className="field-check"><input type="checkbox" checked={item.available !== false} onChange={(e) => onPatch({ available: e.target.checked })} /> On menu</label>
+        <button type="button" role="switch" aria-checked={item.available !== false} aria-label={`Availability for ${item.name}`} className={`availability-toggle ${item.available === false ? 'is-sold-out' : 'is-available'}`} disabled={saving} onClick={() => onPatch({available:item.available === false})}><span className="availability-track" aria-hidden="true"><span/></span>{saving?'Saving…':item.available === false?'Sold out':'Available'}</button>
         <button className="icon-button" aria-label={editing ? 'Close edit' : `Edit ${item.name}`} onClick={() => setEditing((v) => !v)}><Pencil size={16} /></button>
         <button className="icon-button" aria-label={`Remove ${item.name}`} onClick={onRemove}><Trash2 size={16} /></button>
       </div>
