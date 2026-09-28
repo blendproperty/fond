@@ -19,7 +19,7 @@ type StaffOrder = {
   staffNumber:string;
   customerName: string;
   note: string | null;
-  lines: (CartLine & {name?: string; modifiers?: {name:string}[]})[];
+  lines: (CartLine & {rewardDiscountCents?:number;name?: string; modifiers?: {name:string}[]})[];
   collectionTime: string;
   totalCents: number;
   status: OrderStatus;
@@ -323,7 +323,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                 const paidOnline = fullyPaid && order.payment?.paymentMethod === 'yoco';
                 const paymentState = fullyPaid ? 'paid' : order.paymentMethod === 'yoco_online' ? 'pending' : 'due';
                 const paidMethod = order.payment?.paymentMethod==='cash'?'CASH':order.payment?.paymentMethod==='card'?'CARD':order.payment?.paymentMethod==='eft'?'EFT':'ONLINE';
-                const paymentLabel = fullyPaid
+                const paymentLabel = order.totalCents===0?'FREE COFFEE REWARD · NO PAYMENT DUE':fullyPaid
                   ? `PAID ${paidOnline?'ONLINE':`IN PERSON · ${paidMethod}`} · ${money(order.payment?.paidCents ?? order.totalCents)}`
                   : paymentState === 'pending'
                     ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
@@ -346,11 +346,11 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                       {order.lines.map((line) => {
                         const item = menu.find((m) => m.id === line.id);
                         const mods = line.modifiers?.map(m => m.name) ?? (line.modifierIds ?? []).map((mid) => item?.modifiers?.find((m) => m.id === mid)?.name).filter(Boolean);
-                        return <li key={`${line.id}::${(line.modifierIds ?? []).join(',')}`}><strong>{line.quantity}× {line.name ?? item?.name ?? line.id}</strong><StaffItemChanges names={mods as string[]}/></li>;
+                        return <li key={`${line.id}::${(line.modifierIds ?? []).join(',')}`}><strong>{line.quantity}× {line.name ?? item?.name ?? line.id}</strong><StaffItemChanges names={mods as string[]}/>{!!line.rewardDiscountCents&&<p className="notice">APP COFFEE REWARD · discount {money(line.rewardDiscountCents)}. Apply the same discount in Yoco; extras remain payable.</p>}</li>;
                       })}
                     </ul>
                     {order.note && <p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}
-                    {!order.posRecordedAt&&order.posRequired&&<div className="staff-pos-instructions"><strong>Yoco sale note: FOND {order.staffNumber}</strong><button className="quiet" onClick={()=>void copyPosNote(order.staffNumber)}>Copy Yoco note</button>{paidOnline?<p>{paymentMode==='sandbox'?'TEST PAYMENT · Use the Yoco sandbox only.':'Already paid online · close in Yoco as EFT. Do not charge again.'} {posSync?.enabled&&!posSync.error?'The POS reference will appear after matching.':'Automatic matching is not connected. Record the POS reference manually.'}</p>:<p>Enter the short number in Yoco. Keep the existing payment-on-collection process.</p>}{posSync?.issues.filter(issue=>issue.staffNumber===order.staffNumber).map(issue=><p role="alert" key={issue.message}>{issue.message}</p>)}</div>}
+                    {!order.posRecordedAt&&order.posRequired&&<div className="staff-pos-instructions"><strong>Yoco sale note: FOND {order.staffNumber}</strong><button className="quiet" onClick={()=>void copyPosNote(order.staffNumber)}>Copy Yoco note</button>{order.totalCents===0?<p>Free app reward. Record the coffee with its full discount in Yoco. No payment is due.</p>:paidOnline?<p>{paymentMode==='sandbox'?'TEST PAYMENT · Use the Yoco sandbox only.':'Already paid online · close in Yoco as EFT. Do not charge again.'} {posSync?.enabled&&!posSync.error?'The POS reference will appear after matching.':'Automatic matching is not connected. Record the POS reference manually.'}</p>:<p>Enter the short number in Yoco. Keep the existing payment-on-collection process.</p>}{posSync?.issues.filter(issue=>issue.staffNumber===order.staffNumber).map(issue=><p role="alert" key={issue.message}>{issue.message}</p>)}</div>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
                     <button className="staff-history-toggle" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>
                     {historyOrderId===order.id&&<div className="staff-audit" aria-live="polite">{!orderAudit?<p>Loading audit trail…</p>:<><strong>Permanent order record</strong>{orderAudit.payment.checkout&&<p>Yoco checkout: {orderAudit.payment.checkout.status} · {orderAudit.payment.checkout.checkoutId??'creating'} · {new Date(orderAudit.payment.checkout.updatedAt).toLocaleString('en-ZA')}</p>}{orderAudit.payment.records.map(record=><p key={record.reference}>Payment: {money(record.amountCents)} · {record.method} · {record.reference} · {new Date(record.createdAt).toLocaleString('en-ZA')}</p>)}{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}

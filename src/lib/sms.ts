@@ -22,10 +22,13 @@ export function smsBody(template:SmsTemplate,reference:string,fulfillment:SmsFul
  return renderMessageText(publishedMessageTemplates().sms[key],{reference,customerName});
 }
 export async function sendSmsNotification(input:{toE164:string;templateName:SmsTemplate;reference:string;customerName?:string;fulfillment?:SmsFulfillment;statusCallback?:boolean}){
+ return sendSmsText(input.toE164,smsBody(input.templateName,input.reference,input.fulfillment,input.customerName),input.statusCallback!==false);
+}
+export async function sendSmsText(toE164:string,text:string,statusCallback=false){
  if(!smsConfigured())return {sent:false,reason:'NOT_CONFIGURED'} as const;
  const config=smsConfig(),token=providerSecret('twilio-auth-token')!;
- const body=new URLSearchParams({From:config.sender,To:input.toE164,Body:smsBody(input.templateName,input.reference,input.fulfillment,input.customerName)});
- if(input.statusCallback!==false)body.set('StatusCallback',`${publicBaseUrl()}/api/webhooks/twilio/sms`);
+ const body=new URLSearchParams({From:config.sender,To:toE164,Body:text});
+ if(statusCallback)body.set('StatusCallback',`${publicBaseUrl()}/api/webhooks/twilio/sms`);
  try{
   const response=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Authorization:`Basic ${Buffer.from(`${config.accountSid}:${token}`).toString('base64')}`,'Content-Type':'application/x-www-form-urlencoded'},body});
   const data=await response.json().catch(()=>({})) as {sid?:string;status?:string;message?:string;code?:number};

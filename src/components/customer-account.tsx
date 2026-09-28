@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import {CoffeeRewards} from './coffee-rewards';
 import {BrandLogo} from './brand-logo';
 import {formatCollectionTime} from '@/lib/fulfilment';
 
@@ -54,6 +55,7 @@ export function CustomerAccount() {
       <p>Signed in as {user.email} <button className="quiet" onClick={logout}>Sign out</button></p>
       <p>Orders placed while signed in appear here. Guest orders can still be tracked using their reference on the menu page.</p>
       {!user.emailVerified && <section className="staff-card" style={{ marginBottom: 20 }}><h2>Verify your email</h2><p>Verify your address to confirm ownership of this account. You can still enter an email address for order updates at checkout.</p><button className="outline" onClick={sendCode}>Send verification code</button><form onSubmit={confirmCode}><label className="field">Six digit code<input value={code} onChange={event => setCode(event.target.value)} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} /></label><button className="primary" type="submit">Verify email</button></form>{verificationMessage && <p role="status">{verificationMessage}</p>}</section>}
+      <CoffeeRewards key={String(user.emailVerified)}/>
       {orders.length ? orders.map(order => <article key={order.reference} className="staff-card" style={{ marginBottom: 16 }}>
         <h2>{order.displayReference}</h2><p>{new Date(order.createdAt).toLocaleString()} · {order.status.replaceAll('_',' ')} · {formatCollectionTime(order.collectionTime)}</p>
         <ul>{order.lines.map((line, index) => <li key={index}>{line.quantity}× {line.name}</li>)}</ul>

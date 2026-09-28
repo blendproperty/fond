@@ -1,3 +1,4 @@
+import {processRewardMessages} from '@/lib/loyalty-messages';
 import { paymentStatus } from '@/lib/payments';
 import { after } from 'next/server';
 import { processNotifications } from '@/lib/notifications';
@@ -18,6 +19,7 @@ export async function GET(request:Request) {
     return NextResponse.json({ code: 'STAFF_AUTH_REQUIRED', message: 'Enter the staff access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   after(processNotifications);
+  after(processRewardMessages);
   after(syncYocoPos);
   const query=new URL(request.url).searchParams.get('query')?.trim();
   const orders=query?searchOrders({query,limit:50}):listActiveOrders();

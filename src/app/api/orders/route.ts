@@ -19,6 +19,8 @@ export async function POST(request: Request) {
     if(body.fulfillment==='delivery'&&customerCheckoutMode()==='none')throw new Error('Delivery ordering requires secure online payment, which is not available right now.');
     const order = createOrder({
       submissionKey,
+      rewardCode:typeof body.rewardCode==='string'?body.rewardCode:undefined,
+      rewardEnvironment:customerCheckoutMode()==='live'?'live':'test',
       customerName: body.customerName,
       note: typeof body.note === 'string' ? body.note : null,
       lines: body.lines,
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
       customerEmail: body.emailOptIn ? (typeof body.customerEmail === 'string' ? body.customerEmail : user?.email) : user?.email,
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
-    const redirectUrl=order.paymentMethod==='yoco_online'?await createCustomerCheckout(order.reference):null;
+    const redirectUrl=order.paymentMethod==='yoco_online'&&order.totalCents>0?await createCustomerCheckout(order.reference):null;
     const emailEvent=automaticOrderEmailEvent(order.status);
     if (order.emailOptIn&&emailEvent) await deliverOrderEmail(order,emailEvent).catch(() => false);
     return NextResponse.json(

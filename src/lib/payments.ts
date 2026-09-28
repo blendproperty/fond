@@ -1,3 +1,4 @@
+import {reconcileOrderRewards} from './loyalty';
 import { createHmac,timingSafeEqual,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { settings } from './management';
@@ -55,6 +56,7 @@ export async function createCheckout(reference:string,options:{allowSandbox?:boo
     : mode==='live'&&s.onlinePaymentsEnabled&&onlinePaymentsConfigured();
   if(!allowed)throw new Error('Online payment is not available. Please pay at FOND.');
   const db=getDb();const order=db.prepare('SELECT id,total_cents,status FROM orders WHERE reference=?').get(reference) as {id:string;total_cents:number;status:string}|undefined;
+  if(order?.total_cents===0)throw new Error('This order is covered by a coffee reward; no payment is needed.');
   if(!order||order.status==='cancelled')throw new Error('Order unavailable.');
   if(paymentStatus(order.id).paidCents>0)throw new Error('A payment is already recorded. Contact FOND for the remaining balance.');
   const prior=db.prepare('SELECT redirect_url,status,updated_at FROM yoco_checkouts WHERE order_id=?').get(order.id) as {redirect_url:string;status:string;updated_at:string}|undefined;
@@ -98,6 +100,7 @@ export function processPaymentEvent(event:{id:string;type:string;payload:{id:str
       db.prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run(randomUUID(),checkout.order_id,refund?-p.amount:p.amount,refund?'yoco-refund':'yoco',reference,'yoco-webhook',new Date().toISOString());
     }
     db.prepare("UPDATE yoco_checkouts SET status='paid',updated_at=? WHERE order_id=?").run(new Date().toISOString(),checkout.order_id);
+    reconcileOrderRewards(checkout.order_id);
     db.prepare('INSERT INTO webhook_receipts VALUES (?,?)').run(event.id,new Date().toISOString());db.exec('COMMIT');return {ok:true};
   }catch(e){db.exec('ROLLBACK');throw e;}
 }

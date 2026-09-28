@@ -1,3 +1,4 @@
+import {attachOrderRewards,reconcileOrderRewards,orderRewardSummary,type RewardEnvironment} from './loyalty';
 import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
 import {basketPrepMinutes as calculateBasketPrepMinutes} from './preparation-estimates';
@@ -25,13 +26,14 @@ export type OrderSource = 'customer' | 'staff';
 export type FulfillmentType = 'collection' | 'delivery';
 export type PaymentMethod = 'yoco_online' | 'pay_at_collection';
 
-export type PricedLine = CartLine & { name: string; unitPriceCents: number; subtotalCents: number; prepMinutes?:number; modifiers?: {id:string;name:string;price:number}[] };
+export type PricedLine = CartLine & { rewardDiscountCents?:number; name: string; unitPriceCents: number; subtotalCents: number; prepMinutes?:number; modifiers?: {id:string;name:string;price:number}[] };
 
 export type OrderRecord = {
   id: string;
   reference: string;
   displayReference: string;
   staffNumber: string;
+  reward?:{discountCents:number;eligibleCoffees:number;environment:string}|null;
   customerName: string;
   note: string | null;
   lines: PricedLine[];
@@ -112,6 +114,7 @@ function fromRow(row: OrderRow): OrderRecord {
     reference: row.reference,
     displayReference: row.display_reference ?? row.reference,
     staffNumber: row.staff_number,
+    reward:orderRewardSummary(row.id) as OrderRecord['reward'],
     customerName: row.customer_name,
     note: row.note,
     lines: JSON.parse(row.lines_json) as PricedLine[],
@@ -155,6 +158,8 @@ function createDisplayReference() {
 
 export function createOrder(input: {
   submissionKey?: string;
+  rewardCode?:string;
+  rewardEnvironment?:RewardEnvironment;
   customerName: string;
   note?: string | null;
   lines: CartLine[];
@@ -180,6 +185,8 @@ export function createOrder(input: {
   const fingerprint = createHash('sha256')
     .update(
       JSON.stringify({
+        rewardCode:input.rewardCode??null,
+        rewardEnvironment:input.rewardEnvironment??null,
         name: input.customerName,
         note: input.note ?? null,
         lines: input.lines,
@@ -243,7 +250,9 @@ export function createOrder(input: {
     const hasFoodTruck=input.lines.some(line=>foodTruckIds.has(line.id));
     const window=tradingWindow(trading,hasFoodTruck);
     assertFoodTruckOrderingAvailable({hasFoodTruck,source:input.source,enforceHours:trading.enforceHours,cutoffTime:window.closingTime,openingTime:window.openingTime,openDays:window.openDays});
-    const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
+    const orderId=randomUUID();
+    const reward=attachOrderRewards({orderId,userId:input.userId,source:input.source,environment:input.rewardEnvironment,code:input.rewardCode,lines:input.lines,menu:availableMenu});
+    const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0)-reward.discountCents;
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
     const estimatedPrepMinutes=basketPrepMinutes+queueDelayMinutes;
@@ -252,18 +261,19 @@ export function createOrder(input: {
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.
     const status: OrderStatus = input.source === 'staff' ? 'accepted' : 'received';
-    const lines: PricedLine[] = priced.map((line) => ({
+    const lines: PricedLine[] = priced.map((line,index) => ({
       id: line.id,
       quantity: line.quantity,
       modifierIds: line.selectedModifiers.map((m) => m.id),
       modifiers: line.selectedModifiers.map(m => ({id:m.id,name:m.name,price:m.price})),
       name: line.name,
       unitPriceCents: line.unitPrice,
-      subtotalCents: line.subtotal,
+      subtotalCents: line.subtotal-(index===reward.lineIndex?reward.discountCents:0),
+      rewardDiscountCents:index===reward.lineIndex?reward.discountCents:0,
       prepMinutes:line.prepMinutes??10,
     }));
     const record: OrderRecord = {
-      id: randomUUID(),
+      id: orderId,
       reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
       displayReference: createDisplayReference(),
       staffNumber: allocateStaffOrderNumber(db),
@@ -436,6 +446,7 @@ export function updateOrderStatus(id: string, nextStatus: OrderStatus, expectedS
     db.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`).run(nextStatus, updatedAt, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, current.status, nextStatus, actor, updatedAt);
     enqueueNotification(id,nextStatus);
+    reconcileOrderRewards(id);
     db.exec('COMMIT');
     return { ...current, status: nextStatus, updatedAt };
   } catch (error) {

@@ -1,3 +1,4 @@
+import {reconcileOrderRewards} from './loyalty';
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { audit, normalizePhone } from './management';
@@ -36,13 +37,14 @@ export function recordPayment(input:{orderId:string;amountCents:number;method:st
     if(!o)throw new Error('Order not found.');
     const prior=db.prepare('SELECT * FROM payment_records WHERE reference=?').get(input.reference.trim()) as {order_id:string;amount_cents:number;method:string}|undefined;
     const amount=input.method==='refund'?-input.amountCents:input.amountCents;
-    if(prior){if(prior.order_id!==input.orderId||prior.amount_cents!==amount||prior.method!==input.method)throw new Error('Reference already used.');db.exec('COMMIT');return;}
+    if(prior){if(prior.order_id!==input.orderId||prior.amount_cents!==amount||prior.method!==input.method)throw new Error('Reference already used.');reconcileOrderRewards(input.orderId);db.exec('COMMIT');return;}
     const paid=(db.prepare('SELECT coalesce(sum(amount_cents),0) AS n FROM payment_records WHERE order_id=?').get(input.orderId) as {n:number}).n;
     if(paid+amount<0||paid+amount>o.total_cents)throw new Error('Amount exceeds the outstanding balance or refundable amount.');
     if(o.status==='cancelled'&&amount>0)throw new Error('Cannot record payment against a cancelled order.');
     const pending=db.prepare("SELECT status FROM yoco_checkouts WHERE order_id=? AND status IN ('creating','pending')").get(input.orderId);
     if(pending&&amount>0)throw new Error('Online checkout is pending. Reconcile it before recording another payment.');
     db.prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run(randomUUID(),input.orderId,amount,input.method,input.reference.trim(),actor,new Date().toISOString());
+    reconcileOrderRewards(input.orderId);
     audit(actor,input.method==='refund'?'refund-recorded':'payment-recorded',input.orderId);db.exec('COMMIT');
   }catch(e){db.exec('ROLLBACK');throw e;}
 }

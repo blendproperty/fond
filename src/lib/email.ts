@@ -18,7 +18,7 @@ function codeHash(userId: string, code: string) {
   if (!key || !/^[a-f0-9]{64}$/i.test(key)) throw new Error('Email verification key unavailable.');
   return createHmac('sha256', Buffer.from(key, 'hex')).update(`${userId}:${code}`).digest('hex');
 }
-async function send(to: string, message: EmailMessage, idempotencyKey: string) {
+export async function sendEmailMessage(to: string, message: EmailMessage, idempotencyKey: string) {
   const key = providerSecret('email-api'), from = emailSender();
   if (!key || !from) throw new Error('Email provider is not configured.');
   const response = await fetch('https://api.resend.com/emails', {
@@ -33,7 +33,7 @@ async function send(to: string, message: EmailMessage, idempotencyKey: string) {
 export async function sendControlledEmailTest(to: string) {
   const recipient = to.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter a valid test email address.');
-  const providerId = await send(recipient, buildControlledTestEmail(recipient), `fond-email-test-${Date.now()}`);
+  const providerId = await sendEmailMessage(recipient, buildControlledTestEmail(recipient), `fond-email-test-${Date.now()}`);
   return { recipient, providerId };
 }
 export async function requestVerification(user: { id: string; email: string }) {
@@ -47,7 +47,7 @@ export async function requestVerification(user: { id: string; email: string }) {
   const code = String(randomInt(0, 1000000)).padStart(6, '0');
   const sentAt = new Date(now).toISOString();
   db.prepare('INSERT INTO email_verifications VALUES (?,?,?,0,?) ON CONFLICT(user_id) DO UPDATE SET code_hash=excluded.code_hash,expires_at=excluded.expires_at,attempts=0,sent_at=excluded.sent_at').run(user.id, codeHash(user.id, code), new Date(now + 10 * 60000).toISOString(), sentAt);
-  await send(user.email, buildVerificationEmail(code), `fond-verify-${user.id}-${now}`);
+  await sendEmailMessage(user.email, buildVerificationEmail(code), `fond-verify-${user.id}-${now}`);
   return { sent: true };
 }
 export function verifyEmail(userId: string, code: string) {
@@ -73,7 +73,7 @@ export async function deliverOrderEmail(order: OrderRecord, event: 'received' | 
   const claimed = db.prepare("UPDATE email_jobs SET status='sending',updated_at=? WHERE id=? AND (status IN ('pending','failed') OR (status='sending' AND updated_at<?))").run(now, id, new Date(Date.now() - 60000).toISOString());
   if (!claimed.changes) return false;
   try {
-    const providerId = await send(order.customerEmail, buildOrderEmail(order, event), `fond-${id}`);
+    const providerId = await sendEmailMessage(order.customerEmail, buildOrderEmail(order, event), `fond-${id}`);
     db.prepare("UPDATE email_jobs SET status='sent',provider_id=?,error=NULL,updated_at=? WHERE id=?").run(providerId, new Date().toISOString(), id);
     return true;
   } catch (error) {

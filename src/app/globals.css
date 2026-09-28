@@ -405,3 +405,7 @@ footer span:last-child{margin-left:auto}
 .promo-dialog-artwork .promo-artwork-action>img{width:auto;height:auto;max-width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);object-fit:contain}
 .promo-dialog-artwork .promo-close{width:44px;height:44px;right:8px;top:8px;box-shadow:0 2px 10px #0003}
 .promo-artwork-action:focus-visible{outline:3px solid #ffca73;outline-offset:-3px}
+
+.coffee-rewards{padding:24px;border:1px solid #d4dfda;border-radius:16px;background:#faf7ef;margin:24px 0;overflow-wrap:anywhere}.reward-card{display:grid;gap:10px;padding:16px;background:white;border:1px solid #d4dfda;border-radius:10px;margin:12px 0}.reward-card code{font-size:16px;overflow-wrap:anywhere}.basket-rewards{border:1px solid #d4dfda;padding:16px;border-radius:12px;margin:20px 0}.basket-rewards h3{margin-top:0}.coffee-rewards .field-check{margin:12px 0}
+
+.account-page h1{color:#102f2a}.coffee-rewards .eyebrow{color:#366153}.coffee-rewards strong+p{margin-top:12px}.coffee-rewards .field+button{margin-top:12px}.email-mini-banner img{height:auto;object-fit:contain}
