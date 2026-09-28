@@ -10,13 +10,30 @@ import styles from './customer-account.module.css';
 type User={id:string;email:string;emailVerified:boolean};
 type Order={reference:string;displayReference:string;status:string;createdAt:string;collectionTime:string;totalCents:number;lines:{name:string;quantity:number;subtotalCents:number}[];payment:{paidCents:number}};
 export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
+ const [historyLoaded,setHistoryLoaded]=useState(false),[historyBusy,setHistoryBusy]=useState(false);
  const [user,setUser]=useState<User|null>(null),[orders,setOrders]=useState<Order[]>([]),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[code,setCode]=useState(''),[verificationMessage,setVerificationMessage]=useState(''),[verificationError,setVerificationError]=useState(false),[verificationBusy,setVerificationBusy]=useState(false);
  async function refresh(){
   const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)throw new Error('Could not load your account. Please try again.');const session=await response.json();setUser(session.user??null);
-  if(session.user&&view==='orders'){const response=await fetch('/api/account/orders',{cache:'no-store'});if(!response.ok)throw new Error('Could not load your orders. Please try again.');const result=await response.json();setOrders(result.orders??[]);}else setOrders([]);
-  setLoading(false);
+  if(session.user&&view==='orders'){const response=await fetch('/api/account/orders',{cache:'no-store'});if(!response.ok)throw new Error('Could not load your orders. Please try again.');const result=await response.json();setOrders(result.orders??[]);setHistoryLoaded(true);}else{setOrders([]);setHistoryLoaded(false);}
+  setError('');setLoading(false);
  }
  useEffect(()=>{refresh().catch(e=>{setError(e.message);setLoading(false);});},[view]);
+ // Refresh history without changing purchase-time ownership or reward eligibility.
+ useEffect(()=>{
+  if(!user||view!=='orders')return;
+  const controller=new AbortController();let pending=false;
+  async function update(){
+   if(pending||document.visibilityState==='hidden')return;pending=true;
+   try{const response=await fetch('/api/account/orders',{cache:'no-store',signal:controller.signal});
+    if(response.status===401){setUser(null);setOrders([]);setHistoryLoaded(false);return;}
+    if(!response.ok)throw new Error('Could not refresh your orders. Showing the last loaded details.');
+    const result=await response.json();if(!controller.signal.aborted){setOrders(result.orders??[]);setHistoryLoaded(true);setError('');}
+   }catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Could not refresh your orders.');}finally{pending=false;}
+  }
+  const timer=setInterval(update,15000);window.addEventListener('focus',update);document.addEventListener('visibilitychange',update);
+  return()=>{controller.abort();clearInterval(timer);window.removeEventListener('focus',update);document.removeEventListener('visibilitychange',update);};
+ },[user?.id,view]);
+ async function refreshHistory(){setHistoryBusy(true);try{await refresh();}catch(e){setError(e instanceof Error?e.message:'Could not refresh your orders.');}finally{setHistoryBusy(false);}}
  async function sendCode(){
   setVerificationBusy(true);setVerificationMessage('');setVerificationError(false);
   try{const response=await fetch('/api/account/verification',{method:'POST'}),result=await response.json();if(!response.ok)throw new Error(result.message??'Could not send the code.');setVerificationMessage('Verification code sent. Check your inbox.');}
@@ -50,8 +67,9 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
       <p className={styles.hint}>Can't find the email? Check your spam folder, then request another code.</p>
      </section>}
      {view==='rewards'?<CoffeeRewards key={String(user.emailVerified)}/>:<>
-      {orders.length?<div className={styles.orders}>{orders.map(order=><article key={order.reference} className={`${styles.card} ${styles.order}`}><div className={styles.orderHeading}><h2>{order.displayReference}</h2><span>{order.status.replaceAll('_',' ')}</span></div><p>{new Date(order.createdAt).toLocaleString()} · {formatCollectionTime(order.collectionTime)}</p><ul>{order.lines.map((line,i)=><li key={i}><span>{line.quantity} × {line.name}</span><span>R{(line.subtotalCents/100).toFixed(2)}</span></li>)}</ul><div className={styles.orderTotal}><strong>R{(order.totalCents/100).toFixed(2)}</strong><span>{order.totalCents===0?'Coffee reward':order.payment?.paidCents>=order.totalCents?'Paid':'Payment due or pending'}</span></div></article>)}</div>:<section className={`${styles.card} ${styles.empty}`}><ShoppingBag size={30} aria-hidden="true"/><h2>Your next favourite is waiting.</h2><p>You have not placed an order while signed in yet. Start with a coffee, breakfast or a little lunchtime lift.</p><Link className={styles.primary} href="/">Explore the menu <ArrowRight size={17} aria-hidden="true"/></Link></section>}
-      <p className={styles.hint}>Orders linked to your account appear here. Guest orders can be tracked from the menu using their order reference.</p>
+      <div className={styles.historyTools}><p>Updates automatically every 15 seconds.</p><button className={styles.secondary} disabled={historyBusy} onClick={refreshHistory}>{historyBusy?'Refreshing…':'Refresh orders'}</button></div>
+      {orders.length?<div className={styles.orders}>{orders.map(order=><article key={order.reference} className={`${styles.card} ${styles.order}`}><div className={styles.orderHeading}><h2>{order.displayReference}</h2><span>{order.status.replaceAll('_',' ')}</span></div><p>{new Date(order.createdAt).toLocaleString()} · {formatCollectionTime(order.collectionTime)}</p><ul>{order.lines.map((line,i)=><li key={i}><span>{line.quantity} × {line.name}</span><span>R{(line.subtotalCents/100).toFixed(2)}</span></li>)}</ul><div className={styles.orderTotal}><strong>R{(order.totalCents/100).toFixed(2)}</strong><span>{order.totalCents===0?'Coffee reward':order.payment?.paidCents>=order.totalCents?'Paid':'Payment due or pending'}</span></div></article>)}</div>:historyLoaded?<section className={`${styles.card} ${styles.empty}`}><ShoppingBag size={30} aria-hidden="true"/><h2>Your next favourite is waiting.</h2><p>No orders are linked to this account yet. Guest orders using the same email appear after you verify it.</p><Link className={styles.primary} href="/">Explore the menu <ArrowRight size={17} aria-hidden="true"/></Link></section>:<p role="status">Your order history could not be loaded. Please try Refresh orders.</p>}
+      <p className={styles.hint}>Your latest 100 orders include signed-in purchases and guest orders sent to your verified email. Orders placed with another email or without an email can still be tracked from the menu using their reference.</p>
      </>}
     </>:<section className={`${styles.card} ${styles.auth}`}>
      <span className={styles.icon}>{mode==='login'?<Coffee size={27} aria-hidden="true"/>:<ShieldCheck size={27} aria-hidden="true"/>}</span><p className={styles.eyebrow}>{mode==='login'?'WELCOME BACK':'PULL UP A CHAIR'}</p><h2>{mode==='login'?'Sign in':'Create an account'}</h2><p>{mode==='login'?'Your favourites and coffee rewards are just a sign-in away.':'A free account for your orders, your coffee card and a little extra to look forward to.'}</p>

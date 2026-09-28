@@ -363,7 +363,14 @@ export function getOrderByReference(reference: string): OrderRecord | null {
 }
 
 export function listCustomerOrders(userId: string): OrderRecord[] {
-  return (getDb().prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').all(userId) as OrderRow[]).map(fromRow);
+  // Email verification proves access to the guest receipt address. Never take
+  // orders from another account, or rewrite purchase-time ownership/loyalty data.
+  return (getDb().prepare(`SELECT * FROM orders WHERE user_id = ? OR (
+    user_id IS NULL AND EXISTS (
+      SELECT 1 FROM users WHERE users.id = ? AND users.email_verified_at IS NOT NULL
+      AND users.email = lower(trim(orders.customer_email))
+    )
+  ) ORDER BY created_at DESC LIMIT 100`).all(userId,userId) as OrderRow[]).map(fromRow);
 }
 
 export function recordPosEntry(id: string, posReference: string, actor: string): OrderRecord {
