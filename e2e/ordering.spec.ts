@@ -7,10 +7,10 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await expect(page.getByRole('tab',{name:'Delivery'})).toBeDisabled();
  await expect(page.getByText(/Online payment is currently unavailable/)).toBeVisible();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
- await page.getByLabel('Preferred collection').selectOption('Lunch collection');
+ await page.getByLabel('Preferred collection date and time').selectOption({index:1});
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
- await page.getByLabel('Email address').fill('guest@example.test');
+ await page.getByLabel('Email address (optional)').fill('guest@example.test');
  await expect(page.getByLabel('Email me when my order is received and ready')).toBeChecked();
  await expect(page.getByLabel('Email me when my order is received and ready')).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
@@ -32,12 +32,25 @@ test('available email and SMS notifications are preselected while WhatsApp stays
  const sms=page.getByLabel('SMS me when my order is accepted and ready');
  const email=page.getByLabel('Email me when my order is received and ready');
  await expect(sms).toBeChecked();await expect(sms).toBeDisabled();
- await expect(page.getByLabel('Email address')).toHaveValue('customer@example.test');
+ await expect(page.getByLabel('Email address (optional)')).toHaveValue('customer@example.test');
  await expect(email).toBeChecked();await expect(email).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByLabel('Contact number').fill('0821234567');
  await expect(sms).toBeChecked();await expect(sms).toBeEnabled();
  await expect(email).toBeChecked();
+});
+test('delivery checkout uses the configured business and building directory',async({page})=>{
+ await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.onlinePayments=true;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.deliveryLocations=['Redington South Africa | OnPoint · L2-1-08','Blend Property Management | K8 · Kingfisher Avenue'];await route.fulfill({response,json:body});});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
+ await page.getByRole('button',{name:/^Basket/}).click();
+ await page.getByRole('tab',{name:'Delivery'}).click();
+ await page.getByLabel('Business and building').selectOption('Redington South Africa | OnPoint · L2-1-08');
+ await expect(page.getByLabel('Business and building')).toHaveValue('Redington South Africa | OnPoint · L2-1-08');
+ await expect(page.getByLabel('Email address (optional)')).not.toHaveAttribute('required');
+ await page.getByLabel('Business and building').selectOption('other');
+ await expect(page.getByLabel('Business name')).toBeVisible();
+ await expect(page.getByLabel('Building / office')).toBeVisible();
 });
 test('food truck menu is clearly separated and can be ordered',async({page},testInfo)=>{
  await page.goto('/');
@@ -98,6 +111,7 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
  await expect(page.locator('.brand-logo-staff')).toBeVisible();
  await page.route(/\/api\/staff\/orders\?query=/,route=>route.fulfill({json:{search:true,orders:[{id:'search-fixture',reference:'FOND-43E48401AA7044188B6DA071832E84AE',displayReference:'FOND-7K3P-9Q8R',customerName:'Search Customer',note:null,lines:[{id:'espresso-single',quantity:1,name:'Espresso (Single)'}],collectionTime:'As soon as possible',totalCents:3200,status:'completed',source:'customer',createdAt:'2026-09-22T09:00:00.000Z',updatedAt:'2026-09-22T09:20:00.000Z',fulfillment:'collection',contactNumber:'0821234567',company:null,building:null,posRequired:true,posRecordedAt:'2026-09-22T09:02:00.000Z',posReference:'Y-123',estimatedPrepMinutes:4,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:3200,paymentMethod:'cash',checkout:null}}]}}));
+ await page.getByRole('button',{name:'Find order'}).click();
  await page.getByPlaceholder('Order number, name, mobile, company or building').fill('FOND-7K3P-9Q8R');
  await page.getByRole('button',{name:'Search',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Search results'})).toBeVisible();
@@ -125,8 +139,8 @@ test('staff landscape tablet has large direct stage controls and a focused work 
   await page.reload();
   await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
   await expect(page.locator('.staff-summary')).toHaveCount(0);
-  const searchBar=await page.locator('.staff-order-search').boundingBox();
-  expect(searchBar?.height).toBeLessThanOrEqual(60);
+  await expect(page.locator('.staff-order-search')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Find order'})).toBeVisible();
   const newLane=page.getByRole('region',{name:'New'});
   const emptyState=newLane.getByRole('status');
   await expect(emptyState).toContainText('Stage clear');

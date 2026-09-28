@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
 import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSection, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 
@@ -8,6 +8,8 @@ import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
 import { submissionKey, clearSubmission } from '@/lib/submission';
+import {weightedPrepMinutes} from '@/lib/preparation-estimates';
+import {collectionSlots,deliveryLocationValue,formatCollectionTime} from '@/lib/fulfilment';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
@@ -25,9 +27,9 @@ function statusLabel(order:TrackedOrder){
 }
 function timingLabel(order:TrackedOrder){
   if(order.status==='out_for_delivery'&&order.estimatedArrivalAt)return `Expected by ${new Date(order.estimatedArrivalAt).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}`;
-  if(order.status==='ready')return order.fulfillment==='delivery'?'Your order is packed; the delivery ETA starts when it leaves FOND.':`Ready now · ${order.collectionTime}`;
+  if(order.status==='ready')return order.fulfillment==='delivery'?'Your order is packed; the delivery ETA starts when it leaves FOND.':`Ready now · ${formatCollectionTime(order.collectionTime)}`;
   if(['completed','cancelled'].includes(order.status))return order.fulfillment==='delivery'?'Delivery update':'Collection update';
-  return `${order.collectionTime} · approx. ${order.estimatedPrepMinutes} min preparation`;
+  return `${formatCollectionTime(order.collectionTime)} · approx. ${order.estimatedPrepMinutes} min preparation`;
 }
 
 export function OrderingApp() {
@@ -49,6 +51,7 @@ export function OrderingApp() {
   const [contactNumber, setContactNumber] = useState('');
   const [company, setCompany] = useState('');
   const [building, setBuilding] = useState('');
+  const [deliveryLocation,setDeliveryLocation]=useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [smsOptIn, setSmsOptIn] = useState(true);
@@ -66,7 +69,7 @@ export function OrderingApp() {
   const [trackError, setTrackError] = useState('');
 
   useEffect(() => {
-    fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection(data.settings.collectionSlots[0]);if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
+    fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection('As soon as possible');if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
     fetch('/api/auth/session').then(r=>r.json()).then(data=>{const user=data.user as CustomerSession|null;if(user?.email)setCustomerEmail(user.email);setEmailOptIn(true);}).catch(()=>setEmailOptIn(true));
 
     const params=new URLSearchParams(location.search);if(params.has('payment')&&params.get('reference')){setPanel('track');setTrackInput(params.get('reference')!);void lookupOrder(params.get('reference')!);}
@@ -110,6 +113,10 @@ export function OrderingApp() {
   }
   const pricedCart = priceCart(cart);
   const total = pricedCart.reduce((n, l) => n + l.subtotal, 0);
+  const estimatedPrepMinutes=pricedCart.length?weightedPrepMinutes(Math.max(...pricedCart.map(line=>line.prepMinutes??10)),store?.settings.preparationWeightPercent??7):(store?.settings.preparationMinutes??20);
+  const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:store?.settings.closingTime??'17:00',openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,store?.settings.closingTime,store?.settings.openDays]);
+  const collectionGroups=useMemo(()=>collectionOptions.reduce<{label:string;slots:typeof collectionOptions}[]>((groups,slot)=>{const group=groups.find(item=>item.label===slot.dateLabel);if(group)group.slots.push(slot);else groups.push({label:slot.dateLabel,slots:[slot]});return groups;},[]),[collectionOptions]);
+  useEffect(()=>{if(!collectionOptions.some(option=>option.value===collection))setCollection('As soon as possible');},[collection,collectionOptions]);
 
   function toggleModifier(mealId: string, modifierId: string) {
     setPendingMods((current) => {
@@ -139,14 +146,14 @@ export function OrderingApp() {
   async function placeOrder() {
     if (sending.current) return;
     setError('');
+    const normalizedEmail=customerEmail.trim().toLowerCase();
     try {
       if (store && !store.open) throw new Error(store.settings.closedMessage);
       if (offline) throw new Error('Reconnect before continuing.');
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
       if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
-      const normalizedEmail=customerEmail.trim().toLowerCase();
-      if(emailOptIn&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address for order updates, or turn email updates off.');
+      if(normalizedEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address, or leave the optional email field blank.');
       if (fulfillment === 'delivery') {
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
         if(!store?.onlinePayments)throw new Error('Delivery requires secure online payment, which is not available right now.');
@@ -159,7 +166,7 @@ export function OrderingApp() {
     setSubmitting(true);
     try {
       const paymentMethod=fulfillment==='delivery'||payOnline?'yoco_online':'pay_at_collection';
-      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,customerEmail:customerEmail.trim()||null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn});
+      const payload = JSON.stringify({lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,customerEmail:normalizedEmail||null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn:emailOptIn&&!!normalizedEmail});
       const key = await submissionKey(payload);
       const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -228,7 +235,7 @@ export function OrderingApp() {
           {trackError && <p role="alert">{trackError}</p>}
           {tracked && <div className="notice order-tracking-result" style={{ marginTop: 16 }}><span className="tracking-order-label">YOUR ORDER NUMBER</span><strong>{tracked.displayReference}</strong><p className="tracking-status">{statusLabel(tracked)}</p><p>{timingLabel(tracked)} · {money(tracked.totalCents)}</p><p>{(tracked.payment?.paidCents??0)>=tracked.totalCents?(store?.paymentMode==='sandbox'?"Paid in Yoco test mode":"Paid online"):tracked.paymentMethod==='yoco_online'?"Waiting for confirmed Yoco payment":"Payment due at collection"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>{store.paymentMode==='sandbox'?'Open Yoco TEST payment':'Pay securely with Yoco'}</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
           {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((order) => <button key={order.lookup} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(order.lookup)}>{order.label}</button>)}</div>}
-        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="small">Quote this order number</p><p className="reference">{confirmation.displayReference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : confirmation.collection}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">{confirmation.fulfillment==='delivery'?'Your secure payment and delivery status will appear in Track order.':'Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.'}</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
+        </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="small">Quote this order number</p><p className="reference">{confirmation.displayReference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : formatCollectionTime(confirmation.collection)}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">{confirmation.fulfillment==='delivery'?'Your secure payment and delivery status will appear in Track order.':'Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.'}</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
             <button role="tab" aria-selected={fulfillment === 'collection'} disabled={store?.settings.collectionEnabled===false} onClick={() => setFulfillment('collection')}><ShoppingBag size={16} /> Collection</button>
@@ -236,14 +243,14 @@ export function OrderingApp() {
           </div>
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
           {fulfillment === 'collection' ? (
-            <label className="field">Preferred collection<select value={collection} onChange={(e) => setCollection(e.target.value)}>{(store?.settings.collectionSlots??['As soon as possible','Breakfast collection','Lunch collection','After-work collection']).map(t=><option key={t}>{t}</option>)}</select></label>
+            <label className="field">Preferred collection date and time<select value={collection} onChange={(e) => setCollection(e.target.value)}>{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select></label>
           ) : <>
             <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel" /></label>
-            <label className="field">Company (optional)<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Blend Property" /></label>
-            <label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="e.g. OnPoint, 2nd floor" /></label>
+            <label className="field">Business and building<select value={deliveryLocation} onChange={event=>{const value=event.target.value;setDeliveryLocation(value);if(value&&value!=='other'){const location=deliveryLocationValue(value);setCompany(location.business);setBuilding(location.building);}else{setCompany('');setBuilding('');}}}><option value="">Select your business and building</option>{(store?.settings.deliveryLocations??[]).map(location=><option value={location} key={location}>{deliveryLocationValue(location).business} — {deliveryLocationValue(location).building}</option>)}<option value="other">My business is not listed</option></select></label>
+            {deliveryLocation==='other'&&<><label className="field">Business name<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Your business" /></label><label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="Building, unit or floor" /></label></>}
           </>}
           {fulfillment==='collection'&&<label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>}
-          <label className="field">Email address<input type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)} placeholder="For receipts and order-ready updates" autoComplete="email" required={emailOptIn}/></label>
+          <label className="field">Email address (optional)<input type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)} placeholder="For receipts and order-ready updates" autoComplete="email" /></label>
           {store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={e=>setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> SMS me when my order is accepted and ready</label>}
           <label className="field-check"><input type="checkbox" checked={emailOptIn} onChange={e=>setEmailOptIn(e.target.checked)}/> Email me when my order is received and ready</label>
           <label className={`field-check${store?.settings.whatsappEnabled?'':' notification-unavailable'}`}><input type="checkbox" checked={whatsappOptIn} onChange={e=>setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()||!store?.settings.whatsappEnabled}/> {store?.settings.whatsappEnabled?'WhatsApp me when my order is accepted and ready':'WhatsApp notifications unavailable — setup pending'}</label>

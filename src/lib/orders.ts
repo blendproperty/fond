@@ -1,6 +1,7 @@
 import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
 import {weightedPrepMinutes} from './preparation-estimates';
+import {validateScheduledCollection} from './fulfilment';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
@@ -226,6 +227,7 @@ export function createOrder(input: {
     const priced = quoteCart(input.lines, getAvailableMenu());
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
     const estimatedPrepMinutes=weightedPrepMinutes(Math.max(...priced.map(line=>line.prepMinutes??10)),settings().preparationWeightPercent);
+    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,settings());
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.

@@ -26,7 +26,10 @@ export const DEFAULT_SETTINGS = {
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
   preparationWeightPercent:7,allowTestPayments:false,
   deliveryArea:'Midpoint Hub',
-  collectionSlots:['As soon as possible','Breakfast collection','Lunch collection','After-work collection'],
+  collectionSlotIncrementMinutes:15,
+  deliveryLocations:[
+    'Blend Property Management | K8 · Kingfisher Avenue','Bidvest Bank | S3 · Sunbird Road','Care Call Retail and Distribution Services | H1 · Hornbill Lane','City of Johannesburg Metropolitan Municipality | K9 · Kingfisher Road','Crysbol | L1 · Loerie Road','Deli South Africa | S3 · Sunbird Road / W5 · Weaver Avenue','Epsidon Management & Marketing Consultancy | L2 · Loerie Road','Even Flow Distribution | K8 · Kingfisher Avenue','First Coast Technologies | ST1 · Starling Crescent','Fresenius Kabi S.A. | K7 · Kingfisher Avenue','Galito’s Holdings | H3 · Hornbill Lane','Gobiosis International | ST1 · Starling Crescent','Gofresh Retail Solutions | C1 · Canary','Healthcare and Mobility Africa | S3 · Sunbird Road','IT and E | H1 · Hornbill Lane','Le Morgan Direct Marketing | L1 · Loerie Road','LG Electronics SA | K3 · Kingfisher Avenue','LNS Orthopaedics | OnPoint · L2-1-06','Makokga Attorneys and Administrators of Estate | S3 · Sunbird Road','MBT Automotive | C1 · Canary','Momentum Metropolitan Life | W5 · Weaver Avenue','Mrwebi Property Group | L1 · Loerie Road','Omolefe Holdings | OnPoint · L2-1-01','Penguin Random House South Africa | K4 · Kingfisher Avenue / W1 · Weaver Avenue','Phakamo Holdings | H3 · Hornbill Lane','Redington South Africa | OnPoint · L2-1-08','Redington South Africa Distribution | OnPoint · L2-1-09','Resilient Innovations | L3 · Loerie Road','SANBS | L1 · Loerie Road','South Africa Atess Power Technology | K9 · Kingfisher Road','SPG | W3 · Weaver Avenue','SPX Flow Technology | W4 · Weaver Avenue','Stellantis South Africa | H2 · Hornbill Lane','Studio at Lifestyle | ST1 · Starling Crescent','Syntegon Technology South Africa | K4 · Kingfisher Avenue','Technologia Group | K1 · Kingfisher Avenue','Tenova South Africa | H3 · Hornbill Lane','Ubunye Uniforms | H1 · Hornbill Lane','Vehicle Security Association of SA | H1 · Hornbill Lane'
+  ],
   closedMessage:'Online ordering is currently closed. Please contact FOND.',
   contactPhone:'', whatsappEnabled:false, smsEnabled:false, onlinePaymentsEnabled:false,
 };
@@ -41,9 +44,10 @@ export function validateSettings(input:unknown):TradingSettings {
   if(!Array.isArray(s.openDays)||!s.openDays.length||s.openDays.some(d=>!Number.isInteger(d)||d<0||d>6))throw new Error('Select trading days.');
   if(!Number.isInteger(s.maxActiveOrders)||s.maxActiveOrders<1||s.maxActiveOrders>1000)throw new Error('Check maximum active orders.');
   for(const k of ['newOrderMinutes','paymentConfirmationMinutes','yocoEntryMinutes','preparationMinutes','readyDeliveryMinutes','readyCollectionMinutes'] as const)if(!Number.isInteger(s[k])||s[k]<1||s[k]>240)throw new Error('Every queue target must be between 1 and 240 minutes.');
+  if(!Number.isInteger(s.collectionSlotIncrementMinutes)||s.collectionSlotIncrementMinutes<5||s.collectionSlotIncrementMinutes>60||s.collectionSlotIncrementMinutes%5!==0)throw new Error('Collection time increments must be between 5 and 60 minutes, in steps of 5.');
   if(!Number.isInteger(s.preparationWeightPercent)||s.preparationWeightPercent<5||s.preparationWeightPercent>8)throw new Error('Preparation weighting must be between 5% and 8%.');
   for(const k of ['deliveryArea','closedMessage','contactPhone'] as const)if(typeof s[k]!=='string'||s[k].length>250)throw new Error('Invalid contact or display text.');
-  if(!Array.isArray(s.collectionSlots)||!s.collectionSlots.length||s.collectionSlots.length>12||s.collectionSlots.some(t=>typeof t!=='string'||!t.trim()||t.length>80))throw new Error('Provide 1–12 collection options.');
+  if(!Array.isArray(s.deliveryLocations)||!s.deliveryLocations.length||s.deliveryLocations.length>200||s.deliveryLocations.some(t=>typeof t!=='string'||!t.includes('|')||!t.split('|')[0].trim()||!t.split('|').slice(1).join('|').trim()||t.length>180))throw new Error('Provide delivery locations as Business | Building.');
   return {...DEFAULT_SETTINGS,...s};
 }
 export function orderingAvailable(s=settings(),now=new Date()) {

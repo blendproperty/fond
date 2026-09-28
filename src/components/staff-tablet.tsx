@@ -5,6 +5,7 @@ import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quot
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
 import {BrandLogo} from './brand-logo';
+import {formatCollectionTime} from '@/lib/fulfilment';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
@@ -98,6 +99,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [lastUpdated,setLastUpdated]=useState<Date|null>(null);
   const [historyOrderId,setHistoryOrderId]=useState<string|null>(null);
   const [orderAudit,setOrderAudit]=useState<OrderAudit|null>(null);
+  const [searchOpen,setSearchOpen]=useState(false);
   const [searchQuery,setSearchQuery]=useState('');
   const [searchResults,setSearchResults]=useState<StaffOrder[]|null>(null);
   const [searching,setSearching]=useState(false);
@@ -282,7 +284,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     <div className="staff-app">
       {testEnvironment&&<div className="staff-test-banner" role="status">TEST ENVIRONMENT · ORDERS AND PAYMENTS HERE ARE NOT LIVE</div>}
       <header className="staff-header">
-        <div>
+        <div className="staff-header-identity">
           <BrandLogo className="brand-logo-staff" />
           <div className="staff-title-row">
             <h1>{testEnvironment?'Test order board':'Live order board'}</h1>
@@ -293,14 +295,15 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           {queueError && <p role="alert" className="staff-connection-error">{queueError}</p>}
         </div>
         <div className="staff-header-actions">
+          <button className="quiet staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={17}/> Find order</button>
           <button className="quiet" onClick={enableNotifications}>{notificationsEnabled ? 'Notifications on' : 'Enable order alerts'}</button>
           <button className="quiet staff-sound-button" onClick={() => void toggleSound()} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {soundEnabled ? 'Sound on' : 'Enable sound'}</button>
           <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
-      <form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
-      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):order.collectionTime}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}
+      {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
+      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
       <nav className="staff-stage-navigation" aria-label="Order stages">
         <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
         <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
@@ -337,9 +340,9 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
                     {order.fulfillment === 'delivery' ? (
-                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><span>Requested: {order.collectionTime} · ordered {timeAgo(order.createdAt)}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
                     ) : (
-                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><span>Requested: {order.collectionTime} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
                     )}
                     <ul className="staff-lines">
                       {order.lines.map((line) => {

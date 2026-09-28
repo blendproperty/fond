@@ -31,6 +31,8 @@ test('trading hours use Johannesburg and settings reject invalid values',()=>{
  assert.throws(()=>validateSettings({...s,newOrderMinutes:0}));
  assert.throws(()=>validateSettings({...s,preparationWeightPercent:4}));
  assert.throws(()=>validateSettings({...s,preparationWeightPercent:9}));
+ assert.throws(()=>validateSettings({...s,collectionSlotIncrementMinutes:12}));
+ assert.throws(()=>validateSettings({...s,deliveryLocations:['Missing separator']}));
 });
 test('owner is an admin role but cannot grant owner or super-admin access',()=>{
  const id=saveMember({name:'Business owner',username:'owner',password:'owner-password-long',role:'owner',active:true},'shared-admin');
