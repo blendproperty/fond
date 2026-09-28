@@ -5,6 +5,7 @@ import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quot
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
 import {BrandLogo} from './brand-logo';
+import {useStaffAlerts} from './use-staff-alerts';
 import {formatCollectionTime} from '@/lib/fulfilment';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
@@ -83,9 +84,16 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [manualOpen, setManualOpen] = useState(false);
   const [queueError, setQueueError] = useState('');
   const seenOrders = useRef<Set<string> | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const audioRef = useRef<AudioContext | null>(null);
+  const alerts = useStaffAlerts(!locked);
+  const {play: playOrderSound, notify: notifyOrders} = alerts;
+  const hasWaitingOrders = !locked && orders.some(order => order.status === 'received');
+
+  useEffect(() => {
+    if (!hasWaitingOrders) return;
+    playOrderSound();
+    const timer = setInterval(playOrderSound, 30000);
+    return () => clearInterval(timer);
+  }, [hasWaitingOrders, playOrderSound]);
   const queueRef = useRef<HTMLDivElement>(null);
   const [activeLane, setActiveLane] = useState<QueueLane>('new');
   const [now, setNow] = useState(Date.now());
@@ -113,23 +121,6 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     return ()=>clearInterval(timer);
   }, []);
 
-  function playOrderSound() {
-    const context=audioRef.current;
-    if (!context || context.state!=='running') return;
-    [0,0.22].forEach((offset,index)=>{
-      const oscillator=context.createOscillator(),gain=context.createGain(),start=context.currentTime+offset;
-      oscillator.type='sine';oscillator.frequency.value=index?660:880;
-      gain.gain.setValueAtTime(0.0001,start);gain.gain.exponentialRampToValueAtTime(0.09,start+0.025);gain.gain.exponentialRampToValueAtTime(0.0001,start+0.18);
-      oscillator.connect(gain).connect(context.destination);oscillator.start(start);oscillator.stop(start+0.19);
-    });
-  }
-
-  async function toggleSound() {
-    if (soundEnabled) {setSoundEnabled(false);await audioRef.current?.close();audioRef.current=null;return;}
-    try {audioRef.current=new AudioContext();await audioRef.current.resume();setSoundEnabled(true);playOrderSound();}
-    catch {setQueueError('This browser could not enable order sounds.');}
-  }
-
   const refresh = useCallback(async () => {
     const res = await fetch('/api/staff/orders', { cache: 'no-store' });
     if (res.status === 401) {
@@ -142,21 +133,11 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     const data = await res.json();
     const current: StaffOrder[] = data.orders ?? [];
     const incoming=seenOrders.current ? current.filter(o=>o.status==='received'&&!seenOrders.current!.has(o.id)) : [];
-    if (incoming.length && soundEnabled) playOrderSound();
-    if (incoming.length && notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      incoming.forEach(o => new Notification('New FOND order', { body: `${o.customerName} · ${o.displayReference}` }));
-    }
+    if (incoming.length) { playOrderSound(); void notifyOrders(incoming); }
     seenOrders.current = new Set(current.map(o => o.id));
     setOrders(current);
     setLastUpdated(new Date());
-  }, [notificationsEnabled,soundEnabled]);
-
-  async function enableNotifications() {
-    if (typeof Notification === 'undefined') { setQueueError('This device does not support browser notifications.'); return; }
-    const permission = await Notification.requestPermission();
-    setNotificationsEnabled(permission === 'granted');
-    if (permission !== 'granted') setQueueError('Allow notifications in this browser to see new orders.');
-  }
+  }, [notifyOrders, playOrderSound]);
 
   async function recordYoco(id: string) {
     setPosError('');
@@ -297,12 +278,17 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
         </div>
         <div className="staff-header-actions">
           <button className="quiet staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={17}/> Find order</button>
-          <button className="quiet" onClick={enableNotifications}>{notificationsEnabled ? 'Notifications on' : 'Enable order alerts'}</button>
-          <button className="quiet staff-sound-button" onClick={() => void toggleSound()} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {soundEnabled ? 'Sound on' : 'Enable sound'}</button>
+          <button className="quiet" onClick={() => void alerts.enableNotifications()} disabled={alerts.permission === 'unsupported'}>{alerts.permission === 'granted' ? 'Notifications on' : alerts.permission === 'denied' ? 'Notifications blocked' : alerts.permission === 'unsupported' ? 'Notifications unavailable' : 'Allow notifications'}</button>
+          <button className="quiet staff-sound-button" onClick={alerts.testSound}>{alerts.soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {alerts.soundEnabled && alerts.soundState === 'ready' ? 'Test sound' : 'Enable sound'}</button>
+          {alerts.soundEnabled && <button className="quiet" onClick={alerts.mute}>Mute sound</button>}
           <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
+      <div className="staff-alert-status" role="status" data-ready={alerts.soundEnabled && alerts.soundState === 'ready'}>
+        <strong>{!alerts.soundEnabled ? 'Sound muted' : alerts.soundState === 'ready' ? 'Sound on · loud' : alerts.soundState === 'unavailable' ? 'Sound unavailable · try Enable sound' : 'Sound needs a tap · tap Enable sound'}</strong>
+        <span>{alerts.alertError || (alerts.permission === 'denied' ? 'Allow notifications in the tablet’s app or browser settings.' : 'New orders repeat every 30 seconds until accepted. Keep this board open and the tablet volume up.')}</span>
+      </div>
       {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
       {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
       <nav className="staff-stage-navigation" aria-label="Order stages">
