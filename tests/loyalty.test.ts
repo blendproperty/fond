@@ -5,7 +5,7 @@ import {getDb,resetDbForTests} from '../src/lib/db';
 import {signUp} from '../src/lib/auth';
 import {createOrder,recordPosEntry,updateOrderStatus} from '../src/lib/orders';
 import {recordPayment} from '../src/lib/business-data';
-import {issueGift,customerRewards,quoteReward,saveRewardPreferences,reconcileOrderRewards,sendCustomerReward,revokeGift} from '../src/lib/loyalty';
+import {issueGift,customerRewards,quoteReward,quoteCounterReward,saveRewardPreferences,reconcileOrderRewards,sendCustomerReward,revokeGift} from '../src/lib/loyalty';
 import {getAvailableMenu} from '../src/lib/menu-store';
 import {saveProviderSecret} from '../src/lib/provider-secrets';
 import {saveDocument} from '../src/lib/management';
@@ -26,3 +26,20 @@ test('earned code notifications are opt-in, deduplicated, and remain pending wit
 
 test('paid extras stay payable and unspent gift revocation does not affect earned rewards',()=>{const u=customer(),r=gift(u.email);getAvailableMenu();getDb().prepare('UPDATE menu_items SET modifiers_json=? WHERE id=?').run(JSON.stringify([{id:'extra-shot',name:'Extra shot',price:1200}]),'espresso-single');const a=order(u.id,1,{rewardCode:r.code,lines:[{id:'espresso-single',quantity:1,modifierIds:['extra-shot']}]});assert.equal(a.totalCents,1200);assert.throws(()=>revokeGift(r.id,'admin'));updateOrderStatus(a.id,'cancelled');revokeGift(r.id,'admin');assert.throws(()=>order(u.id,1,{rewardCode:r.code}));});
 test('code notifications call both providers once and preserve uncertain SMS results for review',async()=>{process.env.FOND_CREDENTIALS_KEY='ab'.repeat(32);const u=customer();saveProviderSecret('email-api','re_test-provider-secret-not-real','test');saveProviderSecret('twilio-auth-token','a'.repeat(32),'test');saveDocument('email-from','orders@fond.mid-point.co.za','test');saveDocument('twilio-sms-config',{accountSid:'AC'+'a'.repeat(32),sender:'+27600928520'},'test');const r=gift(u.email);saveRewardPreferences(u.id,{email:true,sms:true,phone:'0821234567'});sendCustomerReward(u.id,r.id);sendCustomerReward(u.id,r.id);const original=global.fetch;const calls:string[]=[];global.fetch=async(url,init)=>{calls.push(String(url));assert.match(String(init?.body),/COFFEE/);return new Response(JSON.stringify(String(url).includes('resend')?{id:'email-test'}:{sid:'sms-test',status:'queued'}),{status:200});};try{await Promise.all([processRewardMessages(),processRewardMessages()]);await processRewardMessages();assert.equal(calls.length,2);assert.equal(getDb().prepare("SELECT count(*) n FROM loyalty_messages WHERE status='provider-accepted'").get()?.n,2);const second=gift(u.email,{smsEnabled:true,phone:'0821234567'});global.fetch=async()=>{throw new Error('timeout');};await processRewardMessages();assert.equal(getDb().prepare('SELECT status FROM loyalty_messages WHERE reward_id=?').get(second.id)?.status,'unconfirmed');await processRewardMessages();}finally{global.fetch=original;}});
+
+test('counter redemption reserves one verified code, links the account and never earns stamps',()=>{
+ const u=customer(),r=gift(u.email),menu=getAvailableMenu();const lines=[{id:'espresso-single',quantity:3}];
+ const quote=quoteCounterReward('test',r.code,lines,menu);assert.equal(quote.userId,u.id);
+ const key=randomUUID();const input={source:'staff' as const,customerName:'Counter reward',contactNumber:'0821234567',collectionTime:'ASAP',lines,staffRewardCode:r.code,rewardEnvironment:'test' as const,submissionKey:key,actor:'team:operator'};
+ const a=createOrder(input);assert.equal(a.userId,u.id);assert.equal(a.totalCents,quote.totalCents);assert.equal(a.status,'accepted');assert.equal(createOrder(input).id,a.id);
+ assert.throws(()=>quoteCounterReward('test',r.code,lines,menu));assert.throws(()=>order(u.id,1,{rewardCode:r.code}));
+ assert.equal(getDb().prepare("SELECT actor FROM loyalty_events WHERE action='reserved-at-counter'").get()?.actor,'team:operator');
+ assert.throws(()=>updateOrderStatus(a.id,'ready'),/Yoco/);complete(a);assert.equal(customerRewards(u.id,'test').stamps,0);assert.equal(customerRewards(u.id,'test').rewards[0].status,'redeemed');
+});
+test('counter code cancellation releases once; invalid identity, mode and customer bypass are rejected',()=>{
+ const u=customer(),r=gift(u.email),menu=getAvailableMenu(),lines=[{id:'espresso-single',quantity:1}];
+ assert.throws(()=>quoteCounterReward('live',r.code,lines,menu));assert.throws(()=>order(u.id,1,{staffRewardCode:r.code}));
+ getDb().prepare('UPDATE users SET email_verified_at=NULL WHERE id=?').run(u.id);assert.throws(()=>quoteCounterReward('test',r.code,lines,menu));getDb().prepare('UPDATE users SET email_verified_at=? WHERE id=?').run(new Date().toISOString(),u.id);
+ const a=createOrder({source:'staff',customerName:'Counter',contactNumber:'0821234567',collectionTime:'ASAP',lines,staffRewardCode:r.code,rewardEnvironment:'test'});assert.equal(a.totalCents,0);assert.equal(getDb().prepare('SELECT count(*) n FROM payment_records').get()?.n,0);updateOrderStatus(a.id,'cancelled');assert.equal(quoteCounterReward('test',r.code,lines,menu).discountCents,menu.find(m=>m.id==='espresso-single')!.price);
+ revokeGift(r.id,'admin');assert.throws(()=>createOrder({source:'staff',customerName:'Counter',contactNumber:'0821234567',collectionTime:'ASAP',lines,staffRewardCode:r.code,rewardEnvironment:'test'}));assert.equal(getDb().prepare('SELECT count(*) n FROM orders').get()?.n,1);
+});

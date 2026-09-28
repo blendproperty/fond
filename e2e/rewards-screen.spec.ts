@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+
+test('portrait card shows real punches, unlocks FREE and retires a displayed code after redemption',async({page},info)=>{
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user:{id:'fixture',email:'customer@example.test',emailVerified:true}}}));
+ let stamps=2,status='none';
+ await page.route('**/api/account/rewards',r=>r.fulfill({json:{verified:true,environment:'test',stamps,stampsToNext:10-stamps,rewards:status==='none'?[]:[{id:'earned',code:'COFFEE-1234567890ABCDEF1234',kind:'earned',status}],preferences:{email_enabled:0,sms_enabled:0,phone:''}}}));
+ await page.goto('/rewards');await expect(page.getByRole('heading',{name:'Coffee rewards',exact:true})).toBeVisible();await expect(page.locator('.coffee-punches .is-punched')).toHaveCount(2);await expect(page.locator('.coffee-punches li')).toHaveCount(10);
+ const card=await page.locator('.coffee-ticket').boundingBox();expect(card!.height).toBeGreaterThan(card!.width);expect(card!.width).toBeLessThanOrEqual(420);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.locator('.coffee-ticket').screenshot({path:info.outputPath('portrait-two-punches.png')});
+ stamps=0;status='available';await page.reload();await expect(page.locator('.ticket-free strong')).toHaveText('FREE');await expect(page.locator('.coffee-punches .is-punched')).toHaveCount(10);
+ await page.getByRole('button',{name:'Show code to staff'}).click();const modal=page.getByRole('dialog',{name:'One free coffee'});await expect(modal).toBeVisible();await expect(modal.locator('code')).toHaveText('COFFEE-1234567890ABCDEF1234');await expect(modal).toContainText('TEST CODE');
+ await modal.screenshot({path:info.outputPath('show-coffee-code.png')});status='redeemed';await modal.getByRole('button',{name:'Refresh code status'}).click();await expect(modal).toContainText('This coffee has been redeemed');await expect(modal.locator('code')).toHaveCount(0);await page.keyboard.press('Escape');await expect(modal).not.toBeVisible();
+});
+
+test('rewards is reachable from home and new users can create a customer account there',async({page},info)=>{
+ await page.goto('/');await page.getByRole('link',{name:'Coffee rewards',exact:true}).click();await expect(page).toHaveURL(/\/rewards$/);await expect(page.getByText(/Your staff\/admin login is separate/)).toBeVisible();await page.getByRole('button',{name:'Create an account',exact:true}).click();await page.getByLabel('Email',{exact:true}).fill(`rewards-${info.project.name}-${Date.now()}@example.test`);await page.getByLabel('Password',{exact:true}).fill('test-reward-password');await page.getByRole('button',{name:'Create account',exact:true}).click();await expect(page.getByRole('heading',{name:'Verify your email',exact:true})).toBeVisible();await expect(page.getByText('Verify your account email above to start earning and redeeming rewards.')).toBeVisible();await expect(page.getByRole('heading',{name:'Coffee rewards',exact:true})).toBeVisible();
+});
+
+test('staff validates a counter code, invalidates the quote on basket change and records redemption in the order',async({page,request},info)=>{
+ expect((await request.post('/api/staff/rewards',{data:{code:'invalid',lines:[]}})).status()).toBe(401);
+ await page.goto('/staff');await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);await page.getByRole('button',{name:'Open order queue'}).click();await page.getByRole('button',{name:'Redeem coffee',exact:true}).click();const panel=page.getByRole('dialog',{name:'Add order manually'});await expect(panel.getByRole('tab',{name:'Coffee',exact:true})).toHaveAttribute('aria-selected','true');
+ await panel.getByRole('button',{name:'Add Espresso (Single)',exact:true}).click();await panel.getByLabel('Coffee reward code').fill('INVALID');await panel.getByRole('button',{name:'Validate coffee code'}).click();await expect(panel.getByRole('alert')).toContainText('Code unavailable');
+ await page.route('**/api/staff/rewards',r=>r.fulfill({json:{discountCents:3200,totalCents:0,environment:'test'}}));await panel.getByLabel('Coffee reward code').fill('COFFEE-1234567890ABCDEF1234');await panel.getByRole('button',{name:'Validate coffee code'}).click();await expect(panel.getByRole('status')).toContainText('Nothing to collect');
+ await panel.getByRole('button',{name:'Add one Espresso (Single)',exact:true}).click();await expect(panel.getByRole('status')).toHaveCount(0);await panel.getByRole('button',{name:'Remove one Espresso (Single)',exact:true}).click();await panel.getByRole('button',{name:'Validate coffee code'}).click();
+ let posted:any;await page.route('**/api/staff/orders',r=>{if(r.request().method()!=='POST')return r.continue();posted=r.request().postDataJSON();return r.fulfill({status:201,json:{order:{}}});});await panel.getByLabel('Name / table / desk').fill('Counter test');await panel.getByLabel('Contact number',{exact:true}).fill('0821234567');await panel.screenshot({path:info.outputPath('staff-counter-reward.png')});await panel.getByRole('button',{name:'Add to queue'}).click();await expect(panel).not.toBeVisible();expect(posted.rewardCode).toBe('COFFEE-1234567890ABCDEF1234');expect(posted.lines).toEqual([{id:'espresso-single',quantity:1,modifierIds:[]}]);
+});

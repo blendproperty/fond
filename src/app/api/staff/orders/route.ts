@@ -1,4 +1,6 @@
 import {processRewardMessages} from '@/lib/loyalty-messages';
+import {customerCheckoutMode} from '@/lib/payments';
+import {validRequestOrigin} from '@/lib/request-origin';
 import { paymentStatus } from '@/lib/payments';
 import { after } from 'next/server';
 import { processNotifications } from '@/lib/notifications';
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: 'STAFF_AUTH_REQUIRED', message: 'Enter the staff access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   const body = await request.json().catch(() => null);
+  if(!validRequestOrigin(request))return NextResponse.json({message:'Invalid origin.'},{status:403});
   if (!body || !Array.isArray(body.lines) || typeof body.collectionTime !== 'string' || typeof body.customerName !== 'string') {
     return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Missing basket, name or collection time.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
@@ -43,6 +46,8 @@ export async function POST(request: Request) {
     if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
     const order = createOrder({
       submissionKey,
+      staffRewardCode:typeof body.rewardCode==='string'?body.rewardCode:undefined,
+      rewardEnvironment:customerCheckoutMode()==='live'?'live':'test',
       customerName: body.customerName,
       contactNumber: typeof body.contactNumber === 'string' ? body.contactNumber : null,
       note: typeof body.note === 'string' ? body.note : null,

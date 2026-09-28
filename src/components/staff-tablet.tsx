@@ -83,6 +83,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [menu, setMenu] = useState<Meal[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
+  const [counterReward,setCounterReward]=useState(false);
   const [queueError, setQueueError] = useState('');
   const seenOrders = useRef<Set<string> | null>(null);
   const alerts = useStaffAlerts(!locked);
@@ -292,7 +293,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           <button className="quiet" onClick={() => void alerts.enableNotifications()} disabled={alerts.permission === 'unsupported'}>{alerts.permission === 'granted' ? 'Notifications on' : alerts.permission === 'denied' ? 'Notifications blocked' : alerts.permission === 'unsupported' ? 'Notifications unavailable' : 'Allow notifications'}</button>
           <button className="quiet staff-sound-button" onClick={alerts.testSound}>{alerts.soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {alerts.soundEnabled && alerts.soundState === 'ready' ? 'Test sound' : 'Enable sound'}</button>
           {alerts.soundEnabled && <button className="quiet" onClick={alerts.mute}>Mute sound</button>}
-          <button className="primary" onClick={() => setManualOpen(true)}><Plus size={18} /> Add order</button>
+          <button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}>Redeem coffee</button>
+          <button className="primary" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>
       </header>
@@ -373,13 +375,13 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       </div>
       {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p className="staff-short-number">Yoco note: FOND {orders.find(order=>order.id===posOrderId)?.staffNumber}</p><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
       {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed.</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
-      {manualOpen && <ManualOrderPanel menu={menu} onClose={() => setManualOpen(false)} onCreated={refresh} />}
+      {manualOpen && <ManualOrderPanel menu={menu} rewardMode={counterReward} onClose={() => setManualOpen(false)} onCreated={refresh} />}
     </div>
   );
 }
 
-function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose: () => void; onCreated: () => void }) {
-  const [category, setCategory] = useState<Category>(categories[0]);
+function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu: Meal[]; rewardMode?:boolean; onClose: () => void; onCreated: () => void }) {
+  const [category, setCategory] = useState<Category>(rewardMode?'Coffee':categories[0]);
   const [foodTruckMenu, setFoodTruckMenu] = useState<FoodTruckSection>('Build Your Plate');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
@@ -390,6 +392,10 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const sending = useRef(false);
+  const [rewardCode,setRewardCode]=useState(''),[rewardQuote,setRewardQuote]=useState<{discountCents:number;totalCents:number;environment:string}|null>(null),[checkingReward,setCheckingReward]=useState(false),[rewardError,setRewardError]=useState('');
+  const rewardVersion=useRef(0);
+  useEffect(()=>{rewardVersion.current++;setRewardQuote(null);setRewardError('');},[cart,rewardCode]);
+  async function checkReward(){const version=++rewardVersion.current;setCheckingReward(true);setRewardError('');try{const r=await fetch('/api/staff/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:rewardCode,lines:cart})}),d=await r.json();if(version!==rewardVersion.current)return;if(!r.ok)throw new Error(d.message);setRewardQuote(d);}catch(e){if(version===rewardVersion.current){setRewardQuote(null);setRewardError((e as Error).message);}}finally{setCheckingReward(false);}}
 
   const pricedCart = useMemo(() => {
     try { return cart.length ? quoteCart(cart, menu) : []; } catch { return []; }
@@ -415,6 +421,7 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
   async function submit() {
     if (sending.current) return;
     setError('');
+    if((rewardMode||rewardCode.trim())&&!rewardQuote){setError('Validate the coffee code against the selected basket first.');return;}
     try {
       quoteCart(cart, menu);
     } catch (e) {
@@ -432,7 +439,7 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
     sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart });
+      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart, ...(rewardQuote?{rewardCode:rewardCode.trim()}: {}) });
       const key = await submissionKey(payload);
       const res = await fetch('/api/staff/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -453,11 +460,12 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
         <header>
           <div>
             <p className="eyebrow">FOND · FACILITY TABLET</p>
-            <h2>Add order</h2>
+            <h2>{rewardMode?'Redeem a coffee':'Add order'}</h2>
           </div>
           <button className="icon-button" aria-label="Close" onClick={onClose}><X /></button>
         </header>
         <div className="drawer-scroll">
+          {rewardMode&&<p className="notice">Choose the customer's coffee, enter their code below and validate it. Adding the order reserves the code; collection completes redemption. Record the same discount in Yoco and add its reference before preparation. Counter purchases do not earn stamps.</p>}
           <div className="tabs" role="tablist" aria-label="Menu category">
             {categories.map((c) => (
               <button className={c==='Food Truck'?'food-truck-tab':undefined} role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c==='Food Truck'&&<Truck size={16} aria-hidden="true"/>}{c}</button>
@@ -493,9 +501,11 @@ function ManualOrderPanel({ menu, onClose, onCreated }: { menu: Meal[]; onClose:
                   </div>
                 );
               })}
-              <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
+              {rewardQuote&&<p>Free coffee discount: −{money(rewardQuote.discountCents)}</p>}
+              <div className="total"><span>Total</span><strong>{money(rewardQuote?.totalCents??total)}</strong></div>
             </div>
           )}
+          <section className="basket-rewards"><h3>Customer coffee code</h3><label className="field">Coffee reward code<input maxLength={40} value={rewardCode} onChange={e=>setRewardCode(e.target.value)} placeholder="COFFEE-…"/></label><button className="outline" disabled={checkingReward||!rewardCode.trim()||!cart.length} onClick={checkReward}>{checkingReward?'Checking…':'Validate coffee code'}</button>{rewardError&&<p role="alert">{rewardError}</p>}{rewardQuote&&<p role="status">{rewardQuote.environment==='test'?'TEST code verified.':'Code verified.'} One coffee discounted; extras remain payable. {rewardQuote.totalCents===0?'Nothing to collect.':`${money(rewardQuote.totalCents)} remains due.`}</p>}</section>
           <label className="field">Name / table / desk<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Table 4, or Jane (OnPoint 2nd floor)" /></label>
           <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Customer's phone number" /></label>
           <label className="field">Collection time

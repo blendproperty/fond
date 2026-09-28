@@ -14,7 +14,7 @@ export async function processRewardMessages(){
   if(job.kind==='earned'){const user=db.prepare('SELECT id FROM users WHERE email=?').get(job.recipient_email);const p=user?rewardPreferences(String(user.id)):null;if(!p||(job.channel==='email'?!p.email_enabled:!p.sms_enabled||p.phone!==job.recipient)){db.prepare("UPDATE loyalty_messages SET status='cancelled' WHERE id=? AND status='pending'").run(job.id);continue;}}
   if(job.channel==='email'?!emailConfigured():!smsConfigured())continue;
   if(!db.prepare("UPDATE loyalty_messages SET status='sending',updated_at=? WHERE id=? AND status='pending'").run(new Date().toISOString(),job.id).changes)continue;
-  const text=`${job.environment==='test'?'TEST REWARD - ':''}FOND: Your free coffee code is ${job.code}. Redeem once through the FOND app only, using the account for ${job.recipient_email}. Any one Coffee item; extras cost extra. ${publicBaseUrl()}/account`;
+  const text=`${job.environment==='test'?'TEST REWARD - ':''}FOND: Your free coffee code is ${job.code}. Redeem once in the FOND app or show your code to staff. Account: ${job.recipient_email}. Any one Coffee item; extras cost extra. ${publicBaseUrl()}/rewards`;
   try{
    let providerId:string|null=null;
    if(job.channel==='email')providerId=await sendEmailMessage(job.recipient,{subject:`${job.environment==='test'?'TEST - ':''}Your FOND free coffee code`,text,html:`<p>${text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>`},`fond-reward-${job.id}`);

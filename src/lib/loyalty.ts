@@ -22,8 +22,22 @@ export function quoteReward(userId:string,environment:RewardEnvironment,code:str
  priced.forEach((line,i)=>{const item=menu.find(m=>m.id===line.id);if(item?.category==='Coffee'&&Math.min(item.price,line.unitPrice)>discountCents){lineIndex=i;discountCents=Math.min(item.price,line.unitPrice);}});
  if(lineIndex<0)throw new Error('Add an item from the Coffee category to use this code.');return {reward,discountCents,lineIndex,totalCents:priced.reduce((sum,l)=>sum+l.subtotal,0)-discountCents};
 }
-// Called within the order transaction. Price/category eligibility is snapshotted, never inferred from a later menu.
-export function attachOrderRewards(input:{orderId:string;userId?:string|null;source:string;environment?:RewardEnvironment;code?:string;lines:CartLine[];menu:Meal[]}){
+export function quoteCounterReward(environment:RewardEnvironment,code:string,lines:CartLine[],menu:Meal[]){
+ if(!code||code.length>40)throw new Error('Enter the customer’s coffee code.');
+ const u=getDb().prepare("SELECT u.id FROM loyalty_rewards r JOIN users u ON u.email=r.recipient_email WHERE r.code=? AND r.environment=? AND r.status='available' AND u.email_verified_at IS NOT NULL").get(code.trim().toUpperCase(),environment) as {id:string}|undefined;
+ if(!u)throw new Error('Code unavailable. Check that it is unused, the customer has verified their account and the payment mode matches.');
+ return {...quoteReward(u.id,environment,code,lines,menu),userId:u.id};
+}
+// Called within the order transaction. Counter redemption never earns stamps.
+export function attachOrderRewards(input:{orderId:string;userId?:string|null;source:string;environment?:RewardEnvironment;code?:string;counter?:boolean;actor?:string;lines:CartLine[];menu:Meal[]}):{discountCents:number;lineIndex:number;userId?:string}{
+ if(input.counter){
+  if(input.source!=='staff'||!input.environment||!input.code)throw new Error('Staff coffee redemption requires the staff order workflow.');
+  const q=quoteCounterReward(input.environment,input.code,input.lines,input.menu),db=getDb();
+  if(!db.prepare("UPDATE loyalty_rewards SET status='reserved',order_id=? WHERE id=? AND status='available'").run(input.orderId,q.reward.id).changes)throw new Error('This coffee code has just been used.');
+  db.prepare('INSERT INTO loyalty_orders (order_id,user_id,environment,quantity,discount_cents,reward_id,line_index) VALUES (?,?,?,?,?,?,?)').run(input.orderId,q.userId,input.environment,0,q.discountCents,q.reward.id,q.lineIndex);
+  event(q.reward.id,'reserved-at-counter',input.actor??'staff',input.orderId);
+  return {discountCents:q.discountCents,lineIndex:q.lineIndex,userId:q.userId};
+ }
  const db=getDb();if(input.code&&(!input.userId||input.source!=='customer'))throw new Error('Redeem coffee rewards while signed in through the FOND app.');
  if(input.source!=='customer'||!input.userId||!input.environment)return {discountCents:0,lineIndex:-1};
  const u=db.prepare('SELECT email_verified_at FROM users WHERE id=?').get(input.userId);if(!u?.email_verified_at){if(input.code)verified(input.userId);return {discountCents:0,lineIndex:-1};}

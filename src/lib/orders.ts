@@ -159,6 +159,7 @@ function createDisplayReference() {
 export function createOrder(input: {
   submissionKey?: string;
   rewardCode?:string;
+  staffRewardCode?:string;
   rewardEnvironment?:RewardEnvironment;
   customerName: string;
   note?: string | null;
@@ -186,6 +187,7 @@ export function createOrder(input: {
     .update(
       JSON.stringify({
         rewardCode:input.rewardCode??null,
+        staffRewardCode:input.staffRewardCode??null,
         rewardEnvironment:input.rewardEnvironment??null,
         name: input.customerName,
         note: input.note ?? null,
@@ -251,7 +253,7 @@ export function createOrder(input: {
     const window=tradingWindow(trading,hasFoodTruck);
     assertFoodTruckOrderingAvailable({hasFoodTruck,source:input.source,enforceHours:trading.enforceHours,cutoffTime:window.closingTime,openingTime:window.openingTime,openDays:window.openDays});
     const orderId=randomUUID();
-    const reward=attachOrderRewards({orderId,userId:input.userId,source:input.source,environment:input.rewardEnvironment,code:input.rewardCode,lines:input.lines,menu:availableMenu});
+    const reward=attachOrderRewards({orderId,userId:input.userId,source:input.source,environment:input.rewardEnvironment,code:input.staffRewardCode??input.rewardCode,counter:!!input.staffRewardCode,actor:input.actor,lines:input.lines,menu:availableMenu});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0)-reward.discountCents;
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
@@ -293,7 +295,7 @@ export function createOrder(input: {
       whatsappOptIn,
       smsOptIn,
       emailOptIn,
-      userId: input.userId ?? null,
+      userId: reward.userId ?? input.userId ?? null,
       customerEmail,
       posRequired: true,
       posRecordedAt: null,
