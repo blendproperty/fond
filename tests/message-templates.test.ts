@@ -24,7 +24,7 @@ test('message templates allow known placeholders and reject ambiguous or unsafe 
  assert.throws(()=>validateMessageTemplates(unsafe),/secure https/);
 });
 
-test('published templates customise distinct ready email and ready-only upsell without raw HTML',()=>{
+test('published templates customise distinct ready email and received and ready promotions without raw HTML',()=>{
  const config=copy();
  config.email.templates.readyDelivery={subject:'Ready to go · {reference}',title:'Lunch is ready for delivery',status:'Driver handoff next',intro:'Hello {customerName}, the kitchen has finished your order.'};
  config.email.banner={enabled:true,imageUrl:'/api/promotion-images/12345678-1234-1234-1234-123456789abc',imageAlt:'Fresh FOND lunch',eyebrow:'THIS WEEK',title:'Lunch, sorted.',body:'Add a coffee when you order again.',buttonLabel:'See the menu',buttonUrl:'/'};
@@ -45,8 +45,14 @@ test('published templates customise distinct ready email and ready-only upsell w
  assert.doesNotMatch(ready.html,/Brett & Co/);
  const received=buildOrderEmail(delivery,'received');
  assert.doesNotMatch(received.html,/ORDER READY/);
- assert.doesNotMatch(received.html,/Lunch, sorted\./);
- assert.doesNotMatch(received.html,/api\/promotion-images/);
+ assert.match(received.html,/Lunch, sorted\./);
+ assert.match(received.html,/api\/promotion-images/);
+ assert.match(received.text,/Lunch, sorted\./);
+ assert.match(received.text,/See the menu: https:\/\/fond-test.mid-point.co.za/);
+ assert.match(buildOrderEmail(order,'ready').html,/Lunch, sorted\./);
+ assert.doesNotMatch(buildOrderEmail(order,'accepted').html,/Lunch, sorted\./);
+ config.email.banner.enabled=false;saveDocument('message-templates-published',validateMessageTemplates(config),'fixture');
+ for(const event of ['received','ready'] as const){const disabled=buildOrderEmail(order,event);assert.doesNotMatch(disabled.html,/Lunch, sorted\.|api\/promotion-images/);assert.doesNotMatch(disabled.text,/Lunch, sorted\./);}
  assert.equal(smsBody('order_accepted',order.reference,'collection','Brett'),`FOND ${order.reference}: accepted for Brett.`);
 });
 

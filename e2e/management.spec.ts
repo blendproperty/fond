@@ -46,7 +46,7 @@ test('new management APIs and webhook reject anonymous or forged requests',async
  expect((await request.post('/api/admin/yoco/test-checkout')).status()).toBe(403);
 });
 
-test('messaging studio shows the two-message journey and a distinct ready upsell preview',async({page})=>{
+test('messaging studio shows the two-message journey and promotion previews for received and ready emails',async({page})=>{
  await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();
  await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
  await expect(page.getByText(/sends an order receipt first, then one ready email/i)).toBeVisible();
@@ -59,5 +59,11 @@ test('messaging studio shows the two-message journey and a distinct ready upsell
  await expect(page.locator('.email-mini-banner')).toContainText(/Order again from FOND|See the menu/);
  await stages.selectOption('received');
  await expect(page.locator('.email-mini-status.is-ready')).toHaveCount(0);
+ await expect(page.locator('.email-mini-banner')).toBeVisible();
+ await page.getByLabel('Include this banner in received and ready emails').uncheck();
  await expect(page.locator('.email-mini-banner')).toHaveCount(0);
+ await stages.selectOption('readyCollection');
+ await expect(page.locator('.email-mini-banner')).toHaveCount(0);
+ await page.getByLabel('Include this banner in received and ready emails').check();
+ await expect(page.locator('.email-mini-banner')).toBeVisible();
 });

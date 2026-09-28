@@ -2,6 +2,7 @@ export const EMAIL_MESSAGE_KEYS = ['received','accepted','readyCollection','read
 export const ACTIVE_EMAIL_MESSAGE_KEYS = ['received','readyCollection','readyDelivery'] as const;
 export const SMS_MESSAGE_KEYS = ['accepted','readyCollection','readyDelivery'] as const;
 export type EmailMessageKey = typeof EMAIL_MESSAGE_KEYS[number];
+export function emailIncludesPromotion(key:EmailMessageKey){return key==='received'||key==='readyCollection'||key==='readyDelivery';}
 export type SmsMessageKey = typeof SMS_MESSAGE_KEYS[number];
 export type EditableEmailTemplate = {subject:string;title:string;status:string;intro:string};
 export type EmailBanner = {enabled:boolean;imageUrl:string;imageAlt:string;eyebrow:string;title:string;body:string;buttonLabel:string;buttonUrl:string};
