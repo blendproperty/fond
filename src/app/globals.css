@@ -396,3 +396,12 @@ footer span:last-child{margin-left:auto}
 .availability-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:130px;padding:8px 12px;border:1px solid;border-radius:24px;font-weight:700;font-size:12px;white-space:nowrap}.availability-toggle.is-available{color:#166534;background:#dcfce7;border-color:#86d5a4}.availability-toggle.is-sold-out{color:#991b1b;background:#fee2e2;border-color:#f5a5a5}.availability-toggle:disabled{cursor:wait}.availability-track{display:inline-flex;align-items:center;width:30px;height:18px;padding:2px;border-radius:20px;background:currentColor}.availability-track>span{width:14px;height:14px;border-radius:50%;background:white;transition:transform .15s}.is-available .availability-track>span{transform:translateX(12px)}.admin-row-off{opacity:1}.trading-schedule{min-width:0;margin:18px 0;padding:16px;border:1px solid #d5e2de;border-radius:12px;background:#f8fbfa}.trading-schedule legend{padding:0 6px;font-weight:700}.trading-schedule .manage-days{display:flex;flex-wrap:wrap;gap:12px}.trading-schedule .manage-days label{display:flex;align-items:center;gap:4px;min-height:36px}
 
 @media(max-width:600px){.admin-row-main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-row-main .admin-row-symbol{display:none}.admin-row-main .admin-row-name{grid-column:1/-1;min-width:0}.admin-row-main .admin-row-name strong{overflow-wrap:anywhere}.admin-row-main .admin-price,.admin-row-main .icon-button{justify-self:start}.admin-row-main .availability-toggle{justify-self:end;min-width:0;max-width:100%;font-size:11px}}
+
+/* Finished promotion artwork keeps its original proportions and full content. */
+.promo-artwork{background:transparent;border-radius:12px;text-align:center}
+.promo-artwork-action{display:block;width:100%;padding:0;border:0;background:transparent;cursor:pointer;line-height:0}
+.promo-artwork-action>img{display:block;width:100%;height:auto;object-fit:contain}
+.promo-dialog-artwork{width:fit-content;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:visible;background:transparent;border-radius:12px}
+.promo-dialog-artwork .promo-artwork-action>img{width:auto;height:auto;max-width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);object-fit:contain}
+.promo-dialog-artwork .promo-close{width:44px;height:44px;right:8px;top:8px;box-shadow:0 2px 10px #0003}
+.promo-artwork-action:focus-visible{outline:3px solid #ffca73;outline-offset:-3px}

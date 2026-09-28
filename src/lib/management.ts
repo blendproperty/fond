@@ -73,7 +73,7 @@ export function assertTrading(fulfillment:string,source:string) {
   const count=getDb().prepare("SELECT count(*) AS n FROM orders WHERE status IN ('received','accepted','preparing','ready')").get() as {n:number};
   if(count.n>=s.maxActiveOrders)throw new Error('The kitchen is at capacity. Please try again shortly.');
 }
-export type Promotion={id:string;title:string;body:string;startsAt:string;endsAt:string;active:boolean;display?:'banner'|'card'|'popup';imageUrl?:string;buttonLabel?:string;category?:string};
+export type Promotion={id:string;title:string;body:string;startsAt:string;endsAt:string;active:boolean;display?:'banner'|'card'|'popup'|'image-popup';imageUrl?:string;buttonLabel?:string;category?:string};
 export const DEFAULT_CONTENT={headline:'Good food. One less thing to think about.',intro:'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.',announcement:'',promotions:[] as Promotion[]};
 export type SiteContent=typeof DEFAULT_CONTENT;
 export function validateContent(input:unknown):SiteContent {
@@ -83,9 +83,10 @@ export function validateContent(input:unknown):SiteContent {
   for(const p of c.promotions)if(!p||typeof p.id!=='string'||typeof p.title!=='string'||!p.title.trim()||p.title.length>100||typeof p.body!=='string'||p.body.length>500||typeof p.active!=='boolean'||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||Date.parse(p.startsAt)>=Date.parse(p.endsAt))throw new Error('Each promotion needs a title and valid start/end dates.');
   if(new Set(c.promotions.map(p=>p.id)).size!==c.promotions.length)throw new Error('Each promotion must have a unique ID.');
   for(const p of c.promotions){
-    if(!/^[a-zA-Z0-9_-]{1,80}$/.test(p.id)||p.display&&!['banner','card','popup'].includes(p.display))throw new Error('Choose a valid promotion format.');
+    if(!/^[a-zA-Z0-9_-]{1,80}$/.test(p.id)||p.display&&!['banner','card','popup','image-popup'].includes(p.display))throw new Error('Choose a valid promotion format.');
     if(p.imageUrl && (typeof p.imageUrl!=='string'||!/^\/api\/promotion-images\/[a-f0-9-]{36}$/.test(p.imageUrl)))throw new Error('Use an uploaded promotion image.');
-    if(p.display==='card'&&!p.imageUrl)throw new Error('Upload an image for the image card.');
+    if((p.display==='card'||p.display==='image-popup')&&!p.imageUrl)throw new Error('Upload an image for this promotion.');
+    if(p.display==='image-popup'&&!p.body.trim())throw new Error('Describe the image offer for customers using screen readers.');
     if(p.buttonLabel!=null&&(typeof p.buttonLabel!=='string'||p.buttonLabel.length>40))throw new Error('Button text is limited to 40 characters.');
     if(p.category&&!categories.includes(p.category as typeof categories[number]))throw new Error('Choose an existing menu category.');
   }

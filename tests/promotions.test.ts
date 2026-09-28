@@ -11,3 +11,10 @@ test('promotion validation rejects broken images, categories and ambiguous sched
  assert.throws(()=>validateContent({...DEFAULT_CONTENT,promotions:[promotion,promotion]}),/unique/);
  assert.doesNotThrow(()=>validateContent({...DEFAULT_CONTENT,promotions:[{...promotion,display:'card',imageUrl:'/api/promotion-images/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}]}));
 });
+
+test('finished artwork requires a stored image and accessible offer description',()=>{
+ const artwork={...promotion,display:'image-popup',imageUrl:'/api/promotion-images/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'};
+ assert.equal(validateContent({...DEFAULT_CONTENT,promotions:[artwork]}).promotions[0].display,'image-popup');
+ assert.throws(()=>validateContent({...DEFAULT_CONTENT,promotions:[{...artwork,imageUrl:''}]}),/Upload/);
+ assert.throws(()=>validateContent({...DEFAULT_CONTENT,promotions:[{...artwork,body:'  '}]}),/screen readers/);
+});
