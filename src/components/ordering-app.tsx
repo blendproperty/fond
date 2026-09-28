@@ -114,9 +114,9 @@ export function OrderingApp() {
   const pricedCart = priceCart(cart);
   const total = pricedCart.reduce((n, l) => n + l.subtotal, 0);
   const estimatedPrepMinutes=pricedCart.length?weightedPrepMinutes(Math.max(...pricedCart.map(line=>line.prepMinutes??10)),store?.settings.preparationWeightPercent??7):(store?.settings.preparationMinutes??20);
-  const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:store?.settings.closingTime??'17:00',openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,store?.settings.closingTime,store?.settings.openDays]);
+  const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:store?.settings.closingTime??'18:30',openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,store?.settings.closingTime,store?.settings.openDays]);
   const collectionGroups=useMemo(()=>collectionOptions.reduce<{label:string;slots:typeof collectionOptions}[]>((groups,slot)=>{const group=groups.find(item=>item.label===slot.dateLabel);if(group)group.slots.push(slot);else groups.push({label:slot.dateLabel,slots:[slot]});return groups;},[]),[collectionOptions]);
-  useEffect(()=>{if(!collectionOptions.some(option=>option.value===collection))setCollection('As soon as possible');},[collection,collectionOptions]);
+  useEffect(()=>{if(!collectionOptions.some(option=>option.value===collection))setCollection(collectionOptions[0]?.value??'');},[collection,collectionOptions]);
 
   function toggleModifier(mealId: string, modifierId: string) {
     setPendingMods((current) => {
@@ -153,6 +153,7 @@ export function OrderingApp() {
       quoteCart(cart, menu);
       if (!customerName.trim()) throw new Error('Enter your name so FOND knows who this is for.');
       if (!contactNumber.trim()) throw new Error('Enter a contact number so FOND can reach you about your order.');
+      if(fulfillment==='collection'&&!collectionOptions.length)throw new Error(`Today's collection window has closed. The kitchen closes at ${store?.settings.closingTime??'18:30'}.`);
       if(normalizedEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address, or leave the optional email field blank.');
       if (fulfillment === 'delivery') {
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
@@ -243,7 +244,7 @@ export function OrderingApp() {
           </div>
           <label className="field">Your name<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="So FOND knows who this is for" /></label>
           {fulfillment === 'collection' ? (
-            <label className="field">Preferred collection date and time<select value={collection} onChange={(e) => setCollection(e.target.value)}>{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select></label>
+            <label className="field">Preferred collection time (today)<select value={collection} disabled={!collectionOptions.length} onChange={(e) => setCollection(e.target.value)}>{!collectionOptions.length&&<option value="">Today&rsquo;s collection window has closed</option>}{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select><span className="small">Today only · Kitchen closes at {store?.settings.closingTime??'18:30'}.</span></label>
           ) : <>
             <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel" /></label>
             <label className="field">Business and building<select value={deliveryLocation} onChange={event=>{const value=event.target.value;setDeliveryLocation(value);if(value&&value!=='other'){const location=deliveryLocationValue(value);setCompany(location.business);setBuilding(location.building);}else{setCompany('');setBuilding('');}}}><option value="">Select your business and building</option>{(store?.settings.deliveryLocations??[]).map(location=><option value={location} key={location}>{deliveryLocationValue(location).business} — {deliveryLocationValue(location).building}</option>)}<option value="other">My business is not listed</option></select></label>
@@ -259,7 +260,7 @@ export function OrderingApp() {
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
           {error && <p role="alert">{error}</p>}
-          <button className="primary full" disabled={offline || submitting || store?.open===false} onClick={placeOrder}>{submitting ? 'Sending…' : payOnline?(store?.paymentMode==='sandbox'?'Continue to Yoco TEST checkout':'Continue to secure payment'):'Send order to FOND'} <ArrowRight size={18} /></button>
+          <button className="primary full" disabled={offline || submitting || store?.open===false || (fulfillment==='collection'&&!collectionOptions.length)} onClick={placeOrder}>{submitting ? 'Sending…' : payOnline?(store?.paymentMode==='sandbox'?'Continue to Yoco TEST checkout':'Continue to secure payment'):'Send order to FOND'} <ArrowRight size={18} /></button>
           <p className="small center">{payOnline?(store?.paymentMode==='sandbox'?'Your test order moves forward only after Yoco confirms the test payment. No real money is charged.':'Your order moves forward only after Yoco confirms payment.'):'Payment will be due when you collect.'}</p>
         </> : <div className="empty"><ShoppingBag /><h3>A little something good?</h3><p>Your basket is waiting for its first favourite.</p><button className="primary" onClick={() => setPanel(null)}>Explore the menu <ArrowRight size={18} /></button></div>}
       </div>

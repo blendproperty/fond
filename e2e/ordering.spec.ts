@@ -7,7 +7,8 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await expect(page.getByRole('tab',{name:'Delivery'})).toBeDisabled();
  await expect(page.getByText(/Online payment is currently unavailable/)).toBeVisible();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
- await page.getByLabel('Preferred collection date and time').selectOption({index:1});
+ await expect(page.getByText('Today only · Kitchen closes at 18:30.')).toBeVisible();
+ await page.getByLabel('Preferred collection time (today)').selectOption({index:1});
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
  await page.getByLabel('Email address (optional)').fill('guest@example.test');

@@ -21,7 +21,7 @@ export function saveDocument(key:string,value:unknown,actor:string) {
 }
 export const DEFAULT_SETTINGS = {
   orderingEnabled:true, collectionEnabled:true, deliveryEnabled:true,
-  enforceHours:false, openingTime:'07:00', closingTime:'17:00', openDays:[1,2,3,4,5],
+  enforceHours:false, openingTime:'07:00', closingTime:'18:30', openDays:[1,2,3,4,5],
   maxActiveOrders:100, newOrderMinutes:5, paymentConfirmationMinutes:10,
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
   preparationWeightPercent:7,allowTestPayments:false,
