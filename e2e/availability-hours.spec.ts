@@ -14,11 +14,12 @@ test('admin availability toggle saves sold-out state, rejects stale baskets and 
     await page.reload();await page.getByPlaceholder('Search menu items…').fill(name);await expect(toggle).toHaveText('Sold out');
     const publicMenu=await(await page.request.get('/api/menu')).json();expect(publicMenu.menu.some((item:{id:string})=>item.id===id)).toBe(false);
     expect((await page.request.post('/api/orders',{headers:{'Idempotency-Key':randomUUID()},data:{customerName:'Stock check',contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id,quantity:1}]}})).status()).toBe(400);
+    if(testInfo.project.name==='mobile')expect((await page.locator('.admin-row-name').evaluate(el=>el.getBoundingClientRect().width))).toBeGreaterThan(200);
     await page.screenshot({path:testInfo.outputPath('sold-out-toggle.png'),fullPage:true});
     await toggle.click();await expect(toggle).toHaveText('Available');await expect(toggle).toHaveClass(/is-available/);
     expect((await(await page.request.get('/api/menu')).json()).menu.some((item:{id:string})=>item.id===id)).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  }finally{await page.evaluate(id=>fetch('/api/admin/menu/'+id,{method:'DELETE'}),id);}
+  }finally{if(!page.isClosed())await page.evaluate(async id=>{await fetch('/api/admin/menu/'+id,{method:'DELETE'});},id).catch(()=>{});}
 });
 
 for(const [label,time,restaurantOpen] of [['Saturday morning','2026-10-03T10:00:00+02:00',true],['Saturday noon','2026-10-03T12:00:00+02:00',false],['Sunday','2026-10-04T10:00:00+02:00',false]] as const){
