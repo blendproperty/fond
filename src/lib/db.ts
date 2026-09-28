@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { generateOrderNumber } from './order-number';
 
 // Durable storage boundary for orders, accounts and configuration.
@@ -175,6 +176,26 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS sms_jobs (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, template TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, provider_id TEXT, last_error TEXT, next_at INTEGER NOT NULL, updated_at TEXT NOT NULL, UNIQUE(order_id, template));
     CREATE UNIQUE INDEX IF NOT EXISTS sms_provider_id ON sms_jobs(provider_id) WHERE provider_id IS NOT NULL;
   `);
+  // One-time operational configuration approved on 2026-09-28. Apply only
+  // to the two managed FOND hosts, record the before/after values for owner
+  // oversight, and leave a marker so a later admin edit is never overwritten.
+  const configuredHost=process.env.FOND_HOST??(()=>{try{return new URL(process.env.FOND_PUBLIC_URL??'').hostname;}catch{return '';}})();
+  const kitchenHoursMarker='kitchen-hours-2026-09-28-v1';
+  if(['fond.mid-point.co.za','fond-test.mid-point.co.za'].includes(configuredHost)&&!db.prepare('SELECT 1 FROM app_documents WHERE key=?').get(kitchenHoursMarker)){
+    const row=db.prepare('SELECT value FROM app_documents WHERE key=?').get('trading') as {value:string}|undefined;
+    const before=row?JSON.parse(row.value) as Record<string,unknown>:null;
+    const after={...(before??{}),closingTime:'18:30',enforceHours:true};
+    const now=new Date().toISOString(),actor='release:kitchen-hours-2026-09-28';
+    db.exec('BEGIN IMMEDIATE');
+    try{
+      db.prepare('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at').run('trading',JSON.stringify(after),now);
+      db.prepare('INSERT INTO app_documents VALUES (?,?,?)').run(kitchenHoursMarker,JSON.stringify('applied'),now);
+      db.prepare('INSERT INTO admin_change_versions (id,actor,area,entity_id,action,before_json,after_json,reversible,rolled_back_by,rolled_back_at,created_at) VALUES (?,?,?,?,?,?,?,?,NULL,NULL,?)')
+        .run(randomUUID(),actor,'document','trading',before==null?'create':'update',before==null?null:JSON.stringify(before),JSON.stringify(after),1,now);
+      db.prepare('INSERT INTO admin_events VALUES (?,?,?,?,?)').run(randomUUID(),actor,'save','trading',now);
+      db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error;}
+  }
   instance = db;
   return db;
 }
