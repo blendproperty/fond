@@ -105,12 +105,19 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
 
 test('staff landscape tablet has large direct stage controls and a focused work area',async({page},testInfo)=>{
  await page.setViewportSize({width:1180,height:820});
+ await page.route(/\/api\/store$/,route=>route.fulfill({json:{paymentMode:'sandbox',settings:{}}}));
  await page.goto('/staff');
  const accessCode=page.getByLabel('Staff access code');
  await expect(accessCode).toBeVisible();
  await accessCode.fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
  await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
+ const testMode=page.getByRole('status',{name:/Yoco test mode/});
+ await expect(testMode).toContainText('YOCO TEST');
+ await expect(testMode).toContainText('NO REAL MONEY');
+ expect(await testMode.evaluate(element=>element.closest('.staff-header')!==null)).toBe(true);
+ expect((await testMode.boundingBox())?.height).toBeLessThanOrEqual(32);
+ await expect(page.locator('.staff-sandbox-banner')).toHaveCount(0);
  const tabletOrders=['Kitchen One','Kitchen Two'].map((customerName,index)=>({id:`tablet-${index}`,reference:`FOND-INTERNAL-${index}`,displayReference:`FOND-TAB${index}-TEST`,customerName,note:index?'No onion':null,lines:[{id:'smashed-avo',quantity:1,name:'Smashed Avo',modifierIds:[],modifiers:[]}],collectionTime:'As soon as possible',totalCents:12000,status:'preparing',source:'customer',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),fulfillment:'collection',contactNumber:`082123456${index}`,company:null,building:null,posRequired:false,posRecordedAt:null,posReference:null,estimatedPrepMinutes:13,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:0,paymentMethod:null,checkout:null}}));
  await page.route(/\/api\/staff\/orders$/,route=>route.request().method()==='GET'?route.fulfill({json:{orders:tabletOrders}}):route.continue());
  await page.reload();
