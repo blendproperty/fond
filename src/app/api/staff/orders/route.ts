@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
 import { SubmissionConflictError, createOrder, listActiveOrders, searchOrders } from '@/lib/orders';
+import {syncYocoPos,yocoPosStatus} from '@/lib/yoco-pos';
 
 async function requireStaff() {
   const store = await cookies();
@@ -17,9 +18,11 @@ export async function GET(request:Request) {
     return NextResponse.json({ code: 'STAFF_AUTH_REQUIRED', message: 'Enter the staff access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   after(processNotifications);
+  after(syncYocoPos);
   const query=new URL(request.url).searchParams.get('query')?.trim();
   const orders=query?searchOrders({query,limit:50}):listActiveOrders();
-  return NextResponse.json({ orders: orders.map(o=>({...o,payment:paymentStatus(o.id)})),search:!!query }, { headers: { 'Cache-Control': 'no-store' } });
+  const pos=yocoPosStatus();
+  return NextResponse.json({ orders: orders.map(o=>({...o,payment:paymentStatus(o.id)})),search:!!query,posSync:{enabled:pos.config.enabled,environment:pos.config.environment,configured:pos.configured,lastChecked:pos.lastChecked,error:pos.error,issues:pos.issues} }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // Manual order entry from the facility tablet - walk-ins and phone orders

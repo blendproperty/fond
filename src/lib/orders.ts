@@ -9,6 +9,7 @@ import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
 import { getAvailableMenu } from './menu-store';
 import { generateOrderNumber } from './order-number';
+import { allocateStaffOrderNumber } from './staff-order-number';
 
 // Orders track kitchen fulfilment. Optional hosted payment is managed separately
 // in payments.ts; neither payment mode changes the staff acceptance workflow.
@@ -30,6 +31,7 @@ export type OrderRecord = {
   id: string;
   reference: string;
   displayReference: string;
+  staffNumber: string;
   customerName: string;
   note: string | null;
   lines: PricedLine[];
@@ -74,6 +76,7 @@ type OrderRow = {
   id: string;
   reference: string;
   display_reference: string | null;
+  staff_number: string;
   customer_name: string;
   note: string | null;
   lines_json: string;
@@ -108,6 +111,7 @@ function fromRow(row: OrderRow): OrderRecord {
     id: row.id,
     reference: row.reference,
     displayReference: row.display_reference ?? row.reference,
+    staffNumber: row.staff_number,
     customerName: row.customer_name,
     note: row.note,
     lines: JSON.parse(row.lines_json) as PricedLine[],
@@ -262,6 +266,7 @@ export function createOrder(input: {
       id: randomUUID(),
       reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,
       displayReference: createDisplayReference(),
+      staffNumber: allocateStaffOrderNumber(db),
       customerName,
       note,
       lines,
@@ -291,8 +296,8 @@ export function createOrder(input: {
       paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,basket_prep_minutes,queue_delay_minutes,estimated_prep_minutes,payment_method,payment_required)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,basket_prep_minutes,queue_delay_minutes,estimated_prep_minutes,payment_method,payment_required,staff_number)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -321,6 +326,7 @@ export function createOrder(input: {
       record.estimatedPrepMinutes,
       record.paymentMethod,
       record.paymentRequired?1:0,
+      record.staffNumber,
     );
     if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(
@@ -391,9 +397,9 @@ export function searchOrders(filters: { status?: OrderStatus; fulfillment?: Fulf
   if (filters.status) { clauses.push('status = ?'); params.push(filters.status); }
   if (filters.fulfillment) { clauses.push('fulfillment = ?'); params.push(filters.fulfillment); }
   if (filters.query) {
-    clauses.push('(reference LIKE ? OR display_reference LIKE ? OR customer_name LIKE ? OR contact_number LIKE ? OR company LIKE ? OR building LIKE ? OR pos_reference LIKE ?)');
+    clauses.push('(reference LIKE ? OR display_reference LIKE ? OR customer_name LIKE ? OR contact_number LIKE ? OR company LIKE ? OR building LIKE ? OR pos_reference LIKE ? OR staff_number LIKE ?)');
     const like = `%${filters.query}%`;
-    params.push(like, like, like, like, like, like, like);
+    params.push(like, like, like, like, like, like, like, like);
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   const limit = Math.min(Math.max(filters.limit ?? 200, 1), 1000);

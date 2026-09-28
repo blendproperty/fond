@@ -9,7 +9,7 @@ import {validRequestOrigin} from '@/lib/request-origin';
 import {yocoCredentialMode} from '@/lib/payments';
 import {publicBaseUrl} from '@/lib/public-url';
 import {smsConfig,validateSmsConfig} from '@/lib/sms';
-const names:ProviderName[]=['yoco-secret','yoco-webhook','email-api','staff-shared-code','twilio-auth-token','meta-access-token','meta-app-secret','meta-webhook-verify'];
+const names:ProviderName[]=['yoco-secret','yoco-webhook','yoco-pos-key','email-api','staff-shared-code','twilio-auth-token','meta-access-token','meta-app-secret','meta-webhook-verify'];
 const noStore={'Cache-Control':'no-store'};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;if(adminRole(token)!=='super-admin')return null;const member=teamSession(token);return member?'super:'+member.id:'shared-admin';}
 export async function GET(){if(!await actor())return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});const base=publicBaseUrl();return Response.json({configured:Object.fromEntries(names.map(n=>[n,providerSecretStatus(n)])),yocoMode:yocoCredentialMode(),webhookUrl:base?`${base}/api/payments/webhook`:'Public URL not configured',whatsappWebhookUrl:base?`${base}/api/webhooks/whatsapp`:'Public URL not configured',smsWebhookUrl:base?`${base}/api/webhooks/twilio/sms`:'Public URL not configured',vaultReady:/^[a-f0-9]{64}$/i.test(process.env.FOND_CREDENTIALS_KEY??''),emailFrom:emailSender(),twilio:twilioConfig(),sms:smsConfig(),meta:metaConfig()},{headers:noStore});}

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
-test('staff accepts, records Yoco entry, then marks the order ready', async ({ page, request }) => {
+test('staff accepts, records Yoco entry, then marks the order ready', async ({ page, request },testInfo) => {
+  await page.addInitScript(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(value:string)=>{(window as unknown as {copiedNote:string}).copiedNote=value;}}});});
   const created = await request.post('/api/orders', { headers: { 'Idempotency-Key': randomUUID() }, data: { customerName: 'POS browser test', contactNumber: '0821234567', collectionTime: 'ASAP', lines: [{ id: 'espresso-single', quantity: 1 }] } });
   expect(created.status()).toBe(201);
   const { reference,displayReference } = await created.json();
@@ -18,6 +19,12 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await expect(page.getByRole('button',{name:'Test sound'})).toBeVisible();
   const card = page.locator('.staff-card').filter({ hasText: displayReference });
   await expect(card).toBeVisible();
+  await expect(card.locator('.staff-short-number')).toHaveText(/^FOND [1-9]\d{5}$/);
+  const shortNote=await card.locator('.staff-short-number').innerText();
+  await card.getByRole('button',{name:'Copy Yoco note'}).click();
+  expect(await page.evaluate(()=>(window as unknown as {copiedNote:string}).copiedNote)).toBe(shortNote);
+  expect((await request.get('/api/orders',{params:{reference:shortNote.replace('FOND ','')}})).status()).toBe(404);
+  await card.screenshot({path:testInfo.outputPath('short-staff-number.png')});
   await expect(card.getByRole('status').filter({ hasText: 'PAY IN PERSON ON COLLECTION' })).toBeVisible();
   await expect(card.getByText(/Collecting: POS browser test · 0821234567/)).toBeVisible();
   await card.getByRole('button',{name:'View audit trail'}).click();

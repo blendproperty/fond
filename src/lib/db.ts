@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { generateOrderNumber } from './order-number';
+import { allocateStaffOrderNumber } from './staff-order-number';
 
 // Durable storage boundary for orders, accounts and configuration.
 // Node's built-in SQLite is used deliberately so the Alpine production image
@@ -114,6 +115,7 @@ export function getDb(): DatabaseSync {
     ['payment_method', `ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'pay_at_collection'`],
     ['payment_required', `ALTER TABLE orders ADD COLUMN payment_required INTEGER NOT NULL DEFAULT 0`],
     ['display_reference', `ALTER TABLE orders ADD COLUMN display_reference TEXT`],
+    ['staff_number', `ALTER TABLE orders ADD COLUMN staff_number TEXT`],
   ];
   for (const [column, sql] of orderMigrations) {
     if (!existingOrderColumns.has(column)) db.exec(sql);
@@ -135,6 +137,29 @@ export function getDb(): DatabaseSync {
     } catch (error) { db.exec('ROLLBACK'); throw error; }
   }
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS order_display_reference ON orders(display_reference)');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS staff_order_sequence (id INTEGER PRIMARY KEY CHECK(id=1),next_number INTEGER NOT NULL);
+    INSERT OR IGNORE INTO staff_order_sequence VALUES (1,100000);
+    CREATE UNIQUE INDEX IF NOT EXISTS order_staff_number ON orders(staff_number);
+    CREATE TABLE IF NOT EXISTS yoco_pos_matches (
+      environment TEXT NOT NULL,yoco_order_id TEXT NOT NULL,order_id TEXT NOT NULL UNIQUE,
+      order_number TEXT NOT NULL,matched_at TEXT NOT NULL,
+      PRIMARY KEY(environment,yoco_order_id)
+    );
+    CREATE TABLE IF NOT EXISTS yoco_pos_sync_state (
+      id INTEGER PRIMARY KEY CHECK(id=1),lease TEXT,next_run INTEGER NOT NULL DEFAULT 0,
+      checked_at TEXT,error TEXT,issues_json TEXT NOT NULL DEFAULT '[]'
+    );
+    INSERT OR IGNORE INTO yoco_pos_sync_state(id) VALUES (1);
+  `);
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare('UPDATE staff_order_sequence SET next_number=max(next_number,coalesce((SELECT max(CAST(staff_number AS INTEGER))+1 FROM orders),100000)) WHERE id=1').run();
+    for(const order of db.prepare('SELECT id FROM orders WHERE staff_number IS NULL ORDER BY created_at,id').all() as {id:string}[]){
+      db.prepare('UPDATE orders SET staff_number=? WHERE id=?').run(allocateStaffOrderNumber(db),order.id);
+    }
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
   const userColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map(column => column.name));
   if (!userColumns.has('email_verified_at')) db.exec('ALTER TABLE users ADD COLUMN email_verified_at TEXT');
   // Modifiers (2026-09-15 addition) - "add this / remove this" options such

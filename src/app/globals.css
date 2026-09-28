@@ -232,6 +232,7 @@ footer span:last-child{margin-left:auto}
 .staff-payment-status[data-payment-state="pending"]{color:#755000;background:#fff4cf;border-color:#d39a0b}
 .staff-payment-status[data-payment-state="due"]{color:#8c281f;background:#fff0ed;border-color:#c84d3e}
 .staff-ref{font-family:monospace;font-size:14px;font-weight:850;letter-spacing:.35px;color:var(--rust);overflow-wrap:anywhere}
+.staff-short-number{display:block;font-size:23px;letter-spacing:1px;font-variant-numeric:tabular-nums}.staff-customer-reference{display:block;font-size:10px;color:var(--slate);overflow-wrap:anywhere;margin-top:4px}.staff-pos-instructions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:#edf5f2;border:1px solid #c9ddd7;border-radius:10px;padding:10px;margin:10px 0;font-size:12px}.staff-pos-instructions strong{font-variant-numeric:tabular-nums}.staff-pos-instructions .quiet{min-height:36px;padding:6px 8px;font-size:12px}.staff-pos-instructions p{flex-basis:100%;margin:0;line-height:1.5}.staff-pos-instructions p[role=alert]{color:#9c331b;font-weight:700}.staff-pos-status{font-size:12px;color:var(--slate);margin-top:6px}
 .staff-fulfilment{display:grid;gap:3px;margin:9px 0 11px;padding:10px 11px;border-radius:8px;background:#f3f7f6;font-size:12px;color:var(--slate)}
 .staff-fulfilment strong{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:12px;letter-spacing:.06em}
 .staff-fulfilment[data-fulfilment="delivery"]{background:#eef8f5;border-left:4px solid #238f78}

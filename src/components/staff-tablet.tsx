@@ -16,6 +16,7 @@ type StaffOrder = {
   id: string;
   reference: string;
   displayReference:string;
+  staffNumber:string;
   customerName: string;
   note: string | null;
   lines: (CartLine & {name?: string; modifiers?: {name:string}[]})[];
@@ -102,6 +103,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   const [posOrderId, setPosOrderId] = useState<string | null>(null);
   const [posReference, setPosReference] = useState('');
   const [posError, setPosError] = useState('');
+  const [posSync,setPosSync]=useState<{enabled:boolean;environment:string;configured:boolean;error:string|null;issues:{staffNumber:string;message:string}[]}|null>(null);
+  const [copyMessage,setCopyMessage]=useState('');
   const [paymentOrderId,setPaymentOrderId]=useState<string|null>(null);
   const [paymentMethod,setPaymentMethod]=useState<'cash'|'card'>('card');
   const [paymentReference,setPaymentReference]=useState('');
@@ -131,6 +134,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     setQueueError('');
     setLocked(false);
     const data = await res.json();
+    setPosSync(data.posSync??null);
     const current: StaffOrder[] = data.orders ?? [];
     const incoming=seenOrders.current ? current.filter(o=>o.status==='received'&&!seenOrders.current!.has(o.id)) : [];
     if (incoming.length) { playOrderSound(); void notifyOrders(incoming); }
@@ -149,6 +153,11 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       setActiveLane('yoco');
       await refresh();
     } catch (error) { setPosError(error instanceof Error ? error.message : 'Could not record Yoco entry.'); }
+  }
+
+  async function copyPosNote(number:string){
+    try{await navigator.clipboard.writeText(`FOND ${number}`);setCopyMessage(`FOND ${number} copied.`);}
+    catch{setCopyMessage(`Enter FOND ${number} in the Yoco sale note.`);}
   }
 
   async function recordInPersonPayment(id:string) {
@@ -275,6 +284,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           </div>
           <p className="staff-sync">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}` : 'Connecting'} · refreshes every 5 seconds</p>
           {queueError && <p role="alert" className="staff-connection-error">{queueError}</p>}
+          {posSync?.enabled&&<p className="staff-pos-status" role="status">{posSync.error?`Yoco matching needs attention: ${posSync.error}`:`Yoco ${posSync.environment==='sandbox'?'TEST ':''}reference matching on · keep this board open`}</p>}
+          {copyMessage&&<p className="small" role="status">{copyMessage}</p>}
         </div>
         <div className="staff-header-actions">
           <button className="quiet staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={17}/> Find order</button>
@@ -290,7 +301,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
         <span>{alerts.alertError || (alerts.permission === 'denied' ? 'Allow notifications in the tablet’s app or browser settings.' : 'New orders repeat every 30 seconds until accepted. Keep this board open and the tablet volume up.')}</span>
       </div>
       {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
-      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">{order.displayReference}</span><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
+      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
       <nav className="staff-stage-navigation" aria-label="Order stages">
         <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
         <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
@@ -322,7 +333,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
                       <strong>{order.customerName}</strong>
-                      <span className="staff-ref">{order.displayReference}</span>
+                      <div><span className="staff-ref staff-short-number">FOND {order.staffNumber}</span><small className="staff-customer-reference">Customer number: {order.displayReference}</small></div>
                     </div>
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
@@ -339,6 +350,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                       })}
                     </ul>
                     {order.note && <p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}
+                    {!order.posRecordedAt&&order.posRequired&&<div className="staff-pos-instructions"><strong>Yoco sale note: FOND {order.staffNumber}</strong><button className="quiet" onClick={()=>void copyPosNote(order.staffNumber)}>Copy Yoco note</button>{paidOnline?<p>{paymentMode==='sandbox'?'TEST PAYMENT · Use the Yoco sandbox only.':'Already paid online · close in Yoco as EFT. Do not charge again.'} {posSync?.enabled&&!posSync.error?'The POS reference will appear after matching.':'Automatic matching is not connected. Record the POS reference manually.'}</p>:<p>Enter the short number in Yoco. Keep the existing payment-on-collection process.</p>}{posSync?.issues.filter(issue=>issue.staffNumber===order.staffNumber).map(issue=><p role="alert" key={issue.message}>{issue.message}</p>)}</div>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
                     <button className="staff-history-toggle" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>
                     {historyOrderId===order.id&&<div className="staff-audit" aria-live="polite">{!orderAudit?<p>Loading audit trail…</p>:<><strong>Permanent order record</strong>{orderAudit.payment.checkout&&<p>Yoco checkout: {orderAudit.payment.checkout.status} · {orderAudit.payment.checkout.checkoutId??'creating'} · {new Date(orderAudit.payment.checkout.updatedAt).toLocaleString('en-ZA')}</p>}{orderAudit.payment.records.map(record=><p key={record.reference}>Payment: {money(record.amountCents)} · {record.method} · {record.reference} · {new Date(record.createdAt).toLocaleString('en-ZA')}</p>)}{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}
@@ -359,7 +371,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           </section>
         ))}
       </div>
-      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
+      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p className="staff-short-number">Yoco note: FOND {orders.find(order=>order.id===posOrderId)?.staffNumber}</p><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
       {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed.</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
       {manualOpen && <ManualOrderPanel menu={menu} onClose={() => setManualOpen(false)} onCreated={refresh} />}
     </div>
