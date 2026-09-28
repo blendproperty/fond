@@ -32,6 +32,7 @@ type StaffOrder = {
   posRecordedAt: string | null;
   posReference: string | null;
   estimatedPrepMinutes:number;
+  basketPrepMinutes:number;
   paymentMethod:'yoco_online'|'pay_at_collection';
   paymentRequired:boolean;
 };

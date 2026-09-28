@@ -20,3 +20,26 @@ const OVERRIDES:Record<string,number>={
 };
 export function estimatedPrepMinutes(item:Pick<Meal,'id'|'category'>){return OVERRIDES[item.id]??CATEGORY_MINUTES[item.category]??10;}
 export function weightedPrepMinutes(baseMinutes:number,weightPercent:number){return Math.ceil(baseMinutes*(1+weightPercent/100));}
+
+export type PreparationLine={quantity:number;prepMinutes?:number};
+
+// A basket is scheduled across two item-preparation lanes. This reflects that
+// the kitchen can work on parts of one order together without pretending that
+// four portions take the same time as one. Individual item times remain
+// editable in Menu management; the uncertainty buffer remains editable in
+// Trading settings.
+export function basketPrepMinutes(lines:PreparationLine[],weightPercent:number,parallelItems=2){
+  if(!lines.length)return 0;
+  const work=lines.flatMap(line=>Array.from({length:Math.max(1,line.quantity)},()=>Math.max(1,line.prepMinutes??10))).sort((a,b)=>b-a);
+  const lanes=Array.from({length:Math.max(1,Math.floor(parallelItems))},()=>0);
+  for(const minutes of work){const next=lanes.indexOf(Math.min(...lanes));lanes[next]+=minutes;}
+  return weightedPrepMinutes(Math.max(...lanes),weightPercent);
+}
+
+export function queueDelayForWorkloads(workloads:number[],parallelOrders:number){
+  const lanes=Array.from({length:Math.max(1,Math.floor(parallelOrders))},()=>0);
+  for(const minutes of [...workloads].filter(value=>value>0).sort((a,b)=>b-a)){
+    const next=lanes.indexOf(Math.min(...lanes));lanes[next]+=minutes;
+  }
+  return Math.min(...lanes);
+}

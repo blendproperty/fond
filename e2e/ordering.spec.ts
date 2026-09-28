@@ -4,11 +4,17 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await expect(page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Smashed Avo'})}).getByText(/Approx\. \d+ min/)).toBeVisible();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
+ const collectionTimes=page.getByLabel('Preferred collection time (today)');
+ const oneItemEstimate=Number(((await collectionTimes.locator('option').first().textContent())??'').match(/approx\. (\d+) min/)?.[1]);
  await expect(page.getByRole('tab',{name:'Delivery'})).toBeDisabled();
  await expect(page.getByText(/Online payment is currently unavailable/)).toBeVisible();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
+ await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
+ await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
+ const fourItemEstimate=Number(((await collectionTimes.locator('option').first().textContent())??'').match(/approx\. (\d+) min/)?.[1]);
+ expect(fourItemEstimate).toBeGreaterThan(oneItemEstimate);
  await expect(page.getByText('Today only · Kitchen closes at 18:30.')).toBeVisible();
- await page.getByLabel('Preferred collection time (today)').selectOption({index:1});
+ await collectionTimes.selectOption({index:1});
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
  await page.getByLabel('Email address (optional)').fill('guest@example.test');
@@ -17,12 +23,19 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
  await page.getByRole('button',{name:'Send order to FOND'}).click();
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
- await expect(page.getByRole('dialog')).toContainText(/240/);
+ await expect(page.getByRole('dialog')).toContainText(/480/);
  await page.getByRole('button',{name:'Back to the menu'}).click();
  await page.getByRole('button',{name:'Track order'}).click();
  await expect(page.getByRole('dialog')).toContainText('FOND-');
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+test('basket estimate explains the current kitchen queue delay',async({page})=>{
+ await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.queueDelayMinutes=12;await route.fulfill({response,json:body});});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
+ await page.getByRole('button',{name:/^Basket/}).click();
+ await expect(page.getByText(/including 12 minutes for the current kitchen queue/)).toBeVisible();
 });
 test('available email and SMS notifications are preselected while WhatsApp stays unavailable',async({page})=>{
  await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.settings.smsEnabled=true;body.settings.whatsappEnabled=false;await route.fulfill({response,json:body});});

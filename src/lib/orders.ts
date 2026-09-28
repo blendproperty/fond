@@ -1,6 +1,7 @@
 import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
-import {weightedPrepMinutes} from './preparation-estimates';
+import {basketPrepMinutes as calculateBasketPrepMinutes} from './preparation-estimates';
+import {currentKitchenDelayMinutes} from './kitchen-workload';
 import {assertFoodTruckOrderingAvailable,validateScheduledCollection} from './fulfilment';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
@@ -51,6 +52,8 @@ export type OrderRecord = {
   posRecordedBy: string | null;
   posReference: string | null;
   estimatedPrepMinutes:number;
+  basketPrepMinutes:number;
+  queueDelayMinutes:number;
   paymentMethod:PaymentMethod;
   paymentRequired:boolean;
 };
@@ -93,6 +96,8 @@ type OrderRow = {
   pos_recorded_by: string | null;
   pos_reference: string | null;
   estimated_prep_minutes:number;
+  basket_prep_minutes:number;
+  queue_delay_minutes:number;
   payment_method:string;
   payment_required:number;
 };
@@ -125,6 +130,8 @@ function fromRow(row: OrderRow): OrderRecord {
     posRecordedBy: row.pos_recorded_by,
     posReference: row.pos_reference,
     estimatedPrepMinutes:row.estimated_prep_minutes??20,
+    basketPrepMinutes:row.basket_prep_minutes??row.estimated_prep_minutes??20,
+    queueDelayMinutes:row.queue_delay_minutes??0,
     paymentMethod:row.payment_method==='yoco_online'?'yoco_online':'pay_at_collection',
     paymentRequired:!!row.payment_required,
   };
@@ -230,7 +237,9 @@ export function createOrder(input: {
     const foodTruckIds=new Set(availableMenu.filter(item=>item.category==='Food Truck').map(item=>item.id));
     assertFoodTruckOrderingAvailable({hasFoodTruck:input.lines.some(line=>foodTruckIds.has(line.id)),source:input.source,enforceHours:trading.enforceHours,cutoffTime:trading.foodTruckClosingTime,openDays:trading.openDays});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0);
-    const estimatedPrepMinutes=weightedPrepMinutes(Math.max(...priced.map(line=>line.prepMinutes??10)),trading.preparationWeightPercent);
+    const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
+    const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
+    const estimatedPrepMinutes=basketPrepMinutes+queueDelayMinutes;
     if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,closingTime:input.lines.some(line=>foodTruckIds.has(line.id))?trading.foodTruckClosingTime:trading.closingTime});
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
@@ -273,12 +282,14 @@ export function createOrder(input: {
       posRecordedBy: null,
       posReference: null,
       estimatedPrepMinutes,
+      basketPrepMinutes,
+      queueDelayMinutes,
       paymentMethod,
       paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,estimated_prep_minutes,payment_method,payment_required)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,basket_prep_minutes,queue_delay_minutes,estimated_prep_minutes,payment_method,payment_required)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -302,6 +313,8 @@ export function createOrder(input: {
       record.userId,
       record.customerEmail,
       1,
+      record.basketPrepMinutes,
+      record.queueDelayMinutes,
       record.estimatedPrepMinutes,
       record.paymentMethod,
       record.paymentRequired?1:0,

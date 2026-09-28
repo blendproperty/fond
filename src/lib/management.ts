@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS = {
   enforceHours:false, openingTime:'07:00', closingTime:'18:30', foodTruckClosingTime:'15:30', openDays:[1,2,3,4,5],
   maxActiveOrders:100, newOrderMinutes:5, paymentConfirmationMinutes:10,
   yocoEntryMinutes:5, preparationMinutes:20, readyDeliveryMinutes:10, readyCollectionMinutes:10,
-  preparationWeightPercent:7,allowTestPayments:false,
+  preparationWeightPercent:7,preparationParallelItems:2,preparationParallelOrders:2,allowTestPayments:false,
   deliveryArea:'Midpoint Hub',
   collectionSlotIncrementMinutes:15,
   deliveryLocations:[
@@ -47,6 +47,8 @@ export function validateSettings(input:unknown):TradingSettings {
   for(const k of ['newOrderMinutes','paymentConfirmationMinutes','yocoEntryMinutes','preparationMinutes','readyDeliveryMinutes','readyCollectionMinutes'] as const)if(!Number.isInteger(s[k])||s[k]<1||s[k]>240)throw new Error('Every queue target must be between 1 and 240 minutes.');
   if(!Number.isInteger(s.collectionSlotIncrementMinutes)||s.collectionSlotIncrementMinutes<5||s.collectionSlotIncrementMinutes>60||s.collectionSlotIncrementMinutes%5!==0)throw new Error('Collection time increments must be between 5 and 60 minutes, in steps of 5.');
   if(!Number.isInteger(s.preparationWeightPercent)||s.preparationWeightPercent<5||s.preparationWeightPercent>8)throw new Error('Preparation weighting must be between 5% and 8%.');
+  if(!Number.isInteger(s.preparationParallelItems)||s.preparationParallelItems<1||s.preparationParallelItems>10)throw new Error('Parallel items per order must be between 1 and 10.');
+  if(!Number.isInteger(s.preparationParallelOrders)||s.preparationParallelOrders<1||s.preparationParallelOrders>10)throw new Error('Parallel kitchen orders must be between 1 and 10.');
   for(const k of ['deliveryArea','closedMessage','contactPhone'] as const)if(typeof s[k]!=='string'||s[k].length>250)throw new Error('Invalid contact or display text.');
   if(!Array.isArray(s.deliveryLocations)||!s.deliveryLocations.length||s.deliveryLocations.length>200||s.deliveryLocations.some(t=>typeof t!=='string'||!t.includes('|')||!t.split('|')[0].trim()||!t.split('|').slice(1).join('|').trim()||t.length>180))throw new Error('Provide delivery locations as Business | Building.');
   return {...DEFAULT_SETTINGS,...s};

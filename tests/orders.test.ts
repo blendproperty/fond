@@ -69,11 +69,25 @@ test('valid transitions succeed and invalid ones are rejected', () => {
   assert.throws(() => updateOrderStatus('not-a-real-id', 'accepted'), OrderTransitionError);
 });
 
-test('basket estimate uses the slowest item plus the editable uncertainty buffer', async () => {
+test('basket estimate uses item type, quantity, parallel preparation and the editable uncertainty buffer', async () => {
   const {saveDocument,settings}=await import('../src/lib/management');
   saveDocument('trading',{...settings(),preparationWeightPercent:8},'fixture');
   const mixed=createOrder({customerName:'Jane',lines:[{id:'espresso-single',quantity:1},{id:'rump-350',quantity:1}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
   assert.equal(mixed.estimatedPrepMinutes,22);
+  resetDbForTests();
+  const fourSteaks=createOrder({customerName:'Jane',lines:[{id:'rump-350',quantity:4}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  assert.equal(fourSteaks.basketPrepMinutes,43);
+  assert.equal(fourSteaks.estimatedPrepMinutes,43);
+});
+
+test('new customer estimates include the live kitchen queue without inflating the preparing-stage target',()=>{
+  const first=createOrder({customerName:'One',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  const second=createOrder({customerName:'Two',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  const third=createOrder({customerName:'Three',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});
+  assert.equal(first.basketPrepMinutes,4);assert.equal(first.queueDelayMinutes,0);
+  assert.equal(second.basketPrepMinutes,4);assert.equal(second.queueDelayMinutes,0);
+  assert.equal(third.basketPrepMinutes,4);assert.equal(third.queueDelayMinutes,4);
+  assert.equal(third.estimatedPrepMinutes,8);
 });
 
 test('staff can track Yoco entry, preparation and fulfilment without losing the active order', () => {

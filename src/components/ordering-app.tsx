@@ -8,7 +8,7 @@ import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
 import { submissionKey, clearSubmission } from '@/lib/submission';
-import {weightedPrepMinutes} from '@/lib/preparation-estimates';
+import {basketPrepMinutes} from '@/lib/preparation-estimates';
 import {collectionSlots,deliveryLocationValue,formatCollectionTime,isBeforeDailyCutoff} from '@/lib/fulfilment';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
@@ -33,7 +33,7 @@ function timingLabel(order:TrackedOrder){
 }
 
 export function OrderingApp() {
-  const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean;paymentMode?:'live'|'sandbox'|'none'}|null>(null);
+  const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean;paymentMode?:'live'|'sandbox'|'none';queueDelayMinutes?:number}|null>(null);
   useEffect(()=>{const timer=setInterval(()=>{fetch('/api/store').then(r=>r.json()).then(setStore).catch(()=>{});},60000);return()=>clearInterval(timer);},[]);
   const [installHelp,setInstallHelp]=useState(false);
   const [payOnline,setPayOnline]=useState(false);
@@ -118,7 +118,9 @@ export function OrderingApp() {
   const foodTruckClosingTime=store?.settings.foodTruckClosingTime??'15:30';
   const orderClosingTime=hasFoodTruck?foodTruckClosingTime:(store?.settings.closingTime??'18:30');
   const foodTruckAvailable=!store?.settings.enforceHours||isBeforeDailyCutoff(foodTruckClosingTime,store?.settings.openDays??[1,2,3,4,5]);
-  const estimatedPrepMinutes=pricedCart.length?weightedPrepMinutes(Math.max(...pricedCart.map(line=>line.prepMinutes??10)),store?.settings.preparationWeightPercent??7):(store?.settings.preparationMinutes??20);
+  const basketPreparationMinutes=pricedCart.length?basketPrepMinutes(pricedCart,store?.settings.preparationWeightPercent??7,store?.settings.preparationParallelItems??2):(store?.settings.preparationMinutes??20);
+  const queueDelayMinutes=store?.queueDelayMinutes??0;
+  const estimatedPrepMinutes=basketPreparationMinutes+queueDelayMinutes;
   const collectionOptions=useMemo(()=>collectionSlots({prepMinutes:estimatedPrepMinutes,incrementMinutes:store?.settings.collectionSlotIncrementMinutes??15,openingTime:store?.settings.openingTime??'07:00',closingTime:orderClosingTime,openDays:store?.settings.openDays??[1,2,3,4,5]}),[estimatedPrepMinutes,store?.settings.collectionSlotIncrementMinutes,store?.settings.openingTime,orderClosingTime,store?.settings.openDays]);
   const collectionGroups=useMemo(()=>collectionOptions.reduce<{label:string;slots:typeof collectionOptions}[]>((groups,slot)=>{const group=groups.find(item=>item.label===slot.dateLabel);if(group)group.slots.push(slot);else groups.push({label:slot.dateLabel,slots:[slot]});return groups;},[]),[collectionOptions]);
   useEffect(()=>{if(!collectionOptions.some(option=>option.value===collection))setCollection(collectionOptions[0]?.value??'');},[collection,collectionOptions]);
@@ -262,7 +264,7 @@ export function OrderingApp() {
           {store?.settings.smsEnabled&&<label className="field-check"><input type="checkbox" checked={smsOptIn} onChange={e=>setSmsOptIn(e.target.checked)} disabled={!contactNumber.trim()}/> SMS me when my order is accepted and ready</label>}
           <label className="field-check"><input type="checkbox" checked={emailOptIn} onChange={e=>setEmailOptIn(e.target.checked)}/> Email me when my order is received and ready</label>
           <label className={`field-check${store?.settings.whatsappEnabled?'':' notification-unavailable'}`}><input type="checkbox" checked={whatsappOptIn} onChange={e=>setWhatsappOptIn(e.target.checked)} disabled={!contactNumber.trim()||!store?.settings.whatsappEnabled}/> {store?.settings.whatsappEnabled?'WhatsApp me when my order is accepted and ready':'WhatsApp notifications unavailable — setup pending'}</label>
-          {store&&<p className="small">Allow approximately {store.settings.preparationMinutes} minutes. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
+          {store&&<p className="small">This basket is estimated at approximately {estimatedPrepMinutes} minutes based on its items and quantities{queueDelayMinutes?`, including ${queueDelayMinutes} minutes for the current kitchen queue`:''}. {fulfillment==='delivery'&&store.settings.deliveryArea}</p>}
           {store?.onlinePayments?<fieldset className="payment-choice"><legend>Payment</legend>{store.paymentMode==='sandbox'&&<p className="sandbox-payment-warning"><strong>Test checkout only.</strong> No real payment will be taken. FOND staff will see this as a test payment.</p>}<label className="field-check"><input type="radio" name="payment" checked={payOnline} onChange={()=>setPayOnline(true)}/> {store.paymentMode==='sandbox'?'Use Yoco TEST checkout':'Pay securely now with Yoco'}</label>{fulfillment==='collection'&&<label className="field-check"><input type="radio" name="payment" checked={!payOnline} onChange={()=>setPayOnline(false)}/> Pay at FOND when collecting</label>}{fulfillment==='delivery'&&<p className="small">Delivery orders must be paid online before FOND can prepare them.</p>}</fieldset>:<p className="notice">Online payment is currently unavailable. Collection orders can be paid at FOND. Delivery ordering will open when secure online payment is enabled.</p>}
           <label className="field">Note (optional)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Allergy, desk number, special request…" /></label>
           <div className="total"><span>Total</span><strong>{money(total)}</strong></div>
