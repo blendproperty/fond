@@ -1,5 +1,17 @@
 # FOND ordering PWA
 
+## 2026-09-28 - Midpoint Cafe powered by fond identity
+
+Implementation: replaced the typed `fond.` wordmarks with the supplied `Midpoint Cafe powered by fond` identity across the customer header and footer, customer account, staff sign-in and live queue, admin sign-in and desktop/mobile navigation, messaging-studio email preview, generated transactional email and offline fallback. The exact supplied SVG is the shared responsive web asset; the supplied PNG is used in email because common Outlook clients do not reliably render SVG. The wide mark has surface-specific sizing so it remains readable without displacing customer controls or restoring the large tablet-header footprint. The service worker now precaches the branded offline asset and advances its cache version. Existing square PWA launcher icons remain purpose-built for square masks rather than distorting the supplied horizontal identity.
+
+Testing: `npm run typecheck`, all 94 unit/integration tests, the optimized Next.js production build and `git diff --check` passed. The complete Playwright suite passed 56/56 serially across desktop and mobile; its branding checks verify the exact shared SVG on the customer page, bounded 320 px header sizing, staff sign-in/queue identity, responsive admin identity and the absolute PNG URL/alt text in transactional email. The 320×658 customer page, 1180×820 staff board and desktop admin surface were visually inspected. A preceding parallel browser run exposed a small-screen admin-header omission and tight mobile sign-in spacing; both were corrected. The same run also reproduced the suite's known shared in-memory/service-worker timing interference, while the affected checks passed in focused reruns and the final complete serial run.
+
+Commit/push and merge: pending. No pull request is planned; this repository's established release path is a direct verified push to `origin/main` under Brett's standing production authorization.
+
+Deployment/configuration: pending exact-revision Verify FOND, isolated staging deployment and production promotion. No environment variable, provider credential, payment mode, notification setting, role, menu, order or production data is changed by this identity release.
+
+Live production verification: pending. After promotion, verify the cache-busted customer identity, staff identity, admin identity, public email logo asset and unchanged production health/payment state. Physical restaurant-tablet refresh remains operational UAT. Kiosk configuration, live Yoco, WhatsApp/provider, staff training and backup-restore gates remain open. No Asana tracker is in scope.
+
 ## 2026-09-28 - compact staff payment-test indicator
 
 Implementation: removed the large full-width Yoco sandbox warning from the staff order board and moved the safety state into the existing white header. The compact red `YOCO TEST · NO REAL MONEY` indicator remains unmistakable beside the live queue status, exposes the complete no-real-money/exclude-from-takings explanation to assistive technology and preserves all customer checkout warnings and payment safeguards. The title row can wrap cleanly at compact landscape widths without reintroducing a page-width warning panel.

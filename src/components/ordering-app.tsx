@@ -6,6 +6,7 @@ import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSe
 import {CategoryNavigation} from './category-navigation';
 import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
+import {BrandLogo} from './brand-logo';
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
@@ -196,7 +197,7 @@ export function OrderingApp() {
   const visibleMenu = menu.filter((item) => item.category === category && (category !== 'Food Truck' || foodTruckSection(item) === foodTruckMenu));
 
   return <>
-    <header className="header"><a href="/" className="wordmark" aria-label="FOND home">fond<span>.</span></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Collect from FOND</small></div></div><nav><a className="quiet" href="/account">My account</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
+    <header className="header"><a href="/" className="brand-link" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-header" /></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Collect from FOND</small></div></div><nav><a className="quiet" href="/account">My account</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
     <main id="main">
       <section className="hero"><img className="hero-bg" src="/images/fond-hero.jpg" alt="The FOND Eatery entrance at Midpoint Hub" loading="eager" /><div className="hero-copy"><p className="eyebrow"><span />YOUR EVERYDAY FOOD STOP</p><h1>{store?.content.headline??<>Good food.<br/>One less thing<br/><em>to think about.</em></>}</h1><p className="intro">{store?.content.intro??'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.'}</p><a className="primary hero-cta" href="#menu">Find your favourite <ArrowRight size={18} /></a><div className="hero-foot"><Leaf size={16} /> Freshly made <span>·</span><ShoppingBag size={16} /> Order ahead, pay on collection</div></div><span className="hero-photo-caption">FOND · MIDPOINT HUB</span></section>
       <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
@@ -215,7 +216,7 @@ export function OrderingApp() {
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
 
     </main>
-    <footer><a className="wordmark" href="/">fond.</a><span>Good food. Everyday.</span><span>Midpoint Hub</span>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
+    <footer><a className="brand-link" href="/" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><span>Midpoint Hub</span>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
     <button className="mobile-basket" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
     {panel && <div className="overlay" onClick={() => setPanel(null)}><section className="drawer" role="dialog" aria-modal="true" aria-label={panel === 'basket' ? 'Your basket' : 'Track your order'} onClick={(e) => e.stopPropagation()}>

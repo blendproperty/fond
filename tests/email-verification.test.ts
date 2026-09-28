@@ -46,6 +46,8 @@ test('controlled email test uses the configured sender without creating an accou
     assert.match(message?.html ?? '', /Your email details/);
     assert.match(message?.html ?? '', /account@example\.test/);
     assert.match(message?.html ?? '', /Order again from FOND/);
+    assert.match(message?.html ?? '', /https:\/\/fond\.mid-point\.co\.za\/brand\/midpoint-cafe-powered-by-fond\.png/);
+    assert.match(message?.html ?? '', /alt="Midpoint Cafe powered by fond"/);
   } finally { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; }
 });
 test('opted-in guest and verified account orders receive email while opted-out orders do not', async () => {

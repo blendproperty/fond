@@ -5,6 +5,7 @@ import { money, categories, type Category, type Meal, type Modifier } from '@/li
 
 import { ReportsDashboard } from './reports-dashboard';
 import { CustomersPanel,MarketingPanel,FinancePanel,SettingsPanel } from './management-panels';
+import {BrandLogo} from './brand-logo';
 
 type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
 
@@ -77,7 +78,7 @@ export function AdminPanel() {
     return (
       <div className="staff-lock admin-login">
         <form onSubmit={submitCode} className="admin-login-card">
-          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">ADMIN PORTAL</span></div>
+          <div className="admin-login-top"><BrandLogo className="brand-logo-login" /><span className="admin-login-badge">ADMIN PORTAL</span></div>
           <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
           <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
           <h1>Welcome back.</h1>
@@ -97,7 +98,7 @@ export function AdminPanel() {
   return (
     <div className="admin-shell">
       <nav className="admin-nav" aria-label="Admin sections">
-        <div className="admin-nav-brand">fond<span>.</span></div>
+        <div className="admin-nav-brand"><BrandLogo className="brand-logo-admin-nav" /></div>
         {NAV.map((n) => {
           const Icon = n.icon;
           return (
@@ -113,6 +114,7 @@ export function AdminPanel() {
       <div className="admin-main">
         <header className="staff-header">
           <div>
+            <BrandLogo className="brand-logo-admin-mobile" />
             <p className="eyebrow">FOND · ADMIN</p>
             <h1>{NAV.find((n) => n.key === tab)?.label}</h1>
           </div>

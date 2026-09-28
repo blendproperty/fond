@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import {BrandLogo} from './brand-logo';
 
 type User = { id: string; email: string; emailVerified: boolean };
 type Order = { reference: string;displayReference:string; status: string; createdAt: string; collectionTime: string; totalCents: number; lines: { name: string; quantity: number; subtotalCents: number }[]; payment: { paidCents: number } };
@@ -45,6 +46,7 @@ export function CustomerAccount() {
   }
   async function logout() { await fetch('/api/auth/logout', { method: 'POST' }); await refresh(); }
   return <main className="account-page" style={{ maxWidth: 760, margin: '3rem auto', padding: '0 1.5rem' }}>
+    <Link className="account-brand" href="/" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-account" /></Link>
     <Link href="/">← Back to menu</Link>
     <p className="eyebrow">FOND · YOUR ACCOUNT</p><h1>Your orders</h1>
     {loading ? <p>Loading…</p> : user ? <>

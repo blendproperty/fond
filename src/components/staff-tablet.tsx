@@ -4,6 +4,7 @@ import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, 
 import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
+import {BrandLogo} from './brand-logo';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
@@ -260,7 +261,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     return (
       <div className="staff-lock admin-login">
         <form onSubmit={submitCode} className="admin-login-card staff-login-card">
-          <div className="admin-login-top"><span className="admin-login-wordmark">fond<span>.</span></span><span className="admin-login-badge">{testEnvironment?'STAFF PORTAL · TEST':'STAFF PORTAL'}</span></div>
+          <div className="admin-login-top"><BrandLogo className="brand-logo-login" /><span className="admin-login-badge">{testEnvironment?'STAFF PORTAL · TEST':'STAFF PORTAL'}</span></div>
           <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
           <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
           <h1>Ready for service.</h1>
@@ -282,7 +283,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       {testEnvironment&&<div className="staff-test-banner" role="status">TEST ENVIRONMENT · ORDERS AND PAYMENTS HERE ARE NOT LIVE</div>}
       <header className="staff-header">
         <div>
-          <p className="eyebrow">FOND · MIDPOINT SERVICE</p>
+          <BrandLogo className="brand-logo-staff" />
           <div className="staff-title-row">
             <h1>{testEnvironment?'Test order board':'Live order board'}</h1>
             <span className={testEnvironment?'staff-live staff-live-test':'staff-live'}><i/> {testEnvironment?'Test':'Live'}</span>

@@ -1,6 +1,9 @@
 import {test,expect} from '@playwright/test';
 test('published food menu is visible with the new sections, items and prices',async({page})=>{
  await page.goto('/');
+ const brand=page.getByRole('img',{name:'Midpoint Cafe powered by fond'}).first();
+ await expect(brand).toBeVisible();
+ await expect(brand).toHaveAttribute('src','/brand/midpoint-cafe-powered-by-fond.svg');
  await expect(page.getByRole('tab',{name:'Buddha Bowls',exact:true})).toBeVisible();
  await page.getByRole('tab',{name:'Buddha Bowls',exact:true}).click();
  const goddess=page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Golden Goddess Bowl'})});
@@ -19,6 +22,9 @@ test('category arrows reveal hidden categories and installation instructions are
 test('customer PWA fits a narrow Android screen without scaled or clipped controls',async({page},testInfo)=>{
  await page.setViewportSize({width:320,height:658});
  await page.goto('/');
+ const logo=page.locator('.brand-logo-header');
+ await expect(logo).toBeVisible();
+ expect((await logo.boundingBox())?.width).toBeLessThanOrEqual(166);
  await expect(page.locator('.header .basket-button')).toBeHidden();
  await expect(page.getByRole('link',{name:'My account'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Track order'})).toBeVisible();

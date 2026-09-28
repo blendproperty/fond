@@ -86,6 +86,7 @@ test('offline navigation shows fallback without queuing orders',async({page,cont
 test('staff tablet requires the access code and shows the queue',async({page})=>{
  await page.goto('/staff');
  await expect(page.getByRole('heading',{name:'Ready for service.'})).toBeVisible();
+ await expect(page.locator('.brand-logo-login')).toBeVisible();
  await page.getByLabel('Sign in with a named account').check();
  await expect(page.getByLabel('Username')).toBeVisible();
  await expect(page.getByLabel('Password')).toBeVisible();
@@ -95,6 +96,7 @@ test('staff tablet requires the access code and shows the queue',async({page})=>
  await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE ?? '000000');
  await page.getByRole('button',{name:'Open order queue'}).click();
  await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();
+ await expect(page.locator('.brand-logo-staff')).toBeVisible();
  await page.route(/\/api\/staff\/orders\?query=/,route=>route.fulfill({json:{search:true,orders:[{id:'search-fixture',reference:'FOND-43E48401AA7044188B6DA071832E84AE',displayReference:'FOND-7K3P-9Q8R',customerName:'Search Customer',note:null,lines:[{id:'espresso-single',quantity:1,name:'Espresso (Single)'}],collectionTime:'As soon as possible',totalCents:3200,status:'completed',source:'customer',createdAt:'2026-09-22T09:00:00.000Z',updatedAt:'2026-09-22T09:20:00.000Z',fulfillment:'collection',contactNumber:'0821234567',company:null,building:null,posRequired:true,posRecordedAt:'2026-09-22T09:02:00.000Z',posReference:'Y-123',estimatedPrepMinutes:4,paymentMethod:'pay_at_collection',paymentRequired:false,payment:{paidCents:3200,paymentMethod:'cash',checkout:null}}]}}));
  await page.getByPlaceholder('Order number, name, mobile, company or building').fill('FOND-7K3P-9Q8R');
  await page.getByRole('button',{name:'Search',exact:true}).click();

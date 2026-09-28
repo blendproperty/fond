@@ -22,6 +22,7 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({
 
 const money = (cents: number) => `R ${(cents / 100).toFixed(2).replace('.', ',')}`;
 const publicUrl = () => (process.env.FOND_PUBLIC_URL ?? 'https://fond.mid-point.co.za').replace(/\/$/, '');
+const brandLogoUrl = () => `${publicUrl()}/brand/midpoint-cafe-powered-by-fond.png`;
 const localDate = (value: string) => new Intl.DateTimeFormat('en-ZA', {
   timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short',
 }).format(new Date(value));
@@ -61,7 +62,7 @@ function receiptLayout(input: {
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(input.preview)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.mist}"><tr><td align="center" style="padding:30px 12px">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:${BRAND.paper}">
-<tr><td align="center" style="padding:30px 24px 18px"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td width="52" height="52" align="center" valign="middle" bgcolor="${BRAND.green}" style="width:52px;height:52px;border-radius:12px;color:#ffffff;font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:52px;font-weight:700">fond<span style="color:${BRAND.aqua}">.</span></td></tr></table></td></tr>
+<tr><td align="center" style="padding:28px 24px 18px"><img src="${escapeHtml(brandLogoUrl())}" width="300" alt="Midpoint Cafe powered by fond" style="display:block;width:100%;max-width:300px;height:auto;border:0"></td></tr>
 <tr><td bgcolor="${statusBackground}" style="padding:${ready?'21px':'13px'} 22px;text-align:center">${ready?`<p style="margin:0 0 7px;color:${BRAND.aqua};font-size:10px;line-height:14px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase">ORDER READY</p>`:''}<p style="margin:0;color:${statusTitle};font-size:${ready?'19px':'15px'};line-height:${ready?'25px':'20px'};font-weight:800">${escapeHtml(input.title)}</p><p style="margin:4px 0 0;color:${statusDetail};font-size:10px;line-height:15px;font-weight:${ready?'700':'400'}">${escapeHtml(input.statusLine)}</p></td></tr>
 <tr><td style="padding:28px 30px 26px">${input.content}</td></tr>
 <tr><td bgcolor="${BRAND.aqua}" style="padding:22px 28px;text-align:center"><p style="margin:0 0 5px;color:${BRAND.ink};font-size:12px;line-height:17px;font-weight:800">Need help with your order?</p><p style="margin:0;color:${BRAND.ink};font-size:10px;line-height:16px">${escapeHtml(input.footer)}</p><p style="margin:8px 0 0"><a href="${escapeHtml(publicUrl())}" style="color:${BRAND.ink};font-size:10px;line-height:15px;font-weight:800">fond.mid-point.co.za</a></p></td></tr>
