@@ -27,7 +27,7 @@ export function CoffeeRewards(){
      {Array.from({length:10},(_,i)=><li key={i} className={i<punched?'is-punched':''} aria-label={`Coffee ${i+1}: ${i<punched?'collected':'still to collect'}`}><span className="punch-circle">{i<punched?<Check size={22} aria-hidden="true"/>:<Coffee size={27} aria-hidden="true"/>}</span><span className="punch-number">{String(i+1).padStart(2,'0')}</span></li>)}
     </ol>
     <div className={`ticket-free ${earnedReady?'is-unlocked':''}`}><Coffee size={36} aria-hidden="true"/><strong>{earnedReady?'FREE':'YOUR FREE COFFEE'}</strong><span>{earnedReady?'Your reward is ready below':`${data.stampsToNext} more ${data.stampsToNext===1?'coffee':'coffees'} to go`}</span></div>
-    <p className="ticket-progress">{earnedReady?'Next card: ':'}{data.stamps} / 10 stamps · {data.stampsToNext} coffees to your next reward</p>
+    <p className="ticket-progress">{earnedReady?'Next card: ':''}{data.stamps} / 10 stamps · {data.stampsToNext} coffees to your next reward</p>
     {earnedReady&&<p className="ticket-next">This card is complete. New purchases count towards your next card.</p>}
    </div>
    {data.environment==='test'&&<p className="reward-test-label">TEST CARD · Test stamps and codes cannot be used for live payments.</p>}
