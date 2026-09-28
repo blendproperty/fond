@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { isValidStaffToken, STAFF_COOKIE } from '@/lib/staff-auth';
 import { SubmissionConflictError, createOrder, listActiveOrders, searchOrders } from '@/lib/orders';
+import {syncCounterRefunds} from '@/lib/counter-rewards';
 import {syncYocoPos,yocoPosStatus} from '@/lib/yoco-pos';
 
 async function requireStaff() {
@@ -23,6 +24,7 @@ export async function GET(request:Request) {
   after(processNotifications);
   after(processRewardMessages);
   after(syncYocoPos);
+  after(syncCounterRefunds);
   const query=new URL(request.url).searchParams.get('query')?.trim();
   const orders=query?searchOrders({query,limit:50}):listActiveOrders();
   const pos=yocoPosStatus();

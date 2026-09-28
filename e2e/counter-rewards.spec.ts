@@ -1,0 +1,30 @@
+import {test,expect} from '@playwright/test';
+import QRCode from 'qrcode';
+test('staff receipt workflow previews, invalidates edits, records once and shows retry errors',async({page,request},info)=>{
+ expect((await request.post('/api/staff/counter-rewards',{data:{action:'award'}})).status()).toBe(401);
+ await page.goto('/staff');await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);await page.getByRole('button',{name:'Open order queue'}).click();
+ await expect(page.getByRole('button',{name:'Add coffee stamps',exact:true})).toBeVisible();
+ const staffCookie=(await page.context().cookies()).find(c=>c.name==='fond_staff')!;
+ expect((await page.request.get('/api/staff/counter-rewards',{headers:{Cookie:staffCookie.name+'='+staffCookie.value}})).status()).toBe(200);
+ expect((await page.request.post('/api/staff/counter-rewards',{headers:{Cookie:staffCookie.name+'='+staffCookie.value,Origin:'https://other.example'},data:{action:'award'}})).status()).toBe(403);
+ let calls=0;await page.route('**/api/staff/counter-rewards',r=>{if(r.request().method()==='GET')return r.fulfill({json:{enabled:true}});const b=r.request().postDataJSON();if(b.action==='preview')return r.fulfill({json:{memberCode:b.memberCode,number:b.number,date:b.date,email:'cu…@example.test',quantity:2,environment:'test',revision:1,yocoId:'sale-one',items:[{id:'line',name:'Cappuccino',quantity:2}]}});calls++;return r.fulfill({json:{quantity:2,alreadyAdded:false}});});
+ await page.getByRole('button',{name:'Add coffee stamps',exact:true}).click();const d=page.getByRole('dialog',{name:'Add coffee stamps'});await d.getByLabel('Customer membership number').fill('FOND-M-ABCDEF123456');await d.getByLabel('Yoco order number').fill('123');await d.getByRole('button',{name:'Check Yoco receipt'}).click();await expect(d.getByRole('heading',{name:'2 coffee stamps'})).toBeVisible();
+ await d.getByLabel('Yoco order number').fill('124');await expect(d.getByRole('button',{name:'Confirm and add stamps'})).toHaveCount(0);await d.getByRole('button',{name:'Check Yoco receipt'}).click();
+ await d.screenshot({path:info.outputPath('counter-staff-preview.png')});expect(await d.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+ await d.getByRole('button',{name:'Confirm and add stamps'}).click();await expect(d.getByRole('status')).toContainText('2 coffee stamps added');expect(calls).toBe(1);await expect(d.getByRole('button',{name:'Confirm and add stamps'})).toHaveCount(0);
+ await page.route('**/api/staff/counter-rewards',r=>r.fulfill({status:400,json:{message:'This Yoco sale has already been recorded.'}}));await d.getByRole('button',{name:'Check Yoco receipt'}).click();await expect(d.getByRole('alert')).toContainText('already been recorded');await page.keyboard.press('Escape');await expect(d).not.toBeVisible();
+});
+test('admin trial defaults paused and rollback requires a reason and explicit confirmation',async({page,request},info)=>{
+ expect((await request.get('/api/admin/counter-rewards')).status()).toBe(403);await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ const panel=page.locator('.counter-admin');await expect(panel).toContainText('Counter earning paused / setup required');await expect(panel.getByRole('button',{name:'Save items and enable counter trial'})).toBeDisabled();
+ const adminCookie=(await page.context().cookies()).find(c=>c.name==='fond_admin')!;
+ expect((await page.request.get('/api/admin/counter-rewards',{headers:{Cookie:adminCookie.name+'='+adminCookie.value}})).status()).toBe(200);
+ expect((await page.request.post('/api/admin/counter-rewards',{headers:{Cookie:adminCookie.name+'='+adminCookie.value,Origin:'https://other.example'},data:{action:'pause'}})).status()).toBe(403);
+ await panel.getByText('Roll back all counter stamps',{exact:true}).click();await expect(panel.getByRole('button',{name:'Roll back counter stamps',exact:true})).toBeDisabled();await panel.getByLabel('Reversal reason').fill('Isolated trial rollback test');await panel.getByLabel('Type ROLL BACK COUNTER').fill('ROLL BACK COUNTER');await panel.getByRole('button',{name:'Roll back counter stamps',exact:true}).click();await expect(panel.getByRole('status')).toContainText('0 counter entries reversed');await panel.screenshot({path:info.outputPath('counter-admin-rollback.png')});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+test('customer sees separate membership QR and code, portrait punches and accurate counter offer',async({page},info)=>{
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user:{id:'example',email:'customer@example.test',emailVerified:true}}}));await page.route('**/api/store',r=>r.fulfill({json:{counterRewards:true}}));const qr=await QRCode.toDataURL('FOND-M-ABCDEF123456');
+ await page.route('**/api/account/rewards',r=>r.fulfill({json:{verified:true,environment:'test',stamps:2,stampsToNext:8,rewards:[],membership:{code:'FOND-M-ABCDEF123456',enabled:true,qr},preferences:{}}}));
+ await page.goto('/rewards');const card=page.locator('.membership-card');await expect(card).toBeVisible();await expect(card.locator('code')).toHaveText('FOND-M-ABCDEF123456');expect(await card.locator('img').evaluate((el:HTMLImageElement)=>el.complete&&el.naturalWidth>0)).toBe(true);await expect(page.locator('.coffee-ticket')).toContainText('Buy 10 in the app or at FOND');await expect(page.getByRole('complementary',{name:'Coffee rewards promotion'})).toContainText('In the app or at FOND');await card.screenshot({path:info.outputPath('counter-membership-card.png')});await page.setViewportSize({width:320,height:740});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+

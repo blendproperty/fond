@@ -1,4 +1,5 @@
 'use client';
+import {CounterStamps} from './counter-rewards';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
@@ -293,7 +294,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           <button className="quiet" onClick={() => void alerts.enableNotifications()} disabled={alerts.permission === 'unsupported'}>{alerts.permission === 'granted' ? 'Notifications on' : alerts.permission === 'denied' ? 'Notifications blocked' : alerts.permission === 'unsupported' ? 'Notifications unavailable' : 'Allow notifications'}</button>
           <button className="quiet staff-sound-button" onClick={alerts.testSound}>{alerts.soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {alerts.soundEnabled && alerts.soundState === 'ready' ? 'Test sound' : 'Enable sound'}</button>
           {alerts.soundEnabled && <button className="quiet" onClick={alerts.mute}>Mute sound</button>}
-          <button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}>Redeem coffee</button>
+          <CounterStamps/><button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}>Redeem coffee</button>
           <button className="primary" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={18} /> Add order</button>
           <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
         </div>

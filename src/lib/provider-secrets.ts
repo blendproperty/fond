@@ -21,6 +21,7 @@ export function saveProviderSecret(name:ProviderName,value:string,actor:string){
  const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',vaultKey(),iv);cipher.setAAD(Buffer.from(name));const ciphertext=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);
  getDb().prepare('INSERT INTO provider_secrets VALUES (?,?,?,?,?) ON CONFLICT(name) DO UPDATE SET iv=excluded.iv,tag=excluded.tag,ciphertext=excluded.ciphertext,updated_at=excluded.updated_at').run(name,iv,cipher.getAuthTag(),ciphertext,new Date().toISOString());audit(actor,'provider-credential-replaced',name);
  if(name==='yoco-pos-key'){
+  getDb().prepare('UPDATE counter_reward_settings SET enabled=0,revision=revision+1 WHERE id=1').run();
   getDb().prepare("UPDATE app_documents SET value=json_set(value,'$.enabled',json('false'),'$.eftMappingVerified',json('false')),updated_at=? WHERE key='yoco-pos'").run(new Date().toISOString());
   getDb().prepare("UPDATE yoco_pos_sync_state SET lease=NULL,next_run=0,error=NULL,issues_json='[]' WHERE id=1").run();
  }

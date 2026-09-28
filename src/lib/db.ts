@@ -265,6 +265,21 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS loyalty_events (id TEXT PRIMARY KEY,subject TEXT NOT NULL,action TEXT NOT NULL,actor TEXT NOT NULL,detail TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS loyalty_messages (id TEXT PRIMARY KEY,reward_id TEXT NOT NULL,channel TEXT NOT NULL,recipient TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',provider_id TEXT,error TEXT,updated_at TEXT NOT NULL,UNIQUE(reward_id,channel));
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS loyalty_members (user_id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE);
+    CREATE TABLE IF NOT EXISTS counter_reward_settings (id INTEGER PRIMARY KEY CHECK(id=1),enabled INTEGER NOT NULL DEFAULT 0,revision INTEGER NOT NULL DEFAULT 0,batch TEXT NOT NULL,variants_json TEXT NOT NULL DEFAULT '[]');
+    INSERT OR IGNORE INTO counter_reward_settings (id,batch) VALUES (1,'initial');
+    CREATE TABLE IF NOT EXISTS counter_reward_sales (
+      id TEXT PRIMARY KEY,environment TEXT NOT NULL,yoco_id TEXT NOT NULL,order_number TEXT NOT NULL,sale_date TEXT NOT NULL,location_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,batch TEXT NOT NULL,quantity INTEGER NOT NULL,credited INTEGER NOT NULL,snapshot_json TEXT NOT NULL,
+      actor TEXT NOT NULL,created_at TEXT NOT NULL,reversed_at TEXT,reason TEXT,checked_at TEXT,check_error TEXT,
+      UNIQUE(environment,yoco_id)
+    );
+    CREATE TABLE IF NOT EXISTS counter_reward_sync (id INTEGER PRIMARY KEY CHECK(id=1),next_run INTEGER NOT NULL DEFAULT 0);
+    CREATE INDEX IF NOT EXISTS counter_reward_member ON counter_reward_sales(user_id,environment);
+    CREATE INDEX IF NOT EXISTS counter_reward_checks ON counter_reward_sales(environment,location_id,credited,checked_at);
+    INSERT OR IGNORE INTO counter_reward_sync (id) VALUES (1);
+  `);
   instance = db;
   return db;
 }

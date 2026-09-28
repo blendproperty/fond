@@ -28,7 +28,7 @@ export function yocoPosStatus(){
   const state=getDb().prepare('SELECT checked_at,error,issues_json FROM yoco_pos_sync_state WHERE id=1').get() as {checked_at:string|null;error:string|null;issues_json:string};
   return {config:yocoPosConfig(),configured:providerSecretStatus('yoco-pos-key'),lastChecked:state.checked_at,error:state.error,issues:JSON.parse(state.issues_json) as PosIssue[]};
 }
-async function readOrders(config:YocoPosConfig,params:URLSearchParams){
+export async function readOrders(config:YocoPosConfig,params:URLSearchParams){
   const key=providerSecret('yoco-pos-key');
   if(!key)throw new Error('Save the Yoco business API key in Settings first.');
   let response:Response;
