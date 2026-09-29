@@ -1,5 +1,6 @@
 'use client';
 import {CounterStamps} from './counter-rewards';
+import {CategoryNavigation} from './category-navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
 import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
@@ -467,10 +468,9 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
         </header>
         <div className="drawer-scroll">
           {rewardMode&&<p className="notice">Choose the customer's coffee, enter their code below and validate it. Adding the order reserves the code; collection completes redemption. Record the same discount in Yoco and add its reference before preparation. Counter purchases do not earn stamps.</p>}
-          <div className="tabs" role="tablist" aria-label="Menu category">
-            {categories.map((c) => (
-              <button className={c==='Food Truck'?'food-truck-tab':undefined} role="tab" aria-selected={category === c} key={c} onClick={() => setCategory(c)}>{c==='Food Truck'&&<Truck size={16} aria-hidden="true"/>}{c}</button>
-            ))}
+          <div className="staff-menu-navigation">
+            <label className="field">Jump to category<select value={category} onChange={event=>setCategory(event.target.value as Category)}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
+            <CategoryNavigation value={category} onChange={setCategory} revealSelection/>
           </div>
           {category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
           <div className="staff-item-grid" role="tabpanel" aria-label={category}>
