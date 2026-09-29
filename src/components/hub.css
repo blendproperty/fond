@@ -101,3 +101,7 @@
 @media(max-width:700px){.hub-wide .hub-actions .hub-original-action,.hub-wide .hub-actions .hub-original-padel{width:110px;height:110px}.hub-wide .hub-brand-badge{width:100px;height:100px}}
 @media(max-width:400px){.hub-wide .hub-actions .hub-original-action,.hub-wide .hub-actions .hub-original-padel{width:92px;height:92px}}
 .hub-wide .hub-brand-badge{background:#003b30}
+
+/* Stacked Midpoint HUB lockup follows the physical building signage. */
+.hub-top img{width:105px;height:70px;max-height:none}
+@media(max-width:700px){.hub-top img{width:90px;height:60px}}

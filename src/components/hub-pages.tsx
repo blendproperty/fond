@@ -6,7 +6,7 @@ import './hub.css';
 export function HubShell({children,service,wide=false}:{children:React.ReactNode;service?:HubService;wide?:boolean}) {
   return <main className={`hub-shell ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''}`}>
     <header className="hub-top">
-      <Link href="/hub" aria-label="Midpoint Hub home"><img src="/hub-assets/hub-logo.png" alt="Midpoint Hub"/></Link>
+      <Link href="/hub" aria-label="Midpoint Hub home"><img src="/hub-assets/hub-logo-stacked.svg" width="180" height="120" alt="Midpoint Hub"/></Link>
       <nav aria-label="Hub navigation"><Link href="/fond">FOND</Link><Link href="/gym" aria-current={service==='gym'?'page':undefined}>Gym</Link><Link href="/padel" aria-current={service==='padel'?'page':undefined}>Padel</Link><Link href="/functions">Functions</Link></nav>
       <span className="hub-header-place">MIDRAND, SOUTH AFRICA</span>
     </header>

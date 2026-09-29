@@ -1,3 +1,9 @@
+## 2026-09-29 - Building-signage Hub logo
+
+Implementation: replaced the shared Hub header's horizontal logo with a transparent vector lockup matching Brett's building photo: original Midpoint symbol/wordmark above large uppercase HUB. Original vector outlines were reused; HUB uses outlined letters so rendering does not depend on installed fonts. Responsive dimensions are 105x70 desktop and 90x60 mobile. Existing original assets and FOND identity preserved.
+
+Testing: production build/TypeScript and all four focused desktop/mobile Hub checks passed; desktop and 390px phone header visually inspected. Commit/push: started from clean main d5303a5 matching origin/main; implementation and context pending commit/push. Merge: direct-main bounded asset correction. Deployment/configuration: exact-revision CI, staging and production pending; no settings changed. Live production verification: pending. Existing staff/provider/data/privacy/UAT/training/payment/rewards gates remain open.
+
 ## 2026-09-29 - Direct Midpoint Padel venue link
 
 Implementation: Brett supplied https://playtomic.com/clubs/midpoint-padel; changed only the Book a court destination to that exact venue URL and updated the existing navigation assertion. Wording and artwork retained.
