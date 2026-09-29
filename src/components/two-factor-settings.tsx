@@ -2,14 +2,14 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 
-export function TwoFactorSettings() {
+export function TwoFactorSettings({endpoint='/api/admin/two-factor'}:{endpoint?:string}={}) {
   const [named, setNamed] = useState(false), [active, setActive] = useState(false);
   const [secret, setSecret] = useState(''), [uri, setUri] = useState(''), [code, setCode] = useState('');
   const [showKey, setShowKey] = useState(false), [qrError, setQrError] = useState(false);
   const [recovery, setRecovery] = useState<string[]>([]), [message, setMessage] = useState('');
   const canvas = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => { fetch('/api/admin/two-factor', { cache: 'no-store' }).then(async response => { setNamed(response.ok); if (response.ok) setActive((await response.json()).active); }).catch(() => {}); }, []);
+  useEffect(() => { fetch(endpoint, { cache: 'no-store' }).then(async response => { setNamed(response.ok); if (response.ok) setActive((await response.json()).active); }).catch(() => {}); }, [endpoint]);
   useEffect(() => {
     if (!uri || !canvas.current) return;
     let cancelled = false;
@@ -20,7 +20,7 @@ export function TwoFactorSettings() {
   }, [uri]);
 
   async function action(body: Record<string, string>) {
-    const response = await fetch('/api/admin/two-factor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const result = await response.json();
     if (!response.ok) { setMessage(result.message ?? 'Could not enable 2FA.'); return; }
     if (body.action === 'begin') {

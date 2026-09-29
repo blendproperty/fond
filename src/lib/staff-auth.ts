@@ -31,7 +31,7 @@ export function checkStaffCode(candidate: string): string | null {
 
 export function isValidStaffToken(token: string | undefined | null): boolean {
   if (!token) return false;
-  if (token.startsWith('team_')) return !!teamSession(token);
+  if (token.startsWith('team_')) return ['staff','manager','owner','super-admin'].includes(teamSession(token)?.role ?? '');
   let expected: string;
   try {
     expected = tokenFor(requiredCode());

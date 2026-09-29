@@ -25,6 +25,13 @@ services:
       - 'traefik.http.routers.fond.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}'
       - 'traefik.http.routers.fond.tls=true'
       - 'traefik.http.routers.fond.tls.certresolver=${TRAEFIK_CERTRESOLVER:?Set existing TLS resolver}'
+      # Dedicated aliases preserve the legacy API callbacks during cutover.
+      # Leave these equal to FOND_HOST until DNS and the Hub release are ready.
+      - 'traefik.http.routers.fond-alias.rule=Host(`${FOND_ALIAS_HOST:-${FOND_HOST}}`) || Host(`${FOND_WWW_HOST:-${FOND_HOST}}`)'
+      - 'traefik.http.routers.fond-alias.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}'
+      - 'traefik.http.routers.fond-alias.tls=true'
+      - 'traefik.http.routers.fond-alias.tls.certresolver=${TRAEFIK_CERTRESOLVER:?Set existing TLS resolver}'
+      - 'traefik.http.routers.fond-alias.service=fond'
       - 'traefik.http.services.fond.loadbalancer.server.port=3000'
 networks:
   proxy:

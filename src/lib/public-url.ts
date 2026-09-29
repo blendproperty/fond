@@ -10,3 +10,16 @@ export function publicBaseUrl(){
   // Traefik label interpolation and does not inject it into the container.
   return 'https://fond.mid-point.co.za';
 }
+
+// During the domain transition existing provider registrations stay on the
+// old routed hostname. New customer links use FOND_PUBLIC_URL independently.
+export function callbackBaseUrl(){
+  const configured=process.env.FOND_CALLBACK_URL;
+  if(configured){
+    const url=new URL(configured);
+    if(url.protocol!=='https:'||!['fond.mid-point.co.za','midpointhub.com','fond-test.mid-point.co.za'].includes(url.hostname)||url.username||url.password)throw new Error('Invalid provider callback URL.');
+    return url.origin;
+  }
+  return publicBaseUrl();
+}
+export function orderingUrl(){return `${publicBaseUrl()}${process.env.MIDPOINT_HUB_ENABLED==='true'?'/fond':'/'}`;}

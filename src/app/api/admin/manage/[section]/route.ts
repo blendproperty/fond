@@ -22,7 +22,7 @@ export async function GET(request:Request,context:Context){
   try{
     if(section==='settings'){
       const currentRole=await role(),oversight=currentRole==='super-admin'||currentRole==='owner';
-      const team=currentRole==='super-admin'?listTeam():currentRole==='owner'?(listTeam() as {role:string}[]).filter(member=>['manager','staff'].includes(member.role)):[];
+      const team=currentRole==='super-admin'?listTeam():currentRole==='owner'?(listTeam() as {role:string}[]).filter(member=>['manager','staff','gym','padel'].includes(member.role)):[];
       return Response.json({settings:settings(),team,role:currentRole,providers:{yoco:onlinePaymentsConfigured(),whatsapp:whatsappConfigured(),sms:smsConfigured()},changes:oversight?listAdminChanges():[],audit:oversight?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
     }
     if(section==='customers'){
@@ -54,10 +54,10 @@ export async function POST(request:Request,context:Context){
       const currentRole=await role();
       if(!['super-admin','owner'].includes(currentRole??''))return Response.json({message:'Owner or super admin access required.'},{status:403,headers});
       if(currentRole==='owner'){
-        if(!['manager','staff'].includes(String(b.role)))return Response.json({message:'Only a super admin can create or edit owner and super admin accounts.'},{status:403,headers});
+        if(!['manager','staff','gym','padel'].includes(String(b.role)))return Response.json({message:'Only a super admin can create or edit owner and super admin accounts.'},{status:403,headers});
         if(typeof b.id==='string'){
           const target=getDb().prepare('SELECT role FROM team_members WHERE id=?').get(b.id) as {role:string}|undefined;
-          if(target&&!['manager','staff'].includes(target.role))return Response.json({message:'Only a super admin can edit this account.'},{status:403,headers});
+          if(target&&!['manager','staff','gym','padel'].includes(target.role))return Response.json({message:'Only a super admin can edit this account.'},{status:403,headers});
         }
       }
       saveMember(b,currentRole==='super-admin'?(who==='shared-admin'?who:who.replace('team:','super:')):who);

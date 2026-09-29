@@ -1,0 +1,52 @@
+name: Manage Midpoint Hub Domain
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Exact deployed production revision
+        required: true
+        type: string
+      mode:
+        description: Inspect, add aliases, enable Hub after DNS/TLS, or restore old home
+        required: true
+        type: choice
+        options: [inspect, prepare, cutover, rollback]
+permissions:
+  contents: read
+concurrency:
+  group: fond-production
+  cancel-in-progress: false
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate requested revision
+        env:
+          EXPECTED_SHA: ${{ inputs.sha }}
+        run: '[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]'
+      - name: Apply bounded routing change to the existing container
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          EXPECTED_SHA: ${{ inputs.sha }}
+          DOMAIN_MODE: ${{ inputs.mode }}
+        with:
+          envs: EXPECTED_SHA,DOMAIN_MODE
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/fond
+            test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+            test -f scripts/configure-hub-domain.py
+            python3 scripts/configure-hub-domain.py "$DOMAIN_MODE"
+            if [ "$DOMAIN_MODE" != inspect ]; then
+              docker compose config --quiet
+              docker compose up -d --no-build
+              for attempt in 1 2 3 4 5 6; do
+                if docker compose exec -T fond wget -qO- http://127.0.0.1:3000/api/health; then break; fi
+                if [ "$attempt" = 6 ]; then exit 1; fi
+                sleep 5
+              done
+            fi
+            docker compose ps
