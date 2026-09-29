@@ -13,7 +13,7 @@ test('Hub destinations, real empty calendars and forms work on desktop and phone
   await page.route('**/api/hub/requests',route=>{const body=route.request().postDataJSON();expect(body.identity).toBe('SYNTHETIC-ONLY');expect(body.service).toBe('gym');expect(route.request().headers()['idempotency-key']).toBeTruthy();return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({id:'fixture-request'})});});
   await page.getByRole('button',{name:'Send signup request'}).click();await expect(page.getByText('REQUEST RECEIVED',{exact:true})).toBeVisible();await expect(page.getByLabel('ID or passport number')).toHaveCount(0);
   await page.goto('/gym/classes');await expect(page.getByText('The next dates are on their way.')).toBeVisible();await page.getByRole('button',{name:'Next month'}).click();
-  await page.goto('/padel');await expect(page.getByRole('link',{name:'Midpoint Padel Book a court',exact:true})).toHaveAttribute('href','https://playtomic.com/');
+  await page.goto('/padel');await expect(page.getByRole('link',{name:'Midpoint Padel Book a court',exact:true})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');
   for(const path of ['/hub','/gym','/gym/signup','/gym/classes','/gym/events','/padel','/padel/signup','/padel/events','/functions','/hub/manage']){
     await page.goto(path);await expect(page.locator('.hub-shell')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   }

@@ -1,3 +1,8 @@
+## 2026-09-29 - Direct Midpoint Padel venue link
+
+Implementation: Brett supplied https://playtomic.com/clubs/midpoint-padel; changed only the Book a court destination to that exact venue URL and updated the existing navigation assertion. Wording and artwork retained.
+
+Testing: production build/TypeScript and four focused desktop/mobile Hub checks passed. Commit/push: clean main matched origin/main fa33fa2 before the bounded edit; implementation/context commit pending. Merge: direct main correction, no PR. Deployment/configuration: awaiting exact-revision CI and staging/production promotion. Live verification: pending. This supersedes the generic Playtomic destination; existing operational gates remain open.
 ## 2026-09-29 - Padel card links directly to Playtomic
 
 Implementation: at Brett's explicit request, only the Padel court action now reads Book a court / Find your next game on Playtomic and links to https://playtomic.com/ in a new tab. It no longer depends on the venue setting or falls back to email. Other cards, artwork, calendar and contact sections are unchanged. Updated the existing desktop/mobile navigation assertion to the requested destination.
