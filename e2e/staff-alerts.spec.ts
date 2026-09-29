@@ -114,14 +114,27 @@ test('notification switch persists independently from sound and suppresses new a
 
 test('tablet toolbar keeps settings and actions readable at tablet and phone widths',async({page},info)=>{
  await tablet(page);
- for(const width of [1886,1280,1024,768,390,320]){
+ for(const width of [1886,1280,1100,1024,960,768,390,320]){
   await page.setViewportSize({width,height:800});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   for(const button of await page.locator('.staff-header-actions>button,.staff-coffee-actions>button').all()){
    const box=await button.boundingBox();expect(box!.height).toBeGreaterThanOrEqual(48);expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width);
   }
   const header=await page.locator('.staff-header').boundingBox(),actions=await page.locator('.staff-header-actions').boundingBox();expect(actions!.y).toBeGreaterThanOrEqual(header!.y+header!.height-1);
-  const logo=await page.locator('.staff-header-logo').boundingBox();expect(Math.abs(logo!.x+logo!.width/2-width/2)).toBeLessThan(1);expect(logo!.width).toBeGreaterThanOrEqual(280);
+  const logo=await page.locator('.staff-header-logo').boundingBox();expect(Math.abs(logo!.x+logo!.width/2-width/2)).toBeLessThan(1);expect(logo!.width).toBeGreaterThanOrEqual(width===960?240:280);
+  const badge=await page.locator('.staff-payment-mode').boundingBox();
+  await expect(page.locator('.staff-header .staff-payment-mode')).toHaveCount(0);
+  if(width>=960){
+   const identity=await page.locator('.staff-header-identity').boundingBox(),settings=await page.locator('.staff-device-controls').boundingBox();
+   expect(identity!.x+identity!.width).toBeLessThanOrEqual(logo!.x);
+   expect(logo!.x+logo!.width).toBeLessThanOrEqual(settings!.x);
+   for(const box of [identity!,settings!])expect(Math.abs(box.y+box.height/2-(logo!.y+logo!.height/2))).toBeLessThan(1);
+   expect(header!.height).toBeLessThanOrEqual(120);
+   const find=await page.locator('.staff-find-button').boundingBox(),earn=await page.locator('.staff-earn-coffee').boundingBox();
+   expect(badge!.x).toBeGreaterThanOrEqual(find!.x+find!.width);
+   expect(badge!.x+badge!.width).toBeLessThanOrEqual(earn!.x);
+   expect(Math.abs(badge!.y+badge!.height/2-(find!.y+find!.height/2))).toBeLessThan(1);
+  }
   if(width===1886||width===1280||width===1024||width===390)await page.screenshot({path:info.outputPath(`staff-toolbar-${width}.png`)});
  }
 });

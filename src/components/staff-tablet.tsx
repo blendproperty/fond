@@ -286,7 +286,6 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           <div className="staff-title-row">
             <h1>{testEnvironment?'Test order board':'Live order board'}</h1>
             <span className={testEnvironment?'staff-live staff-live-test':'staff-live'}><i/> {testEnvironment?'Test':'Live'}</span>
-            {paymentMode==='sandbox'&&<span className="staff-payment-mode" role="status" aria-label="Yoco test mode. No real money is charged. Exclude test orders from live takings." title="Test payments only. No real money is charged. Exclude these orders from live takings."><strong>YOCO TEST</strong><span>NO REAL MONEY</span></span>}
           </div>
           <p className="staff-sync">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}` : 'Connecting'} · refreshes every 5 seconds</p>
           {queueError && <p role="alert" className="staff-connection-error">{queueError}</p>}
@@ -306,6 +305,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       </header>
       <div className="staff-header-actions" aria-label="Order actions">
         <button className="outline staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={19}/> Find order</button>
+        {paymentMode==='sandbox'&&<span className="staff-payment-mode" role="status" aria-label="Yoco test mode. No real money is charged. Exclude test orders from live takings." title="Test payments only. No real money is charged. Exclude these orders from live takings."><strong>YOCO TEST</strong><span>NO REAL MONEY</span></span>}
         <div className="staff-coffee-actions"><CounterStamps/><button className="outline staff-redeem-coffee" onClick={()=>{setCounterReward(true);setManualOpen(true);}}><Gift size={19}/> Redeem coffee</button></div>
         <button className="primary staff-add-order" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={21} /> Add order</button>
       </div>
