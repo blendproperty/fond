@@ -1,3 +1,9 @@
+## 2026-09-29 - Functions venue-page redesign
+
+Implementation: expanded the sparse Functions page into a wide photographic venue page using existing real Midpoint images, an editorial hero, three gathering ideas, FOND/padel context and a dedicated Michelle enquiry section. The email link includes optional date, guest-count and occasion prompts; no message is sent automatically. Availability, catering, pricing and court arrangements remain team-confirmed; no capacities, packages or prices invented.
+
+Testing: production build/TypeScript and four focused desktop/mobile Hub checks passed. Visually inspected desktop hero, 390px mobile layout and enquiry section; hero anchor reaches the enquiry. Commit/push: began from clean main c912534 matching origin/main; implementation/context commit pending. Merge: bounded direct-main page refinement. Deployment/configuration: CI, staging and production pending, no settings changed. Live verification: pending. All prior staff/provider/data/privacy/UAT/training/payment/rewards gates remain open.
+
 ## 2026-09-29 - Building-signage Hub logo
 
 Implementation: replaced the shared Hub header's horizontal logo with a transparent vector lockup matching Brett's building photo: original Midpoint symbol/wordmark above large uppercase HUB. Original vector outlines were reused; HUB uses outlined letters so rendering does not depend on installed fonts. Responsive dimensions are 105x70 desktop and 90x60 mobile. Existing original assets and FOND identity preserved.
