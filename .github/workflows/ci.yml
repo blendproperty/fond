@@ -14,6 +14,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: python3 -m unittest discover -s tests -p test_hub_domain.py
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
@@ -22,4 +23,5 @@ jobs:
           FOND_ADMIN_CODE: ci-admin-code
           FOND_DB_PATH: ':memory:'
       - run: npm run test:practice
+      - run: npx playwright test --config playwright.hub.config.ts
       - run: docker build -t fond:ci .

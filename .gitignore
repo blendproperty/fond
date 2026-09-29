@@ -10,3 +10,6 @@ graphify-out/
 
 .coffee-practice-*/
 practice-results/
+hub-results/
+__pycache__/
+debug.log

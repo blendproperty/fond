@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (body.username) {
       if (body.password.length > 128) return NextResponse.json({message:'Invalid credentials.'},{status:400});
       const result=loginMember(body.username,body.password,typeof body.twoFactorCode==='string'?body.twoFactorCode:undefined);
-      token=result?.token ?? null;
+      token=result && ['staff','manager','owner','super-admin'].includes(result.role) ? result.token : null;
     } else { token = checkStaffCode(body.code); }
   } catch {
     return NextResponse.json({ code: 'NOT_CONFIGURED', message: 'Staff access has not been configured on this server (FOND_STAFF_CODE is unset).' }, { status: 503 });

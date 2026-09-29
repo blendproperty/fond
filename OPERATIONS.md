@@ -1,5 +1,8 @@
 # FOND operating handover
 
+Midpoint Hub domain/routing, department accounts, calendars and signup handling:
+see [Midpoint migration and handover](docs/MIDPOINT_DOMAIN_MIGRATION.md).
+
 ## Release environments and tablet installation
 
 `fond-test.mid-point.co.za` is the isolated UAT environment and `fond.mid-point.co.za` is production. They run the same application code but retain separate databases, orders, sessions and provider configuration. Every successful push to `main` deploys the exact verified revision to staging only. Production promotion is a separate `Promote FOND Production` workflow and requires the full commit SHA; it refuses a revision that has no successful staging deployment.

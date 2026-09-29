@@ -1,7 +1,7 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {document} from './management';
 import {providerSecret} from './provider-secrets';
-import {publicBaseUrl} from './public-url';
+import {callbackBaseUrl} from './public-url';
 import {renderMessageText,type SmsMessageKey} from './message-template-config';
 import {publishedMessageTemplates} from './message-templates';
 
@@ -28,7 +28,7 @@ export async function sendSmsText(toE164:string,text:string,statusCallback=false
  if(!smsConfigured())return {sent:false,reason:'NOT_CONFIGURED'} as const;
  const config=smsConfig(),token=providerSecret('twilio-auth-token')!;
  const body=new URLSearchParams({From:config.sender,To:toE164,Body:text});
- if(statusCallback)body.set('StatusCallback',`${publicBaseUrl()}/api/webhooks/twilio/sms`);
+ if(statusCallback)body.set('StatusCallback',`${callbackBaseUrl()}/api/webhooks/twilio/sms`);
  try{
   const response=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Authorization:`Basic ${Buffer.from(`${config.accountSid}:${token}`).toString('base64')}`,'Content-Type':'application/x-www-form-urlencoded'},body});
   const data=await response.json().catch(()=>({})) as {sid?:string;status?:string;message?:string;code?:number};

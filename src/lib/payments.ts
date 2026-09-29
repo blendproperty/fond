@@ -3,10 +3,10 @@ import { createHmac,timingSafeEqual,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { settings } from './management';
 import {providerSecret,saveProviderSecret} from './provider-secrets';
-import {publicBaseUrl} from './public-url';
+import {publicBaseUrl,orderingUrl} from './public-url';
 const yocoKey=()=>providerSecret('yoco-secret')??process.env.YOCO_SECRET_KEY;
 const webhookKey=()=>providerSecret('yoco-webhook')??process.env.YOCO_WEBHOOK_SECRET;
-const SANDBOX_CUSTOMER_HOSTS=new Set(['fond-test.mid-point.co.za','fond.mid-point.co.za']);
+const SANDBOX_CUSTOMER_HOSTS=new Set(['fond-test.mid-point.co.za','fond.mid-point.co.za','midpointhub.com']);
 export function onlinePaymentsConfigured(){
   try {
     const key=yocoKey();
@@ -67,7 +67,7 @@ export async function createCheckout(reference:string,options:{allowSandbox?:boo
   db.prepare("INSERT OR IGNORE INTO yoco_checkouts VALUES (?,NULL,NULL,'creating',?)").run(order.id,new Date().toISOString());
   const response=await fetch('https://payments.yoco.com/api/checkouts',{
     method:'POST',headers:{Authorization:`Bearer ${yocoKey()}`,'Content-Type':'application/json','Idempotency-Key':order.id},signal:AbortSignal.timeout(20000),
-    body:JSON.stringify({amount:order.total_cents,currency:'ZAR',metadata:{fondOrderId:order.id},externalId:order.id,successUrl:`${base.origin}/?payment=return&reference=${encodeURIComponent(reference)}`,cancelUrl:`${base.origin}/?payment=cancelled&reference=${encodeURIComponent(reference)}`,failureUrl:`${base.origin}/?payment=failed&reference=${encodeURIComponent(reference)}`})
+    body:JSON.stringify({amount:order.total_cents,currency:'ZAR',metadata:{fondOrderId:order.id},externalId:order.id,successUrl:`${orderingUrl()}?payment=return&reference=${encodeURIComponent(reference)}`,cancelUrl:`${orderingUrl()}?payment=cancelled&reference=${encodeURIComponent(reference)}`,failureUrl:`${orderingUrl()}?payment=failed&reference=${encodeURIComponent(reference)}`})
   });
   if(!response.ok)throw new Error('Yoco could not start checkout. Retry the same order or contact FOND.');
   const result=await response.json();const url=new URL(result.redirectUrl);
