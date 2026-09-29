@@ -181,6 +181,10 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS team_two_factor (member_id TEXT PRIMARY KEY, iv BLOB NOT NULL, tag BLOB NOT NULL, ciphertext BLOB NOT NULL, active INTEGER NOT NULL DEFAULT 0, recovery_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_sessions (token_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL, expires_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS customer_two_factor (user_id TEXT PRIMARY KEY REFERENCES users(id), channel TEXT NOT NULL, phone TEXT, recovery_json TEXT NOT NULL, version TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS customer_auth_challenges (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), purpose TEXT NOT NULL, channel TEXT NOT NULL, destination TEXT NOT NULL, code_hash TEXT NOT NULL, state_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, expires_at INTEGER NOT NULL, ready INTEGER NOT NULL DEFAULT 0);
+    CREATE INDEX IF NOT EXISTS customer_auth_challenge_user ON customer_auth_challenges(user_id,purpose);
+    CREATE TABLE IF NOT EXISTS customer_auth_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE, email TEXT, company TEXT, notes TEXT NOT NULL DEFAULT '', marketing_consent INTEGER NOT NULL DEFAULT 0, consent_note TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS admin_events (id TEXT PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS admin_change_versions (

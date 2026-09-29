@@ -5,6 +5,12 @@ import {formatCollectionTime} from './fulfilment';
 
 export type EmailMessage = { subject: string; text: string; html: string };
 
+export function buildAccountSecurityEmail(code:string,purpose:'login'|'reset'|'enable'|'disable'):EmailMessage{
+ const action={login:'Sign in to FOND',reset:'Reset your FOND password',enable:'Enable two-factor sign-in',disable:'Turn off two-factor sign-in'}[purpose];
+ const text=`${action}\n\nYour code is ${code}. It expires in 10 minutes. Enter it only in the FOND app. Never share this code. If you did not request this, ignore this message.\n\n${publicUrl()}/account`;
+ return {subject:action,text,html:receiptLayout({preview:action,title:action,statusLine:'Your account security code',content:`<p style="text-align:center;font-size:32px;letter-spacing:8px;font-weight:bold">${escapeHtml(code)}</p><p>This code expires in 10 minutes. Enter it only in the FOND app. Never share it. If you did not request this, ignore this message.</p>`,footer:'FOND account security. This is not a marketing message.'})};
+}
+
 const BRAND = {
   ink: '#102f2a',
   green: '#173f37',

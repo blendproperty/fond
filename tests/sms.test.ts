@@ -10,7 +10,7 @@ import {sendSmsNotification,smsBody,smsConfigured,validateSmsConfig,verifyTwilio
 
 process.env.FOND_DB_PATH=':memory:';
 process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';
-beforeEach(()=>{resetDbForTests();process.env.FOND_CREDENTIALS_KEY='f'.repeat(64);});
+beforeEach(()=>{resetDbForTests();process.env.FOND_CREDENTIALS_KEY='f'.repeat(64);saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false},'fixture');});
 
 test('SMS validates the FOND sender and sends concise Twilio messages with a delivery callback',async()=>{
  const config={accountSid:`AC${'a'.repeat(32)}`,sender:'+27600928520'};

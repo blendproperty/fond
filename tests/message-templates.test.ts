@@ -1,7 +1,7 @@
 import {beforeEach,test} from 'node:test';
 import assert from 'node:assert/strict';
 import {resetDbForTests} from '../src/lib/db';
-import {saveDocument} from '../src/lib/management';
+import {saveDocument,DEFAULT_SETTINGS} from '../src/lib/management';
 import {buildOrderEmail} from '../src/lib/email-template';
 import {ACTIVE_EMAIL_MESSAGE_KEYS,DEFAULT_MESSAGE_TEMPLATES,renderMessageText,validateMessageTemplates,type MessageTemplateConfig} from '../src/lib/message-template-config';
 import {createOrder} from '../src/lib/orders';
@@ -10,7 +10,7 @@ import {smsBody} from '../src/lib/sms';
 process.env.FOND_DB_PATH=':memory:';
 process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';
 const copy=()=>JSON.parse(JSON.stringify(DEFAULT_MESSAGE_TEMPLATES)) as MessageTemplateConfig;
-beforeEach(resetDbForTests);
+beforeEach(()=>{resetDbForTests();saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false},'fixture');});
 
 test('message templates allow known placeholders and reject ambiguous or unsafe content',()=>{
  const valid=validateMessageTemplates(copy());

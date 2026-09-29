@@ -17,7 +17,7 @@ const config:YocoPosConfig={enabled:true,environment:'sandbox',locationId:'resta
 beforeEach(()=>{
   process.env.FOND_DB_PATH=':memory:';process.env.FOND_CREDENTIALS_KEY='a'.repeat(64);
   process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';
-  resetDbForTests();
+  resetDbForTests();saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false},'fixture');
 });
 afterEach(()=>{globalThis.fetch=originalFetch;resetDbForTests();delete process.env.FOND_PUBLIC_URL;delete process.env.FOND_CREDENTIALS_KEY;});
 function makeOrder(submissionKey?:string){return createOrder({customerName:'POS sync test',source:'staff',contactNumber:'0821234567',collectionTime:'ASAP',lines:[{id:'espresso-single',quantity:1}],submissionKey});}
@@ -48,7 +48,7 @@ test('six-digit staff numbers are unique, stable on retry, searchable only by st
 test('existing orders receive a number once and retain both old customer references after reopening',()=>{
   const folder=mkdtempSync(join(tmpdir(),'fond-staff-number-'));
   try{
-    resetDbForTests();process.env.FOND_DB_PATH=join(folder,'migration.sqlite');
+    resetDbForTests();process.env.FOND_DB_PATH=join(folder,'migration.sqlite');saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false},'fixture');
     const a=makeOrder(),b=makeOrder();getDb().prepare('UPDATE orders SET staff_number=NULL WHERE id=?').run(b.id);
     resetDbForTests();const first=getOrderByReference(a.reference)!,migrated=getOrderByReference(b.reference)!;
     assert.equal(first.staffNumber,a.staffNumber);assert.match(migrated.staffNumber,/^[1-9]\d{5}$/);assert.notEqual(migrated.staffNumber,a.staffNumber);
