@@ -149,7 +149,7 @@ test('staff landscape tablet has large direct stage controls and a focused work 
  const testMode=page.getByRole('status',{name:/Yoco test mode/});
  await expect(testMode).toContainText('YOCO TEST');
  await expect(testMode).toContainText('NO REAL MONEY');
- expect(await testMode.evaluate(element=>element.closest('.staff-header')!==null)).toBe(true);
+ expect(await testMode.evaluate(element=>element.closest('.staff-header-actions')!==null)).toBe(true);
  expect((await testMode.boundingBox())?.height).toBeLessThanOrEqual(32);
  await expect(page.locator('.staff-sandbox-banner')).toHaveCount(0);
   let tabletOrders:Array<Record<string,unknown>>=[];
