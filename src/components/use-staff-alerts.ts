@@ -87,13 +87,18 @@ export function useStaffAlerts(active: boolean) {
     refreshPermission();
     restore();
     // Normal tablet interaction also unlocks/restarts audio after browser suspension.
-    document.addEventListener('click', restore);
-    document.addEventListener('keydown', restore);
+    const restoreFromInteraction = (event: Event) => {
+      // The sound switch handles its own pointer and keyboard activation.
+      if (event.target instanceof Element && event.target.closest('[data-sound-control]')) return;
+      restore();
+    };
+    document.addEventListener('click', restoreFromInteraction);
+    document.addEventListener('keydown', restoreFromInteraction);
     document.addEventListener('visibilitychange', restoreVisible);
     window.addEventListener('focus', restoreVisible);
     return () => {
-      document.removeEventListener('click', restore);
-      document.removeEventListener('keydown', restore);
+      document.removeEventListener('click', restoreFromInteraction);
+      document.removeEventListener('keydown', restoreFromInteraction);
       document.removeEventListener('visibilitychange', restoreVisible);
       window.removeEventListener('focus', restoreVisible);
       const context = audio.current;

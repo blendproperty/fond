@@ -35,41 +35,43 @@ async function tablet(page: Page, permission: NotificationPermission = 'granted'
 test('tablet defaults on, restores granted notifications and reports blocked audio honestly after reload', async ({page}) => {
   await tablet(page);
   await expect(page.getByRole('switch',{name:'Order notifications'})).toBeVisible();
-  await expect(page.getByText('Tap to activate order sound',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/^(Enable|Test) sound$/}).click();
-  await expect(page.getByText('Sound on · reminders every 30 seconds until accepted.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('Tap to enable',{exact:true})).toBeVisible();
+  await page.getByRole('switch',{name:'Order sound'}).click();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('On',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>window.__alerts.starts)).toBe(6);
   expect(await page.evaluate(()=>Math.max(...window.__alerts.peaks))).toBe(0.65);
   await page.reload();
   await expect(page.getByRole('switch',{name:'Order notifications'})).toBeVisible();
   await expect(page.getByRole('switch',{name:'Order sound',exact:true})).toBeVisible();
-  await expect(page.getByText('Tap to activate order sound',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('Tap to enable',{exact:true})).toBeVisible();
   // Any ordinary touch on the board can recover sound without another settings change.
   await page.getByRole('button',{name:'Find order'}).click();
-  await expect(page.getByText('Sound on · reminders every 30 seconds until accepted.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('On',{exact:true})).toBeVisible();
   await page.evaluate(()=>window.__alerts.suspend());
-  await expect(page.getByText('Tap to activate order sound',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('Tap to enable',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close order search'}).click();
-  await expect(page.getByText('Sound on · reminders every 30 seconds until accepted.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('On',{exact:true})).toBeVisible();
 });
 
 test('intentional mute persists and the sound test re-enables it', async ({page}) => {
   await tablet(page);
+  await page.getByRole('switch',{name:'Order sound'}).click();
+  await expect(page.getByRole('switch',{name:'Order sound'})).toBeChecked();
   await page.getByRole('switch',{name:'Order sound',exact:true}).click();
   await page.reload();
-  await expect(page.getByText('Order sound is off on this tablet.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('Off',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Find order'}).click();
-  await expect(page.getByText('Order sound is off on this tablet.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('Off',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close order search'}).click();
   await page.getByRole('switch',{name:'Order sound'}).click();
-  await expect(page.getByText('Sound on · reminders every 30 seconds until accepted.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('On',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>localStorage.getItem('fond.staff.sound'))).toBe('on');
 });
 
 test('Android notification failures do not stop queue updates; waiting orders repeat and acceptance stops reminders', async ({page}) => {
   await page.clock.install();
   await tablet(page);
-  await page.getByRole('button',{name:/^(Enable|Test) sound$/}).click();
+  await page.getByRole('switch',{name:'Order sound'}).click();
   await page.clock.fastForward(3000);
   await page.evaluate(()=>{window.__alerts.failNotification=true;});
   let status='received';
@@ -93,8 +95,8 @@ test('Android notification failures do not stop queue updates; waiting orders re
 test('denied notification permission stays visible without disabling sound', async ({page}) => {
   await tablet(page,'denied');
   await expect(page.getByRole('switch',{name:'Order notifications'})).toBeDisabled();
-  await page.getByRole('button',{name:'Enable sound'}).click();
-  await expect(page.getByText('Sound on · reminders every 30 seconds until accepted.',{exact:true})).toBeVisible();
+  await page.getByRole('switch',{name:'Order sound'}).click();
+  await expect(page.getByRole('switch',{name:'Order sound'}).getByText('On',{exact:true})).toBeVisible();
   await expect(page.getByText('Notifications are blocked. Allow them in the tablet’s app or browser settings.')).toBeVisible();
 });
 
@@ -102,7 +104,7 @@ test('denied notification permission stays visible without disabling sound', asy
 test('notification switch persists independently from sound and suppresses new alerts',async({page})=>{
  await page.clock.install();await tablet(page);
  const notifications=page.getByRole('switch',{name:'Order notifications'}),sound=page.getByRole('switch',{name:'Order sound'});
- await expect(notifications).toBeChecked();await sound.click();await notifications.click();
+ await expect(notifications).toBeChecked();await sound.click();await expect(sound).toBeChecked();await sound.click();await notifications.click();
  await expect(notifications).not.toBeChecked();await page.reload();await expect(notifications).not.toBeChecked();await expect(sound).not.toBeChecked();
  const order={id:'silent-one',reference:'silent',displayReference:'SILENT-1',customerName:'Silent fixture',lines:[],collectionTime:'ASAP',totalCents:1000,source:'customer',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),fulfillment:'collection',posRequired:true,posRecordedAt:null,estimatedPrepMinutes:10,basketPrepMinutes:10,paymentMethod:'pay_at_collection',paymentRequired:false,status:'received'};
  await page.route('**/api/staff/orders',r=>r.fulfill({json:{orders:[order]}}));await page.clock.fastForward(5000);await expect(page.locator('.staff-card')).toContainText('SILENT-1');expect(await page.evaluate(()=>window.__alerts.notices)).toBe(0);
@@ -121,4 +123,16 @@ test('tablet toolbar keeps settings and actions readable at tablet and phone wid
   const header=await page.locator('.staff-header').boundingBox(),actions=await page.locator('.staff-header-actions').boundingBox();expect(actions!.y).toBeGreaterThanOrEqual(header!.y+header!.height-1);
   if(width===1280||width===1024||width===390)await page.screenshot({path:info.outputPath(`staff-toolbar-${width}.png`)});
  }
+});
+
+
+test('one sound switch handles keyboard activation, mute and suspended audio without a duplicate action',async({page})=>{
+ await tablet(page);const sound=page.getByRole('switch',{name:'Order sound'});
+ await expect(sound).toHaveCount(1);await expect(sound).not.toBeChecked();
+ await expect(page.getByRole('button',{name:/^(Enable|Test|Mute) sound$/})).toHaveCount(0);await expect(page.locator('.staff-alert-status')).toHaveCount(0);
+ await sound.press('Space');await expect(sound).toBeChecked();expect(await page.evaluate(()=>window.__alerts.starts)).toBe(6);
+ await sound.press('Enter');await expect(sound).not.toBeChecked();await expect(sound).toContainText('Off');
+ await sound.press('Space');await expect(sound).toBeChecked();
+ await page.evaluate(()=>window.__alerts.suspend());await expect(sound).not.toBeChecked();await expect(sound).toContainText('Tap to enable');
+ await sound.press('Space');await expect(sound).toBeChecked();await expect(page.locator('.staff-alert-status')).toHaveCount(0);
 });
