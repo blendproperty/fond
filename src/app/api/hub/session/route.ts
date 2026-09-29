@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { HUB_COOKIE } from '@/lib/hub-auth';
+import { ADMIN_COOKIE } from '@/lib/admin-auth';
 import { loginAllowed, loginMember, recordLoginFailure, clearLoginFailures, revokeSession } from '@/lib/team';
 import { validRequestOrigin } from '@/lib/request-origin';
 const headers = {'Cache-Control':'no-store'};
@@ -17,5 +18,10 @@ export async function POST(request: Request) {
 }
 export async function DELETE(request: Request) {
   if (!validRequestOrigin(request)) return NextResponse.json({message:'Invalid origin.'},{status:403,headers});
-  revokeSession((await cookies()).get(HUB_COOKIE)?.value); const response = NextResponse.json({ok:true},{headers}); response.cookies.delete(HUB_COOKIE); return response;
+  const store=await cookies();
+  // Owner oversight can come from the existing admin session; end that too so
+  // refreshing after Hub sign-out cannot silently restore access to requests.
+  revokeSession(store.get(HUB_COOKIE)?.value); revokeSession(store.get(ADMIN_COOKIE)?.value);
+  const response = NextResponse.json({ok:true},{headers});
+  response.cookies.delete(HUB_COOKIE); response.cookies.delete(ADMIN_COOKIE); return response;
 }

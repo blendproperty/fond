@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('department ownership, signup, publishing and new home operate together',async({page,request,playwright,baseURL},info)=>{
   await page.goto('/');await expect(page.getByRole('heading',{name:'Your day. All at Midpoint.'})).toBeVisible();
+  expect((await(await request.get('/manifest.webmanifest')).json()).start_url).toBe('/fond');
   await page.goto('/?payment=return&reference=example');await expect(page).toHaveURL(/\/fond\?payment=return&reference=example$/);
   const login=await request.post('/api/admin/login',{data:{code:'isolated-hub-admin'}});expect(login.ok(),await login.text()).toBe(true);
   const suffix=`${Date.now()}-${info.project.name}`;
@@ -26,5 +27,8 @@ test('department ownership, signup, publishing and new home operate together',as
     await page.screenshot({path:`test-results/hub-workspace-${info.project.name}.png`,fullPage:true});
     for(const width of [320,390,768]){await page.setViewportSize({width,height:850});for(const path of ['/','/gym','/padel','/gym/signup','/padel/signup','/gym/classes','/padel/events','/hub/manage']){await page.goto(path);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`${path} at ${width}px`).toBe(true);}}
     await page.goto('/');await page.screenshot({path:`test-results/hub-home-${info.project.name}.png`,fullPage:true});
+    const signedOut=await gym.delete('/api/hub/session');expect(signedOut.ok()).toBe(true);
+    expect(signedOut.headers()['set-cookie']).toContain('fond_admin=');
+    expect((await gym.get('/api/hub/manage?service=gym')).status()).toBe(401);
   } finally {await gym.dispose();await padel.dispose();}
 });

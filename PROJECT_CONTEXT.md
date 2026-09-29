@@ -1,3 +1,7 @@
+## 2026-09-29 - Hub release review follow-up
+
+Implementation: corrected Hub sign-out to also clear/revoke the existing owner/admin session used for oversight, preventing a refresh from restoring access after sign-out. The UI reports network sign-out failures. FOND's installed-app launch opens /fond when the Hub owns the root. Added workflow checks for both behaviours. Testing: fresh production build/TypeScript and both desktop/mobile Hub journeys passed. Commit/push: initial branch 84ef39dd6a0e0916fa6455c1551eba8f196121a1 is pushed in PR #10 with both CI runs successful; this follow-up still requires replacement exact-head CI after push. Merge, staging, production, DNS and operational gates remain pending.
+
 ## 2026-09-29 - Midpoint Hub implementation and domain migration preparation
 
 Scope: Brett purchased midpointhub.com and Hostinger email and approved one Hub with /fond, /gym and /padel. He explicitly requested ID/passport collection online and that each department populate its own backend calendar. Contacts: Christine (Gym/sales), Ali (Padel/accounts), Ray (FOND), Michelle (functions), all at midpointhub.com. Correct legacy production address is fond.mid-point.co.za, not .com.
