@@ -3,9 +3,15 @@
 Approved: midpointhub.com home, /fond, /gym and /padel. Current FOND is
 fond.mid-point.co.za, not .com. Reuse /opt/fond and its database volume.
 
+Cutover completed 2026-09-29 on deployed SHA
+91c46e09c83b0755cb581043e400cbae2f874eff. Apex A is now 93.127.186.194,
+TTL 60; www follows it. HTTPS and the Hub pages are verified live. Legacy page
+navigation redirects and legacy API callbacks remain available. See the dated
+PROJECT_CONTEXT.md entry for release evidence and outstanding staff/provider gates.
+
 ## DNS and cutover
 
-Verified Hostinger DNS: @ A 2.57.91.91 (TTL 50); www CNAME midpointhub.com
+Before migration, Hostinger DNS was @ A 2.57.91.91 (TTL 50); www CNAME midpointhub.com
 (TTL 300). Current FOND VPS is 93.127.186.194. Nameservers are
 atlas.dns-parking.com and hyperion.dns-parking.com. Keep all MX, SPF, DMARC,
 hostingermail DKIM, autodiscover and autoconfig records unchanged.
@@ -14,14 +20,15 @@ hostingermail DKIM, autodiscover and autoconfig records unchanged.
    /hub, /gym, /padel, /fond and /hub/manage, then promote through the established
    staging-success gate. Production deployment already backs up its database.
 2. Run Manage Midpoint Hub Domain with that production SHA, mode inspect.
-   Only routing settings are printed. Then run prepare to add apex/www TLS
-   aliases to the existing service while preserving the old FOND homepage.
-3. In Hostinger edit only @ A to 93.127.186.194. Keep www CNAME. Verify DNS and
-   HTTPS on both new domains and recheck the unchanged mail records.
-4. Run cutover. It first checks apex/www resolve only to the VPS and both have
+   Only routing settings are printed.
+3. In Hostinger edit only @ A to 93.127.186.194, TTL 60 or greater. Keep www
+   CNAME. Verify public DNS resolves the new server before requesting certificates.
+4. Run prepare to add apex/www TLS aliases to the existing service while preserving
+   the old FOND homepage. Verify HTTPS on both new domains and unchanged mail DNS.
+5. Run cutover. It first checks apex/www resolve only to the VPS and both have
    working HTTPS health endpoints. It enables the Hub root and staff email alerts,
    sets FOND_HOST/public URL to the new domain, and preserves the old alias.
-5. Verify new Hub/FOND/account/rewards/staff/admin, departmental workspace, old
+6. Verify new Hub/FOND/account/rewards/staff/admin, departmental workspace, old
    navigation redirects and unchanged payment/reward configuration. Do not create
    production orders, signups, payments or identity records as test evidence.
 
