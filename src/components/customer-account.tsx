@@ -52,7 +52,7 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
  return <main className={styles.page}>
   <header className={styles.header}><Link href="/" aria-label="Midpoint Cafe home" className={styles.brand}><BrandLogo/></Link><Link className={styles.back} href="/"><ArrowLeft size={17} aria-hidden="true"/> Back to menu</Link></header>
   <div className={styles.intro}><p className={styles.eyebrow}>A LITTLE MORE FOND OF EVERY DAY</p><h1>{view==='rewards'?'Coffee rewards':user?'Your orders':'Your daily FOND favourites.'}</h1><p>{user?'Your orders, your coffee rewards and your next little lift. All in one place.':'Good food, great coffee and something to look forward to. Make yourself at home.'}</p></div>
-  <div className={styles.layout}>
+  <div className={`${styles.layout} ${user&&view==='rewards'?styles.rewardsLayout:''}`}>
    <div className={styles.content} id="customer-access">
     {loading?<section className={styles.card} aria-busy="true"><p role="status">Getting your account ready…</p></section>:user?<>
      <div className={styles.identity}><div><span>Signed in as {user.email}</span><small>{user.emailVerified?<><CheckCircle2 size={14} aria-hidden="true"/> Email verified</>:<><Mail size={14} aria-hidden="true"/> Email verification needed</>}</small></div><button className={styles.textButton} disabled={busy} onClick={logout}>Sign out</button></div>
@@ -65,8 +65,8 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
       {verificationMessage&&<p className={verificationError?styles.error:styles.success} role={verificationError?'alert':'status'}>{verificationMessage}</p>}
       <p className={styles.hint}>Can't find the email? Check your spam folder, then request another code.</p>
      </section>}
-     <AccountSecurity emailVerified={user.emailVerified}/>
-     {view==='rewards'?<CoffeeRewards key={String(user.emailVerified)}/>:<>
+     {view!=='rewards'&&<AccountSecurity emailVerified={user.emailVerified}/>}
+     {view==='rewards'?<><CoffeeRewards key={String(user.emailVerified)}/><AccountSecurity emailVerified={user.emailVerified}/></>:<>
       <div className={styles.historyTools}><p>Updates automatically every 15 seconds.</p><button className={styles.secondary} disabled={historyBusy} onClick={refreshHistory}>{historyBusy?'Refreshing…':'Refresh orders'}</button></div>
       {orders.length?<div className={styles.orders}>{orders.map(order=><article key={order.reference} className={`${styles.card} ${styles.order}`}><div className={styles.orderHeading}><h2>{order.displayReference}</h2><span>{order.status.replaceAll('_',' ')}</span></div><p>{new Date(order.createdAt).toLocaleString()} · {formatCollectionTime(order.collectionTime)}</p><ul>{order.lines.map((line,i)=><li key={i}><span>{line.quantity} × {line.name}</span><span>R{(line.subtotalCents/100).toFixed(2)}</span></li>)}</ul><div className={styles.orderTotal}><strong>R{(order.totalCents/100).toFixed(2)}</strong><span>{order.totalCents===0?'Coffee reward':order.payment?.paidCents>=order.totalCents?'Paid':'Payment due or pending'}</span></div></article>)}</div>:historyLoaded?<section className={`${styles.card} ${styles.empty}`}><ShoppingBag size={30} aria-hidden="true"/><h2>Your next favourite is waiting.</h2><p>No orders are linked to this account yet. Guest orders using the same email appear after you verify it.</p><Link className={styles.primary} href="/">Explore the menu <ArrowRight size={17} aria-hidden="true"/></Link></section>:<p role="status">Your order history could not be loaded. Please try Refresh orders.</p>}
       <p className={styles.hint}>Your latest 100 orders include signed-in purchases and guest orders sent to your verified email. Orders placed with another email or without an email can still be tracked from the menu using their reference.</p>

@@ -21,7 +21,17 @@ export function CoffeeRewards(){
  return <section className="coffee-rewards customer-rewards">
   {error&&<p role="alert">{error} <button className="quiet" onClick={()=>load().catch(e=>setError(e.message))}>Try again</button></p>}
   {!data?<p>Loading your coffee card…</p>:!data.verified?<p>Verify your account email above to start earning and redeeming rewards.</p>:<>
-   <a className="outline" href="#coffee-membership">Show my membership QR</a>
+   {data.membership&&<section id="coffee-membership" className="membership-card" aria-labelledby="membership-heading">
+    <div className="membership-brand"><span>MIDPOINT CAFE · FOND</span><Coffee size={27} aria-hidden="true"/></div>
+    <h2 id="membership-heading">Your coffee pass.</h2>
+    <p className="membership-intro">A little ritual. A little reward.</p>
+    <div className="membership-qr"><span className="membership-scan-label">SHOW THIS WHEN YOU ORDER</span>{data.membership.qr&&<img src={data.membership.qr} width={240} height={240} alt="Your coffee membership QR code"/>}<span className="membership-scan-hint">Staff scan here to link your coffee.</span></div>
+    <div className="membership-number"><span>YOUR MEMBERSHIP</span><code>{data.membership.code}</code></div>
+    <p className="membership-caption">Same code. Every coffee visit.</p>
+    {data.environment==='test'&&<p className="membership-status">PRACTICE / TEST CARD · No live rewards</p>}
+    {!data.membership.enabled&&<p className="membership-status">Counter rewards are not active yet. Your membership is ready; earning will follow once setup is complete.</p>}
+    <small>Stamps follow verified payment and collection.<br/>Free-coffee redemption codes appear below.</small>
+   </section>}
    <div className="coffee-ticket" aria-label="Coffee punch card">
     <div className="ticket-top"><span className="eyebrow">YOUR DAILY LITTLE LIFT</span><Coffee size={35} aria-hidden="true"/><h2>Good coffee.<br/>Great rewards.</h2><p>{data.membership?.enabled?"Buy 10 in the app or at FOND.":"Buy 10 through the app."}<br/>Your next one is on us.</p></div>
     <ol className="coffee-punches" aria-label={`${punched} of 10 coffees punched`}>
@@ -33,7 +43,7 @@ export function CoffeeRewards(){
    </div>
    {data.environment==='test'&&<p className="reward-test-label">TEST CARD · Test stamps and codes cannot be used for live payments.</p>}
    <p className="reward-rules">Earn one punch for each paid Coffee item ordered while signed in with a verified email, once collected or delivered. {data.membership?.enabled?"You can also earn on eligible paid coffees at FOND: show your membership QR when staff add your order.":"Counter earning is currently paused; app earning remains available."}</p>
-   {data.membership&&<section id="coffee-membership" className="membership-card"><p className="eyebrow">EARN AT THE COUNTER</p><h3>Show staff your coffee card</h3><p>Show this QR when staff add your coffee order. It identifies your rewards account; payment and completion earn the stamps.</p>{data.membership.qr&&<img src={data.membership.qr} width={240} height={240} alt="Your coffee membership QR code"/>}<code>{data.membership.code}</code>{!data.membership.enabled&&<p className="notice">Counter rewards are not active yet. Staff can attach your membership, but stamps await setup and a verified paid receipt.</p>}<small>This membership code earns stamps. Your free-coffee codes are separate, below.</small></section>}<h3>Your free coffees</h3>
+<h3>Your free coffees</h3>
    {!data.rewards.some(r=>r.status==='available'||r.status==='reserved')&&<p>Your unique code will appear here when you earn a reward or receive a gift.</p>}
    {data.rewards.map(r=><div className="reward-card" key={r.id}><div className="reward-card-heading"><Ticket aria-hidden="true"/><strong>{r.kind==='gift'?'Gift coffee':'Earned coffee'}</strong><span>{r.status==='available'?'Ready to use':r.status}</span></div>{r.status==='available'&&<><code>{r.code}</code><button className="primary" onClick={()=>setShown(r.id)}>Show code to staff</button><button className="outline" onClick={()=>navigator.clipboard.writeText(r.code).then(()=>setMessage('Code copied. Paste it into your basket.')).catch(()=>setMessage('Select and copy the code above.'))}>Copy coffee code</button><button className="quiet" disabled={busy} onClick={()=>send(r.id)}>Email / SMS this code</button><a href="/">Use in an app order →</a></>}{r.status==='reserved'&&<small>Reserved on an order. Staff can cancel the order to release it.</small>}</div>)}
    <p className="reward-rules">Show your code to staff at FOND or apply it to your basket. Any one Coffee item; extras charged separately. One use per code and one code per order. In a basket with several coffees, the highest-priced base coffee is free.</p>
