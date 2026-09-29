@@ -1,0 +1,1 @@
+2026-09-29: Ten screens rendered at 320, 390 and 768px without horizontal overflow. Gym and tenant signup preview flows, calendar navigation, event details and interest demo passed. FOND href verified. No page JavaScript errors. Dummy data only, no backend or provider integration.
