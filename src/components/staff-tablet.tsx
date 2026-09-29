@@ -3,7 +3,7 @@ import {MembershipScanner} from './membership-scanner';
 import {CounterStamps} from './counter-rewards';
 import {CategoryNavigation} from './category-navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag } from 'lucide-react';
+import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag, Bell, Coffee } from 'lucide-react';
 import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
@@ -294,19 +294,24 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           {posSync?.enabled&&<p className="staff-pos-status" role="status">{posSync.error?`Yoco matching needs attention: ${posSync.error}`:`Yoco ${posSync.environment==='sandbox'?'TEST ':''}reference matching on · keep this board open`}</p>}
           {copyMessage&&<p className="small" role="status">{copyMessage}</p>}
         </div>
-        <div className="staff-header-actions">
-          <button className="quiet staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={17}/> Find order</button>
-          <button className="quiet" onClick={() => void alerts.enableNotifications()} disabled={alerts.permission === 'unsupported'}>{alerts.permission === 'granted' ? 'Notifications on' : alerts.permission === 'denied' ? 'Notifications blocked' : alerts.permission === 'unsupported' ? 'Notifications unavailable' : 'Allow notifications'}</button>
-          <button className="quiet staff-sound-button" onClick={alerts.testSound}>{alerts.soundEnabled ? <Volume2 size={17}/> : <VolumeX size={17}/>} {alerts.soundEnabled && alerts.soundState === 'ready' ? 'Test sound' : 'Enable sound'}</button>
-          {alerts.soundEnabled && <button className="quiet" onClick={alerts.mute}>Mute sound</button>}
-          <CounterStamps/><button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}>Redeem coffee</button>
-          <button className="primary" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={18} /> Add order</button>
-          <button className="icon-button" aria-label="Lock tablet" onClick={logout}><LogOut size={18} /></button>
+        <div className="staff-device-controls" aria-label="Tablet alert settings">
+          <button className="staff-toggle" role="switch" aria-label="Order notifications" aria-checked={alerts.permission==='granted'&&alerts.notificationsEnabled} disabled={alerts.permission==='unsupported'||alerts.permission==='denied'} onClick={()=>alerts.permission==='granted'&&alerts.notificationsEnabled?alerts.disableNotifications():void alerts.enableNotifications()}>
+            <Bell size={18} aria-hidden="true"/><span>Notifications<small>{alerts.permission==='denied'?'Blocked in browser':alerts.permission==='unsupported'?'Unavailable':alerts.permission==='granted'&&alerts.notificationsEnabled?'On this tablet':'Off'}</small></span><i className="staff-switch-track" aria-hidden="true"/>
+          </button>
+          <button className="staff-toggle" role="switch" aria-label="Order sound" aria-checked={alerts.soundEnabled} onClick={()=>alerts.soundEnabled?alerts.mute():alerts.testSound()}>
+            {alerts.soundEnabled?<Volume2 size={18} aria-hidden="true"/>:<VolumeX size={18} aria-hidden="true"/>}<span>Order sound<small>{!alerts.soundEnabled?'Off':alerts.soundState==='ready'?'On': 'Needs a tap'}</small></span><i className="staff-switch-track" aria-hidden="true"/>
+          </button>
+          <button className="staff-lock" aria-label="Lock tablet" onClick={logout}><Lock size={18}/><span>Lock</span></button>
         </div>
       </header>
+      <div className="staff-header-actions" aria-label="Order actions">
+        <button className="outline staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={19}/> Find order</button>
+        <div className="staff-coffee-actions"><CounterStamps/><button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}><Coffee size={19}/> Redeem coffee</button></div>
+        <button className="primary staff-add-order" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={21} /> Add order</button>
+      </div>
       <div className="staff-alert-status" role="status" data-ready={alerts.soundEnabled && alerts.soundState === 'ready'}>
-        <strong>{!alerts.soundEnabled ? 'Sound muted' : alerts.soundState === 'ready' ? 'Sound on · loud' : alerts.soundState === 'unavailable' ? 'Sound unavailable · try Enable sound' : 'Sound needs a tap · tap Enable sound'}</strong>
-        <span>{alerts.alertError || (alerts.permission === 'denied' ? 'Allow notifications in the tablet’s app or browser settings.' : 'New orders repeat every 30 seconds until accepted. Keep this board open and the tablet volume up.')}</span>
+        {alerts.soundEnabled&&alerts.soundState!=='ready'?<><VolumeX size={16} aria-hidden="true"/><strong>Tap to activate order sound</strong><button onClick={alerts.testSound}>Enable sound</button></>:<><span className="staff-alert-dot"/><span>{alerts.soundEnabled?'Sound on · reminders every 30 seconds until accepted.':'Order sound is off on this tablet.'}</span>{alerts.soundEnabled&&<button onClick={alerts.testSound}>Test sound</button>}</>}
+        {(alerts.alertError||alerts.permission==='denied')&&<span className="staff-alert-help">{alerts.alertError||'Notifications are blocked. Allow them in the tablet’s app or browser settings.'}</span>}
       </div>
       {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
       {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}

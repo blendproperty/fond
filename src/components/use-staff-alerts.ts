@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 const SOUND_KEY = 'fond.staff.sound';
+const NOTIFICATION_KEY = 'fond.staff.notifications';
 type SoundState = 'starting' | 'ready' | 'blocked' | 'unavailable';
 
 // A longer, clearly audible chime, with short fades to avoid speaker clicks.
@@ -28,6 +29,8 @@ export function useStaffAlerts(active: boolean) {
   const [soundState, setSoundState] = useState<SoundState>('starting');
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [alertError, setAlertError] = useState('');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const notificationsAllowed = useRef(true);
   const audio = useRef<AudioContext | null>(null);
   const enabled = useRef(true);
   const activeRef = useRef(active);
@@ -75,6 +78,8 @@ export function useStaffAlerts(active: boolean) {
   useEffect(() => {
     try { enabled.current = localStorage.getItem(SOUND_KEY) !== 'off'; } catch { /* Keep default on. */ }
     setSoundEnabled(enabled.current);
+    try { notificationsAllowed.current = localStorage.getItem(NOTIFICATION_KEY) !== 'off'; } catch {}
+    setNotificationsEnabled(notificationsAllowed.current);
     const refreshPermission = () => setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
     const restoreVisible = () => {
       if (document.visibilityState === 'visible') { refreshPermission(); restore(); }
@@ -119,22 +124,31 @@ export function useStaffAlerts(active: boolean) {
   }, []);
 
   const enableNotifications = useCallback(async () => {
-    testSound();
     if (typeof Notification === 'undefined') { setPermission('unsupported'); return; }
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
+      notificationsAllowed.current = result === 'granted';
+      setNotificationsEnabled(notificationsAllowed.current);
+      try { localStorage.setItem(NOTIFICATION_KEY, notificationsAllowed.current ? 'on' : 'off'); } catch {}
       setAlertError(result === 'denied' ? 'Notifications are blocked. Allow them in the tablet’s app or browser settings.' : '');
     } catch { setAlertError('Could not enable notifications. Check the tablet’s app or browser settings.'); }
-  }, [testSound]);
+  }, []);
+
+  const disableNotifications = useCallback(() => {
+    notificationsAllowed.current = false;
+    setNotificationsEnabled(false);
+    setAlertError('');
+    try { localStorage.setItem(NOTIFICATION_KEY, 'off'); } catch {}
+  }, []);
 
   const notify = useCallback(async (orders: {id: string; displayReference: string}[]) => {
-    if (!activeRef.current || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!activeRef.current || !notificationsAllowed.current || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     try {
       // Android requires persistent notifications through the service worker.
       const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
       for (const order of orders) {
-        if (!activeRef.current) return;
+        if (!activeRef.current || !notificationsAllowed.current) return;
         const options: NotificationOptions = {body: `Order ${order.displayReference} is waiting on the staff board.`, tag: `fond-order-${order.id}`, icon: '/icons/icon-192.png', data: {url: '/staff'}};
         if (registration?.active) await registration.showNotification('New FOND order', options);
         else new Notification('New FOND order', options);
@@ -142,5 +156,5 @@ export function useStaffAlerts(active: boolean) {
     } catch { setAlertError('A tablet notification could not be shown. Keep the order board open and check notification permissions.'); }
   }, []);
 
-  return {soundEnabled, soundState, permission, alertError, play, notify, testSound, mute, enableNotifications};
+  return {soundEnabled, soundState, permission, notificationsEnabled, disableNotifications, alertError, play, notify, testSound, mute, enableNotifications};
 }
