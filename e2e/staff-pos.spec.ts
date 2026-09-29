@@ -16,7 +16,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
     await expect(page.getByRole('region',{name:title,includeHidden:true})).toBeAttached();
     await expect(page.getByRole('tab',{name:new RegExp(`^${title}`)})).toBeVisible();
   }
-  await expect(page.getByRole('button',{name:'Test sound'})).toBeVisible();
+  await expect(page.getByRole('switch',{name:'Order sound'})).toBeVisible();
   const card = page.locator('.staff-card').filter({ hasText: displayReference });
   await expect(card).toBeVisible();
   await expect(card.locator('.staff-short-number')).toHaveText(/^FOND [1-9]\d{5}$/);
