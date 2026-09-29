@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Dumbbell, MapPin, ShieldCheck, Volleyball, UserRoundPlus } from 'lucide-react';
 import { HUB_CONTACTS, type HubService } from '@/lib/hub-config';
-import { bookingUrl } from '@/lib/hub-store';
 import './hub.css';
 
 export function HubShell({children,service,wide=false}:{children:React.ReactNode;service?:HubService;wide?:boolean}) {
@@ -34,8 +33,8 @@ export function HubHome() {
   </HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
-  const gym=service==='gym', contact=HUB_CONTACTS[service], venue=gym?null:bookingUrl('padel');
-  const actions=gym?[{href:'/gym/signup',label:'Sign up',copy:'Start your membership journey.',icon:UserRoundPlus},{href:'/gym/events',label:'Join an event',copy:'Find your next shared challenge.',icon:CalendarDays},{href:'/gym/classes',label:'Join a class',copy:'Make movement part of your day.',icon:Dumbbell}]:[{href:'/padel/signup',label:'Tenant signup',copy:'Get your Midpoint tenant profile ready.',icon:UserRoundPlus},{href:venue??`mailto:${contact.email}?subject=Midpoint%20Padel%20court%20enquiry`,label:venue?'Book a court':'Court enquiries',copy:venue?'Find your next game on Playtomic.':'Speak to Ali about your next game.',icon:Volleyball},{href:'/padel/events',label:'Join an event',copy:'Meet the community on court.',icon:CalendarDays}];
+  const gym=service==='gym', contact=HUB_CONTACTS[service];
+  const actions=gym?[{href:'/gym/signup',label:'Sign up',copy:'Start your membership journey.',icon:UserRoundPlus},{href:'/gym/events',label:'Join an event',copy:'Find your next shared challenge.',icon:CalendarDays},{href:'/gym/classes',label:'Join a class',copy:'Make movement part of your day.',icon:Dumbbell}]:[{href:'/padel/signup',label:'Tenant signup',copy:'Get your Midpoint tenant profile ready.',icon:UserRoundPlus},{href:'https://playtomic.com/',label:'Book a court',copy:'Find your next game on Playtomic.',icon:Volleyball},{href:'/padel/events',label:'Join an event',copy:'Meet the community on court.',icon:CalendarDays}];
   return <HubShell service={service} wide>
     <HubBack href="/hub">Midpoint Hub</HubBack>
     <section className="hub-service-hero"><div className="hub-landing"><span className="hub-eyebrow">MIDPOINT {service.toUpperCase()}</span><h1>{gym?<>Make time<br/>for your strength.</>:<>A better way<br/>to end your day.</>}</h1><p>{gym?'A great workout, a fresh start. Right here on the estate.':'Good rallies. Great company. Your next game starts here.'}</p><a href="#your-next-move" className="hub-explore">{gym?'Find your next move':'Let’s get you playing'} <ArrowRight size={20}/></a></div><div className="hub-photo"><img src={`/hub-assets/${service}.jpg.png`} alt={gym?'Midpoint Gym training floor':'Midpoint rooftop padel courts'} fetchPriority="high"/><span>{gym?'MOVE & RECHARGE':'PLAY & UNWIND'}</span></div></section>

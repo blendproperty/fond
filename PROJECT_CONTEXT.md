@@ -1,3 +1,9 @@
+## 2026-09-29 - Padel card links directly to Playtomic
+
+Implementation: at Brett's explicit request, only the Padel court action now reads Book a court / Find your next game on Playtomic and links to https://playtomic.com/ in a new tab. It no longer depends on the venue setting or falls back to email. Other cards, artwork, calendar and contact sections are unchanged. Updated the existing desktop/mobile navigation assertion to the requested destination.
+
+Testing: production build/TypeScript and all four focused Hub desktop/mobile checks passed. Commit/push: clean isolated main began at f849c1d15ee347e769724667da70d36528e3c07b, matching origin/main; this bounded correction and context are being committed directly to main. Merge: no separate PR. Deployment/configuration and live production verification: pending exact-revision CI, staging and promotion. No provider configuration or real booking/submission changed. Retain all existing operational gates; the requested generic Playtomic destination resolves this card's missing-link fallback, not staff venue/provider setup.
+
 ## 2026-09-29 - Original artwork recovered and public design correction
 
 Implementation: Brett explicitly authorized downloading the shared artwork and corrected the cafe brand to FOND. Four source images downloaded successfully from the visible shared conversation. Original Gym and Padel destination badges were recovered from the existing downloaded updated HTML; Gym action badges are displayed unchanged from the original image sheet using CSS. The embedded Cafe source still had obsolete wording, so the built-in image editor produced a FOND badge, with source/provenance retained in docs/design-source. FOND routes to /fond. Home/Gym/Padel have responsive photographic layouts, original badges, shared navigation and contact/footer sections. Existing forms, calendars, departmental access and provider workflows are preserved.
