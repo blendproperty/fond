@@ -19,7 +19,7 @@ export function CounterStamps(){
  function close(){setOpen(false);setCamera(false);}
  async function lookup(){setBusy(true);setError('');setMessage('');setPreview(null);try{setPreview(await post('/api/staff/counter-rewards',{action:'preview',memberCode,number,date}));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  async function award(){setBusy(true);setError('');try{const d=await post('/api/staff/counter-rewards',{...preview,action:'award'});setMessage(d.alreadyAdded?'These stamps were already added.':d.quantity+' coffee stamps added. The customer can refresh their coffee card.');setPreview(null);}catch(e){setError((e as Error).message);setPreview(null);}finally{setBusy(false);}}
- return <><button className="outline" onClick={()=>setOpen(true)}><Coffee size={18}/> Add coffee stamps</button>
+ return <><button className="outline staff-earn-coffee" onClick={()=>setOpen(true)}><Coffee size={18}/> Add coffee stamps</button>
  <dialog className="counter-stamps-dialog" ref={dialog} onCancel={close} onClose={close} aria-labelledby="counter-stamps-title">
  <header><div><p className="eyebrow">COUNTER COFFEE REWARDS</p><h2 id="counter-stamps-title">Add coffee stamps</h2></div><button className="icon-button" aria-label="Close counter stamps" onClick={close}><X/></button></header>
  <p>For a sale entered only in Yoco: complete payment, then link the receipt here. If you added a FOND order, scan the membership inside Add order and verify the receipt on that order instead.</p>

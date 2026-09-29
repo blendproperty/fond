@@ -3,7 +3,7 @@ import {MembershipScanner} from './membership-scanner';
 import {CounterStamps} from './counter-rewards';
 import {CategoryNavigation} from './category-navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag, Bell, Coffee } from 'lucide-react';
+import { Check, ChefHat, ChevronLeft, ChevronRight, Clock3, Lock, LogOut, Plus, Minus, Search, Truck, Volume2, VolumeX, X, ShoppingBag, Bell, Gift } from 'lucide-react';
 import { categories, FOOD_TRUCK_SECTIONS, foodTruckSection, lineKey, money, quoteCart, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 import { DEFAULT_QUEUE_TARGETS, QUEUE_LANES, queueLane, laneTiming, type QueueLane, type QueueTargets } from '@/lib/staff-queue';
 import { staffModifierInstruction } from '@/lib/staff-modifiers';
@@ -283,7 +283,6 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       {testEnvironment&&<div className="staff-test-banner" role="status">TEST ENVIRONMENT · ORDERS AND PAYMENTS HERE ARE NOT LIVE</div>}
       <header className="staff-header">
         <div className="staff-header-identity">
-          <BrandLogo className="brand-logo-staff" />
           <div className="staff-title-row">
             <h1>{testEnvironment?'Test order board':'Live order board'}</h1>
             <span className={testEnvironment?'staff-live staff-live-test':'staff-live'}><i/> {testEnvironment?'Test':'Live'}</span>
@@ -294,6 +293,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           {posSync?.enabled&&<p className="staff-pos-status" role="status">{posSync.error?`Yoco matching needs attention: ${posSync.error}`:`Yoco ${posSync.environment==='sandbox'?'TEST ':''}reference matching on · keep this board open`}</p>}
           {copyMessage&&<p className="small" role="status">{copyMessage}</p>}
         </div>
+        <BrandLogo className="brand-logo-staff staff-header-logo" />
         <div className="staff-device-controls" aria-label="Tablet alert settings">
           <button className="staff-toggle" role="switch" aria-label="Order notifications" aria-checked={alerts.permission==='granted'&&alerts.notificationsEnabled} disabled={alerts.permission==='unsupported'||alerts.permission==='denied'} onClick={()=>alerts.permission==='granted'&&alerts.notificationsEnabled?alerts.disableNotifications():void alerts.enableNotifications()}>
             <Bell size={18} aria-hidden="true"/><span>Notifications<small>{alerts.permission==='denied'?'Blocked in browser':alerts.permission==='unsupported'?'Unavailable':alerts.permission==='granted'&&alerts.notificationsEnabled?'On this tablet':'Off'}</small></span><i className="staff-switch-track" aria-hidden="true"/>
@@ -306,7 +306,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       </header>
       <div className="staff-header-actions" aria-label="Order actions">
         <button className="outline staff-find-button" onClick={()=>setSearchOpen(true)}><Search size={19}/> Find order</button>
-        <div className="staff-coffee-actions"><CounterStamps/><button className="outline" onClick={()=>{setCounterReward(true);setManualOpen(true);}}><Coffee size={19}/> Redeem coffee</button></div>
+        <div className="staff-coffee-actions"><CounterStamps/><button className="outline staff-redeem-coffee" onClick={()=>{setCounterReward(true);setManualOpen(true);}}><Gift size={19}/> Redeem coffee</button></div>
         <button className="primary staff-add-order" onClick={() => {setCounterReward(false);setManualOpen(true);}}><Plus size={21} /> Add order</button>
       </div>
       {(alerts.alertError||alerts.permission==='denied')&&<div className="staff-alert-status" role="status"><span>{alerts.alertError||'Notifications are blocked. Allow them in the tablet’s app or browser settings.'}</span></div>}
