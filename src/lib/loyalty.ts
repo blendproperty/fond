@@ -56,6 +56,7 @@ export function reconcileBalance(userId:string,environment:RewardEnvironment){
 }
 // Called inside payment/status transactions; any refund reverses the entire order's stamps conservatively.
 export function reconcileOrderRewards(orderId:string){
+ reconcileLinkedCounterOrder(orderId);
  const db=getDb(),row=db.prepare('SELECT l.*,o.status,o.total_cents FROM loyalty_orders l JOIN orders o ON o.id=l.order_id WHERE l.order_id=?').get(orderId) as {user_id:string;environment:RewardEnvironment;quantity:number;credited:number;reward_id:string|null;status:string;total_cents:number}|undefined;if(!row)return;
  const pay=db.prepare('SELECT coalesce(sum(amount_cents),0) AS paid,coalesce(sum(CASE WHEN amount_cents<0 THEN 1 ELSE 0 END),0) AS refunds FROM payment_records WHERE order_id=?').get(orderId) as {paid:number;refunds:number};
  const credit=row.status==='completed'&&pay.paid>=row.total_cents&&!pay.refunds?row.quantity:0;
@@ -71,3 +72,15 @@ export function adminRewards(){return {rewards:getDb().prepare('SELECT id,recipi
 
 export function sendCustomerReward(userId:string,rewardId:string){const u=verified(userId),r=getDb().prepare("SELECT * FROM loyalty_rewards WHERE id=? AND recipient_email=? AND status='available'").get(rewardId,u.email) as Reward|undefined;if(!r)throw new Error('Reward unavailable.');const p=rewardPreferences(userId);if(!p.email_enabled&&!p.sms_enabled)throw new Error('Save an email or SMS preference first.');queueRewardMessages(r,{email:!!p.email_enabled,sms:!!p.sms_enabled,phone:p.phone});event(r.id,'delivery-requested',userId,'Saved reward notification channels');}
 export function revokeGift(id:string,actor:string){const db=getDb();db.exec('BEGIN IMMEDIATE');try{if(!db.prepare("UPDATE loyalty_rewards SET status='revoked' WHERE id=? AND kind='gift' AND status='available'").run(id).changes)throw new Error('Only unused, unreserved gifts can be revoked.');event(id,'revoked',actor,'Administrator withdrew unused gift');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
+
+function reconcileLinkedCounterOrder(orderId:string){
+ const db=getDb(),r=db.prepare('SELECT s.*,o.status,o.total_cents FROM counter_order_members m JOIN counter_reward_sales s ON s.id=m.sale_id JOIN orders o ON o.id=m.order_id WHERE m.order_id=?').get(orderId) as {id:string;user_id:string;environment:RewardEnvironment;quantity:number;credited:number;reversed_at:string|null;batch:string;status:string;total_cents:number}|undefined;
+ if(!r||r.reversed_at)return;
+ const pay=db.prepare('SELECT coalesce(sum(amount_cents),0) paid,coalesce(sum(CASE WHEN amount_cents<0 THEN 1 ELSE 0 END),0) refunds FROM payment_records WHERE order_id=?').get(orderId) as {paid:number;refunds:number};
+ const config=db.prepare('SELECT enabled,batch FROM counter_reward_settings WHERE id=1').get()!;
+ const isVerified=!!db.prepare('SELECT 1 FROM users WHERE id=? AND email_verified_at IS NOT NULL').get(r.user_id);
+ const invalid=r.status==='cancelled'||!!pay.refunds;
+ const credit=!invalid&&isVerified&&r.status==='completed'&&pay.paid>=r.total_cents&&(r.credited>0||config.enabled&&config.batch===r.batch)?r.quantity:0;
+ if(invalid)db.prepare('UPDATE counter_reward_sales SET reversed_at=?,reason=? WHERE id=?').run(now(),'Linked order cancelled or refunded',r.id);
+ if(credit!==r.credited){db.prepare('UPDATE counter_reward_sales SET credited=? WHERE id=?').run(credit,r.id);event(r.id,'counter-stamps-adjusted','system',String(credit-r.credited));reconcileBalance(r.user_id,r.environment);}
+}

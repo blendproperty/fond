@@ -1,3 +1,4 @@
+import {attachCounterMember,counterOrderSummary} from './counter-order';
 import {attachOrderRewards,reconcileOrderRewards,orderRewardSummary,type RewardEnvironment} from './loyalty';
 import { enqueueNotification } from './notifications';
 import { assertTrading,settings } from './management';
@@ -33,6 +34,7 @@ export type OrderRecord = {
   reference: string;
   displayReference: string;
   staffNumber: string;
+  counterRewards?:ReturnType<typeof counterOrderSummary>;
   reward?:{discountCents:number;eligibleCoffees:number;environment:string}|null;
   customerName: string;
   note: string | null;
@@ -114,6 +116,7 @@ function fromRow(row: OrderRow): OrderRecord {
     reference: row.reference,
     displayReference: row.display_reference ?? row.reference,
     staffNumber: row.staff_number,
+    counterRewards:counterOrderSummary(row.id),
     reward:orderRewardSummary(row.id) as OrderRecord['reward'],
     customerName: row.customer_name,
     note: row.note,
@@ -160,6 +163,7 @@ export function createOrder(input: {
   submissionKey?: string;
   rewardCode?:string;
   staffRewardCode?:string;
+  membershipCode?:string;
   rewardEnvironment?:RewardEnvironment;
   customerName: string;
   note?: string | null;
@@ -188,6 +192,7 @@ export function createOrder(input: {
       JSON.stringify({
         rewardCode:input.rewardCode??null,
         staffRewardCode:input.staffRewardCode??null,
+        membershipCode:input.membershipCode??null,
         rewardEnvironment:input.rewardEnvironment??null,
         name: input.customerName,
         note: input.note ?? null,
@@ -253,6 +258,8 @@ export function createOrder(input: {
     const window=tradingWindow(trading,hasFoodTruck);
     assertFoodTruckOrderingAvailable({hasFoodTruck,source:input.source,enforceHours:trading.enforceHours,cutoffTime:window.closingTime,openingTime:window.openingTime,openDays:window.openDays});
     const orderId=randomUUID();
+    if(input.membershipCode&&(input.source!=='staff'||input.staffRewardCode||input.rewardCode||!input.rewardEnvironment))throw new Error('Attach membership to a paid staff order; redeem free-coffee codes separately.');
+    const memberId=input.membershipCode?attachCounterMember(orderId,input.membershipCode,input.lines,availableMenu,input.rewardEnvironment!):null;
     const reward=attachOrderRewards({orderId,userId:input.userId,source:input.source,environment:input.rewardEnvironment,code:input.staffRewardCode??input.rewardCode,counter:!!input.staffRewardCode,actor:input.actor,lines:input.lines,menu:availableMenu});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0)-reward.discountCents;
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
@@ -295,7 +302,7 @@ export function createOrder(input: {
       whatsappOptIn,
       smsOptIn,
       emailOptIn,
-      userId: reward.userId ?? input.userId ?? null,
+      userId: memberId ?? reward.userId ?? input.userId ?? null,
       customerEmail,
       posRequired: true,
       posRecordedAt: null,
@@ -373,7 +380,7 @@ export function listCustomerOrders(userId: string): OrderRecord[] {
   ) ORDER BY created_at DESC LIMIT 100`).all(userId,userId) as OrderRow[]).map(fromRow);
 }
 
-export function recordPosEntry(id: string, posReference: string, actor: string): OrderRecord {
+export function recordPosEntry(id: string, posReference: string, actor: string, verifyRewards?:()=>void): OrderRecord {
   const db = getDb();
   const reference = posReference.trim();
   if (!reference || reference.length > 100) throw new OrderTransitionError('Enter the Yoco order reference.');
@@ -386,6 +393,7 @@ export function recordPosEntry(id: string, posReference: string, actor: string):
     if (order.posRecordedAt) throw new OrderTransitionError('Yoco entry was already recorded.');
     const duplicate = db.prepare('SELECT display_reference FROM orders WHERE id <> ? AND pos_reference = ? COLLATE NOCASE').get(id, reference) as {display_reference:string}|undefined;
     if (duplicate) throw new OrderTransitionError(`You cannot use this Yoco reference. It has already been used for order ${duplicate.display_reference}. Check the receipt and enter a different Yoco receipt or order number.`);
+    verifyRewards?.();
     const now = new Date().toISOString();
     db.prepare('UPDATE orders SET pos_recorded_at = ?, pos_recorded_by = ?, pos_reference = ?, updated_at = ? WHERE id = ?').run(now, actor, reference, now, id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(randomUUID(), id, order.status, 'pos-recorded', actor, now);

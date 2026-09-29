@@ -7,3 +7,6 @@ test-results/
 graphify-out/
 *.tsbuildinfo
 /data/
+
+.coffee-practice-*/
+practice-results/

@@ -28,3 +28,12 @@ test('customer sees separate membership QR and code, portrait punches and accura
  await page.goto('/rewards');const card=page.locator('.membership-card');await expect(card).toBeVisible();await expect(card.locator('code')).toHaveText('FOND-M-ABCDEF123456');expect(await card.locator('img').evaluate((el:HTMLImageElement)=>el.complete&&el.naturalWidth>0)).toBe(true);await expect(page.locator('.coffee-ticket')).toContainText('Buy 10 in the app or at FOND');await expect(page.getByRole('complementary',{name:'Coffee rewards promotion'})).toContainText('In the app or at FOND');await card.screenshot({path:info.outputPath('counter-membership-card.png')});await page.setViewportSize({width:320,height:740});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
+
+test('membership remains visible while paused and staff can enter it on Add order',async({page})=>{
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user:{id:'example',email:'customer@example.test',emailVerified:true}}}));
+ const qr=await QRCode.toDataURL('FOND-M-ABCDEF123456');
+ await page.route('**/api/account/rewards',r=>r.fulfill({json:{verified:true,environment:'test',stamps:0,stampsToNext:10,rewards:[],membership:{code:'FOND-M-ABCDEF123456',enabled:false,qr},preferences:{}}}));
+ await page.goto('/rewards');await expect(page.getByAltText('Your coffee membership QR code')).toBeVisible();await expect(page.locator('.membership-card')).toContainText('not active yet');
+ await page.goto('/staff');await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);await page.getByRole('button',{name:'Open order queue'}).click();await page.getByRole('button',{name:'Add order',exact:true}).click();
+ const drawer=page.getByRole('dialog',{name:'Add order manually'});await expect(drawer.getByRole('button',{name:'Scan customer rewards'})).toBeVisible();await drawer.getByLabel('Customer membership number').fill('FOND-M-ABCDEF123456');await page.route('**/api/staff/membership',r=>r.fulfill({json:{email:'cu…@example.test',enabled:false}}));await drawer.getByRole('button',{name:'Check membership'}).click();await expect(drawer.getByRole('status')).toContainText('Counter earning is paused');await drawer.getByRole('button',{name:'Remove membership'}).click();await expect(drawer.getByLabel('Customer membership number')).toBeEmpty();
+});

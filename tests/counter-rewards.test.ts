@@ -1,3 +1,7 @@
+import {createOrder,recordPosEntry,updateOrderStatus,listCustomerOrders} from '../src/lib/orders';
+import {prepareCounterOrderReceipt,counterOrderSummary,skipCounterOrder} from '../src/lib/counter-order';
+import {recordPayment} from '../src/lib/business-data';
+import {reconcileOrderRewards} from '../src/lib/loyalty';
 import {test,beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -15,7 +19,7 @@ function sale(qty=2,patch:Partial<CounterSale>={}):CounterSale{return {id:random
 function user(email='member@example.test'){const u=signUp(email,'safe-test-password').user;getDb().prepare('UPDATE users SET email_verified_at=? WHERE id=?').run(new Date().toISOString(),u.id);return {...u,code:memberCard(u.id).code};}
 async function enabled(){await configureCounter({enabled:true,variants},'admin');}
 async function quote(code:string){return previewCounter({memberCode:code,date:date(),number:sales[0].order_number});}
-beforeEach(()=>{process.env.FOND_DB_PATH=':memory:';process.env.FOND_CREDENTIALS_KEY='a'.repeat(64);process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';resetDbForTests();saveProviderSecret('yoco-secret','sk_test_fixture','test');saveProviderSecret('yoco-webhook','whsec_fixture','test');saveProviderSecret('yoco-pos-key','personal-business-key-fixture','test');saveDocument('trading',{...DEFAULT_SETTINGS,allowTestPayments:true},'test');saveDocument('yoco-pos',{enabled:false,environment:'sandbox',locationId:'cafe',eftMappingVerified:false},'test');sales=[sale()];global.fetch=async(url)=>new Response(JSON.stringify(String(url).includes('/v1/orders/?')?{data:sales,next_cursor:null}:sales.find(s=>String(url).endsWith(s.id))),{status:200});});
+beforeEach(()=>{process.env.FOND_DB_PATH=':memory:';process.env.FOND_CREDENTIALS_KEY='a'.repeat(64);process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';resetDbForTests();saveProviderSecret('yoco-secret','sk_test_fixture','test');saveProviderSecret('yoco-webhook','whsec_fixture','test');saveProviderSecret('yoco-pos-key','personal-business-key-fixture','test');saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false,allowTestPayments:true},'test');saveDocument('yoco-pos',{enabled:false,environment:'sandbox',locationId:'cafe',eftMappingVerified:false},'test');sales=[sale()];global.fetch=async(url)=>new Response(JSON.stringify(String(url).includes('/v1/orders/?')?{data:sales,next_cursor:null}:sales.find(s=>String(url).endsWith(s.id))),{status:200});});
 afterEach(()=>{global.fetch=realFetch;resetDbForTests();delete process.env.FOND_PUBLIC_URL;delete process.env.FOND_CREDENTIALS_KEY;});
 test('trial starts paused; verified members get stable distinct codes; setup requires mapped items',async()=>{const a=user(),b=user('other@example.test');assert.notEqual(a.code,b.code);assert.equal(memberCard(a.id).code,a.code);assert.equal(counterAvailable(),false);await assert.rejects(quote(a.code),/paused/);await assert.rejects(configureCounter({enabled:true,variants:[]},'admin'),/select/);getDb().prepare('UPDATE users SET email_verified_at=NULL WHERE id=?').run(a.id);assert.throws(()=>memberCard(a.id),/Verify/);});
 test('verified counter receipt adds item quantity once without creating orders or payments',async()=>{const u=user();await enabled();const q=await quote(u.code);assert.equal(q.quantity,2);const results=await Promise.all([awardCounter(q,'staff:one'),awardCounter(q,'staff:two')]);assert.equal(results.filter(r=>r.alreadyAdded).length,1);assert.equal(customerRewards(u.id,'test').stamps,2);assert.equal(customerRewards(u.id,'live').stamps,0);assert.equal(getDb().prepare('SELECT count(*) n FROM orders').get()?.n,0);assert.equal(getDb().prepare('SELECT count(*) n FROM payment_records').get()?.n,0);await assert.rejects(quote(u.code),/already/);});
@@ -31,3 +35,32 @@ test('failed later page adds nothing and receipt check does not leak provider re
 test('an administrator pause wins over an in-flight enable request',async()=>{global.fetch=async()=>{pauseCounter('other-admin');return new Response(JSON.stringify({data:sales}));};await assert.rejects(enabled(),/Settings changed/);assert.equal(counterAvailable(),false);});
 test('nested payment refunds are rejected and re-verification during award prevents withdrawn account credit',async()=>{const u=user();await enabled();(sales[0].payments![0] as any).refunded_amount={amount:1,currency:'ZAR'};await assert.rejects(quote(u.code),/refund/);sales=[sale()];const q=await quote(u.code);global.fetch=async()=>{getDb().prepare('UPDATE users SET email_verified_at=NULL WHERE id=?').run(u.id);return new Response(JSON.stringify({data:sales}));};await assert.rejects(awardCounter(q,'staff'),/Membership unavailable/);assert.equal(getDb().prepare('SELECT count(*) n FROM counter_reward_sales').get()?.n,0);});
 
+
+function linkedOrder(code:string,qty=1){return createOrder({source:'staff',customerName:'Counter practice',contactNumber:'0821234567',collectionTime:'ASAP',membershipCode:code,rewardEnvironment:'test',lines:[{id:'espresso-single',quantity:qty}]});}
+function matchingSale(o:ReturnType<typeof linkedOrder>){sales=[sale(o.lines[0].quantity,{note:'FOND '+o.staffNumber,amounts:{net_amount:{amount:o.totalCents,currency:'ZAR'},tip_amount:{amount:0,currency:'ZAR'}},payments:[{status:'approved',payment_method:'card',amount_excl_tip:{amount:o.totalCents,currency:'ZAR'}}]})];}
+async function verifyOrder(o:ReturnType<typeof linkedOrder>){recordPosEntry(o.id,sales[0].order_number,'staff',await prepareCounterOrderReceipt(o.id,sales[0].order_number,date(),'staff'));}
+function collect(o:ReturnType<typeof linkedOrder>){updateOrderStatus(o.id,'ready');recordPayment({orderId:o.id,amountCents:o.totalCents,method:'card',reference:randomUUID()},'staff');updateOrderStatus(o.id,'completed');}
+test('linked staff membership earns once only after matching receipt, payment and collection; reward can be redeemed',async()=>{
+ const u=user();await enabled();const o=linkedOrder(u.code,10);assert.equal(o.userId,u.id);assert.equal(listCustomerOrders(u.id).length,1);assert.equal(customerRewards(u.id,'test').stamps,0);
+ matchingSale(o);await verifyOrder(o);assert.ok(counterOrderSummary(o.id)?.saleId);assert.equal(customerRewards(u.id,'test').stamps,0);assert.equal(getDb().prepare('SELECT count(*) n FROM payment_records').get()?.n,0);
+ updateOrderStatus(o.id,'ready');assert.throws(()=>updateOrderStatus(o.id,'completed'),/payment/);recordPayment({orderId:o.id,amountCents:o.totalCents,method:'card',reference:randomUUID()},'staff');assert.equal(customerRewards(u.id,'test').stamps,0);updateOrderStatus(o.id,'completed');reconcileOrderRewards(o.id);
+ const r=customerRewards(u.id,'test').rewards;assert.equal(r.length,1);assert.equal(r[0].status,'available');await assert.rejects(quote(u.code),/FOND|recorded/);
+ const free=createOrder({source:'staff',customerName:'Free',contactNumber:'0821234567',collectionTime:'ASAP',staffRewardCode:String(r[0].code),rewardEnvironment:'test',lines:[{id:'espresso-single',quantity:1}]});assert.equal(free.totalCents,0);recordPosEntry(free.id,'free-receipt','staff');updateOrderStatus(free.id,'ready');updateOrderStatus(free.id,'completed');assert.equal(customerRewards(u.id,'test').rewards[0].status,'redeemed');
+});
+test('receipt mismatch, missing FOND note, paused and stale verification cannot record POS or reserve stamps',async()=>{
+ const u=user();await enabled();const o=linkedOrder(u.code);matchingSale(o);sales[0].note='FOND 999999';await assert.rejects(verifyOrder(o),/match/);sales[0].note='FOND '+o.staffNumber;sales[0].amounts.net_amount.amount++;await assert.rejects(verifyOrder(o));matchingSale(o);const verify=await prepareCounterOrderReceipt(o.id,'123',date(),'staff');pauseCounter('admin');assert.throws(()=>recordPosEntry(o.id,'123','staff',verify),/settings/);assert.equal(counterOrderSummary(o.id)?.saleId,null);assert.equal(getDb().prepare('SELECT pos_reference FROM orders WHERE id=?').get(o.id)?.pos_reference,null);
+});
+test('rollback reverses pending linked receipt and re-enabling never resurrects it',async()=>{
+ const u=user();await enabled();const o=linkedOrder(u.code);matchingSale(o);await verifyOrder(o);assert.equal(rollbackCounter('Stop practice','admin').reversed,1);await enabled();collect(o);assert.equal(customerRewards(u.id,'test').stamps,0);assert.ok(counterOrderSummary(o.id)?.reversedAt);
+});
+test('linked order cancellation and later payment refund reverse credits',async()=>{
+ const u=user();await enabled();const a=linkedOrder(u.code);matchingSale(a);await verifyOrder(a);updateOrderStatus(a.id,'cancelled');assert.ok(counterOrderSummary(a.id)?.reversedAt);
+ const b=linkedOrder(u.code);matchingSale(b);sales[0].order_number='456';await verifyOrder(b);collect(b);assert.equal(customerRewards(u.id,'test').stamps,1);recordPayment({orderId:b.id,amountCents:b.totalCents,method:'refund',reference:randomUUID()},'admin');assert.equal(customerRewards(u.id,'test').stamps,0);
+});
+test('membership validation rejects customer route, wrong member and reward-code combination',()=>{
+ const u=user();assert.throws(()=>linkedOrder('FOND-M-AAAAAAAAAAAA'));assert.throws(()=>createOrder({source:'customer',customerName:'No',contactNumber:'0821234567',collectionTime:'ASAP',membershipCode:u.code,rewardEnvironment:'test',lines:[{id:'espresso-single',quantity:1}]}),/staff/);assert.equal(getDb().prepare('SELECT count(*) n FROM orders').get()?.n,0);
+});
+
+test('staff can explicitly continue without stamps when counter rewards are paused',()=>{
+ const u=user(),o=linkedOrder(u.code);recordPosEntry(o.id,'plain-receipt','staff',()=>skipCounterOrder(o.id,'staff'));collect(o);assert.equal(counterOrderSummary(o.id),undefined);assert.equal(customerRewards(u.id,'test').stamps,0);assert.equal(listCustomerOrders(u.id).length,1);
+});

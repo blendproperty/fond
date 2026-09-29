@@ -1,4 +1,5 @@
 'use client';
+import {MembershipScanner} from './membership-scanner';
 import {CounterStamps} from './counter-rewards';
 import {CategoryNavigation} from './category-navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -14,6 +15,7 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 
 type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'out_for_delivery' | 'completed' | 'cancelled';
 type StaffOrder = {
+  counterRewards?:{quantity:number;environment:string;credited:number|null;reversedAt:string|null;saleId:string|null};
   payment?: {paidCents:number;paymentMethod:string|null;checkout:string|null;checkoutUpdatedAt?:string|null};
   id: string;
   reference: string;
@@ -146,10 +148,12 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
     setLastUpdated(new Date());
   }, [notifyOrders, playOrderSound]);
 
+  const [skipRewards,setSkipRewards]=useState(false);
+  const [receiptDate,setReceiptDate]=useState(()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));
   async function recordYoco(id: string) {
     setPosError('');
     try {
-      const res = await fetch(`/api/staff/orders/${id}/pos-entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posReference }) });
+      const res = await fetch(`/api/staff/orders/${id}/pos-entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posReference,receiptDate,skipRewards }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not record Yoco entry.');
       setPosOrderId(null); setPosReference(''); setPosError('');
@@ -353,6 +357,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                         return <li key={`${line.id}::${(line.modifierIds ?? []).join(',')}`}><strong>{line.quantity}× {line.name ?? item?.name ?? line.id}</strong><StaffItemChanges names={mods as string[]}/>{!!line.rewardDiscountCents&&<p className="notice">APP COFFEE REWARD · discount {money(line.rewardDiscountCents)}. Apply the same discount in Yoco; extras remain payable.</p>}</li>;
                       })}
                     </ul>
+                    {order.counterRewards&&<p className="notice">Coffee membership attached · {order.counterRewards.quantity} eligible coffee(s). {order.counterRewards.reversedAt?'Stamps reversed.':order.counterRewards.credited?'Stamps added.':order.counterRewards.saleId?'Yoco receipt verified. Stamps will be added after payment is recorded and the order is collected.':'Next: pay in Yoco with this FOND note, then verify the receipt using Record Yoco entry.'}</p>}
                     {order.note && <p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}
                     {!order.posRecordedAt&&order.posRequired&&<div className="staff-pos-instructions"><strong>Yoco sale note: FOND {order.staffNumber}</strong><button className="quiet" onClick={()=>void copyPosNote(order.staffNumber)}>Copy Yoco note</button>{order.totalCents===0?<p>Free app reward. Record the coffee with its full discount in Yoco. No payment is due.</p>:paidOnline?<p>{paymentMode==='sandbox'?'TEST PAYMENT · Use the Yoco sandbox only.':'Already paid online · close in Yoco as EFT. Do not charge again.'} {posSync?.enabled&&!posSync.error?'The POS reference will appear after matching.':'Automatic matching is not connected. Record the POS reference manually.'}</p>:<p>Enter the short number in Yoco. Keep the existing payment-on-collection process.</p>}{posSync?.issues.filter(issue=>issue.staffNumber===order.staffNumber).map(issue=><p role="alert" key={issue.message}>{issue.message}</p>)}</div>}
                     {order.posRecordedAt && <p className="staff-meta">Entered in Yoco · {order.posReference}</p>}
@@ -361,8 +366,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     <div className="staff-card-bottom">
                       <strong>{money(order.totalCents)}</strong>
                       <div className="staff-card-actions">
-                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setPosReference('');setPosError('');}}>Record Yoco entry</button>}
-                        {order.status==='ready'&&!fullyPaid&&order.paymentMethod==='pay_at_collection'&&<button className="primary staff-payment-action" onClick={()=>{setPaymentOrderId(order.id);setPaymentMethod('card');setPaymentReference('');}}>Take payment</button>}
+                        {order.status === 'accepted' && order.posRequired && !order.posRecordedAt && <button className="primary" onClick={() => {setPosOrderId(order.id);setSkipRewards(false);setPosReference('');setPosError('');}}>Record Yoco entry</button>}
+                        {order.status==='ready'&&!fullyPaid&&order.paymentMethod==='pay_at_collection'&&<button className="primary staff-payment-action" onClick={()=>{setPaymentOrderId(order.id);setPaymentMethod('card');setPaymentReference('');}}>{order.counterRewards?"Record Yoco payment":"Take payment"}</button>}
                         {col.key==='payment' && <span className="staff-awaiting">Waiting for signed Yoco payment confirmation</span>}
                         {step && <button className="primary" onClick={() => setStatus(order.id, step.next, step.lane)}><Check size={16} /> {step.label}</button>}
                         <button className="quiet" onClick={() => setStatus(order.id, 'cancelled')}>Cancel</button>
@@ -375,9 +380,9 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
           </section>
         ))}
       </div>
-      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p className="staff-short-number">Yoco note: FOND {orders.find(order=>order.id===posOrderId)?.staffNumber}</p><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
-      {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed.</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
-      {manualOpen && <ManualOrderPanel menu={menu} rewardMode={counterReward} onClose={() => setManualOpen(false)} onCreated={refresh} />}
+      {posOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="pos-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}><X size={20}/></button><p className="eyebrow">RESTAURANT HANDOFF</p><h2 id="pos-modal-title">Confirm Yoco POS entry</h2><p className="staff-short-number">Yoco note: FOND {orders.find(order=>order.id===posOrderId)?.staffNumber}</p><p>Enter the receipt or order number shown on the restaurant Yoco system. Each Yoco receipt or order number can only be used once.</p><form onSubmit={event=>{event.preventDefault();void recordYoco(posOrderId);}}><label className="field">Yoco POS receipt / order number<input autoFocus required maxLength={100} value={posReference} onChange={event=>{setPosReference(event.target.value);setPosError('');}} placeholder="Example: YOCO-12345"/></label>{orders.find(o=>o.id===posOrderId)?.counterRewards&&<><p className="notice">Complete payment in Yoco first. We will verify the FOND note, total and Coffee items. Record the payment at handover, then mark collected to earn stamps.</p><label className="field">Yoco receipt date<input type="date" required={!skipRewards} value={receiptDate} onChange={e=>setReceiptDate(e.target.value)}/></label><label className="field-check"><input type="checkbox" checked={skipRewards} onChange={e=>setSkipRewards(e.target.checked)}/>Continue this order without coffee stamps</label>{skipRewards&&<p>No counter stamps will be earned on this order. Use this if rewards are paused or the receipt cannot be verified.</p>}</>}{posError&&<p role="alert" className="staff-action-error">{posError}</p>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>{setPosOrderId(null);setPosReference('');setPosError('');}}>Cancel</button><button className="primary" type="submit">Confirm POS entry</button></div></form></section></div>}
+      {paymentOrderId&&<div className="staff-modal-backdrop" role="presentation"><section className="staff-action-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title"><button className="staff-modal-close" aria-label="Close" onClick={()=>setPaymentOrderId(null)}><X size={20}/></button><p className="eyebrow">CUSTOMER HANDOVER</p><h2 id="payment-modal-title">Record payment received</h2><p>{orders.find(o=>o.id===paymentOrderId)?.counterRewards?"Record the payment already received in Yoco. Do not charge the customer again.":"Only confirm after the customer has paid. This creates a permanent payment record before collection or delivery can be completed."}</p><form onSubmit={event=>{event.preventDefault();void recordInPersonPayment(paymentOrderId);}}><fieldset className="staff-payment-options"><legend>Payment method</legend><label><input type="radio" name="method" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/> Card terminal</label><label><input type="radio" name="method" checked={paymentMethod==='cash'} onChange={()=>setPaymentMethod('cash')}/> Cash</label></fieldset>{paymentMethod==='card'&&<label className="field">Card receipt reference<input autoFocus required maxLength={150} value={paymentReference} onChange={event=>setPaymentReference(event.target.value)} placeholder="Receipt or terminal reference"/></label>}<div className="staff-modal-actions"><button className="quiet" type="button" onClick={()=>setPaymentOrderId(null)}>Cancel</button><button className="primary" type="submit">Confirm payment received</button></div></form></section></div>}
+      {manualOpen && <ManualOrderPanel menu={menu} rewardMode={counterReward} onClose={() => setManualOpen(false)} onCreated={async()=>{setActiveLane('new');await refresh();}} />}
     </div>
   );
 }
@@ -395,6 +400,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
   const [submitting, setSubmitting] = useState(false);
   const sending = useRef(false);
   const [rewardCode,setRewardCode]=useState(''),[rewardQuote,setRewardQuote]=useState<{discountCents:number;totalCents:number;environment:string}|null>(null),[checkingReward,setCheckingReward]=useState(false),[rewardError,setRewardError]=useState('');
+  const [membershipCode,setMembershipCode]=useState('');
   const rewardVersion=useRef(0);
   useEffect(()=>{rewardVersion.current++;setRewardQuote(null);setRewardError('');},[cart,rewardCode]);
   async function checkReward(){const version=++rewardVersion.current;setCheckingReward(true);setRewardError('');try{const r=await fetch('/api/staff/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:rewardCode,lines:cart})}),d=await r.json();if(version!==rewardVersion.current)return;if(!r.ok)throw new Error(d.message);setRewardQuote(d);}catch(e){if(version===rewardVersion.current){setRewardQuote(null);setRewardError((e as Error).message);}}finally{setCheckingReward(false);}}
@@ -441,7 +447,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
     sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart, ...(rewardQuote?{rewardCode:rewardCode.trim()}: {}) });
+      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart, ...(membershipCode.trim()?{membershipCode:membershipCode.trim()}:{}), ...(rewardQuote?{rewardCode:rewardCode.trim()}: {}) });
       const key = await submissionKey(payload);
       const res = await fetch('/api/staff/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -506,6 +512,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
               <div className="total"><span>Total</span><strong>{money(rewardQuote?.totalCents??total)}</strong></div>
             </div>
           )}
+          {!rewardMode&&<MembershipScanner value={membershipCode} onChange={setMembershipCode}/>}
           <section className="basket-rewards"><h3>Customer coffee code</h3><label className="field">Coffee reward code<input maxLength={40} value={rewardCode} onChange={e=>setRewardCode(e.target.value)} placeholder="COFFEE-…"/></label><button className="outline" disabled={checkingReward||!rewardCode.trim()||!cart.length} onClick={checkReward}>{checkingReward?'Checking…':'Validate coffee code'}</button>{rewardError&&<p role="alert">{rewardError}</p>}{rewardQuote&&<p role="status">{rewardQuote.environment==='test'?'TEST code verified.':'Code verified.'} One coffee discounted; extras remain payable. {rewardQuote.totalCents===0?'Nothing to collect.':`${money(rewardQuote.totalCents)} remains due.`}</p>}</section>
           <label className="field">Name / table / desk<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Table 4, or Jane (OnPoint 2nd floor)" /></label>
           <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Customer's phone number" /></label>

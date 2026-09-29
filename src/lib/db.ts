@@ -279,6 +279,7 @@ export function getDb(): DatabaseSync {
       actor TEXT NOT NULL,created_at TEXT NOT NULL,reversed_at TEXT,reason TEXT,checked_at TEXT,check_error TEXT,
       UNIQUE(environment,yoco_id)
     );
+    CREATE TABLE IF NOT EXISTS counter_order_members (order_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,environment TEXT NOT NULL,quantity INTEGER NOT NULL,sale_id TEXT UNIQUE);
     CREATE TABLE IF NOT EXISTS counter_reward_sync (id INTEGER PRIMARY KEY CHECK(id=1),next_run INTEGER NOT NULL DEFAULT 0);
     CREATE INDEX IF NOT EXISTS counter_reward_member ON counter_reward_sales(user_id,environment);
     CREATE INDEX IF NOT EXISTS counter_reward_checks ON counter_reward_sales(environment,location_id,credited,checked_at);

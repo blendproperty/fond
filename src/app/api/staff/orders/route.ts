@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
     const order = createOrder({
       submissionKey,
+      membershipCode:typeof body.membershipCode==='string'?body.membershipCode:undefined,
       staffRewardCode:typeof body.rewardCode==='string'?body.rewardCode:undefined,
       rewardEnvironment:customerCheckoutMode()==='live'?'live':'test',
       customerName: body.customerName,

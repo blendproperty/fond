@@ -21,4 +21,5 @@ jobs:
           FOND_STAFF_CODE: ci-test-code
           FOND_ADMIN_CODE: ci-admin-code
           FOND_DB_PATH: ':memory:'
+      - run: npm run test:practice
       - run: docker build -t fond:ci .

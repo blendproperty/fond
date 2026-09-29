@@ -22,7 +22,7 @@ export function CounterStamps(){
  return <><button className="outline" onClick={()=>setOpen(true)}><Coffee size={18}/> Add coffee stamps</button>
  <dialog className="counter-stamps-dialog" ref={dialog} onCancel={close} onClose={close} aria-labelledby="counter-stamps-title">
  <header><div><p className="eyebrow">COUNTER COFFEE REWARDS</p><h2 id="counter-stamps-title">Add coffee stamps</h2></div><button className="icon-button" aria-label="Close counter stamps" onClick={close}><X/></button></header>
- <p>Complete the sale once in Yoco. Link that receipt to the customer’s coffee card here.</p>
+ <p>For a sale entered only in Yoco: complete payment, then link the receipt here. If you added a FOND order, scan the membership inside Add order and verify the receipt on that order instead.</p>
  {!enabled&&<p className="notice">Counter earning is paused or awaiting Yoco setup. An administrator can configure it in Marketing & CMS.</p>}
  <fieldset disabled={busy||!enabled}><label className="field">Customer membership number<input value={memberCode} onChange={e=>setMemberCode(e.target.value.toUpperCase())} maxLength={40} placeholder="FOND-M-…" autoComplete="off"/></label><button className="outline" type="button" onClick={()=>setCamera(!camera)}>{camera?'Stop camera':'Scan membership QR'}</button>
  {camera&&<video ref={video} muted playsInline aria-label="Membership QR camera"/>}
