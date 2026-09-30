@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('Hub destinations, real empty calendars and forms work on desktop and phones',async({page})=>{
-  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Your day. All at Midpoint.'})).toBeVisible();
+  await page.goto('/hub');await expect(page.getByRole('heading',{name:'First, something delicious.'})).toBeVisible();
   await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/Gym/}).click();
   await expect(page).toHaveURL(/\/gym$/);await page.getByRole('link',{name:'Midpoint Gym Sign up',exact:true}).click();
   await expect(page.getByLabel('ID or passport number')).toBeVisible();

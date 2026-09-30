@@ -1,0 +1,68 @@
+/* A shared app shell with a recognisable atmosphere for each destination. */
+.hub-app .hub-top:after{display:none}
+.hub-page-label{font-size:9px;letter-spacing:1.5px;font-weight:700;color:var(--hub-ink);text-align:right;max-width:160px}
+.hub-shell.hub-mood-home{background:#fbf8f0}
+.hub-shell.hub-mood-gym{--hub-tint:#e8efce;--hub-accent:#254a31;--hub-line:#d5dfca;background:#f5f7ee}
+.hub-shell.hub-mood-padel{--hub-tint:#e8edfc;--hub-accent:#254fbb;--hub-line:#d5ddf1;background:#f3f5fd}
+.hub-shell.hub-mood-functions{--hub-ink:#493039;--hub-accent:#743d4c;--hub-tint:#f4e9e2;--hub-line:#e7d9cf;background:#fcf7ef}
+.hub-mood-gym .hub-app-nav a[aria-current=page]{background:#dfedb9;color:#24482d}
+.hub-mood-padel .hub-app-nav a[aria-current=page]{background:#254fbb;color:white}
+.hub-mood-functions .hub-app-nav a[aria-current=page]{background:#743d4c;color:#fff9ef}
+.hub-personality-hero{position:relative;isolation:isolate;overflow:hidden;border-radius:30px;display:grid;grid-template-columns:1.2fr 1fr;align-items:center;min-height:350px;margin:6px 0 0;padding:38px;gap:10px}
+.hub-personality-copy{position:relative;z-index:2;min-width:0}
+.hub-app.hub-wide .hub-personality-hero h1{font-size:clamp(36px,4.7vw,54px);font-weight:750;letter-spacing:-2px;line-height:1.05;margin:14px 0 20px}
+.hub-personality-hero h1 em{font:inherit;color:var(--hero-highlight)}
+.hub-personality-hero .hub-eyebrow{font-size:9px;line-height:1.7;letter-spacing:1.7px;margin-bottom:12px}
+.hub-personality-copy>p{max-width:360px;font-size:14px;line-height:1.75;opacity:.9}
+.hub-shell .hub-hero-cta{display:inline-flex;align-items:center;gap:20px;padding:14px 18px;min-height:48px;border-radius:14px;background:var(--hero-button);color:var(--hero-button-ink);font-size:13px;font-weight:750;margin-top:24px;box-shadow:0 4px 0 #0000000a}
+.hub-food-hero{background:#f3d7bd;color:#392b21;--hero-highlight:#a13d23;--hero-button:#753820;--hero-button-ink:#fff5e9}
+.hub-gym-hero{background:#173e2d;color:#f3f7e3;--hero-highlight:#d8ef87;--hero-button:#d8ef87;--hero-button-ink:#173e2d}
+.hub-padel-hero{background:#254fbb;color:#fff;--hero-highlight:#e0f48e;--hero-button:#e0f48e;--hero-button-ink:#183477}
+.hub-feast-hero{background:#633547;color:#fff0da;--hero-highlight:#f4ba91;--hero-button:#f4ba91;--hero-button-ink:#4a2735}
+.hub-app.hub-wide .hub-feast-hero h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;letter-spacing:-1.6px;font-size:57px;line-height:1.02}
+.hub-feast-hero h1 em{font-style:italic}
+.hub-scene-wrap{position:relative;width:100%;aspect-ratio:1;min-width:0;display:grid;place-items:center}
+.hub-scene{position:absolute;inset:0;width:100%;height:100%;color:inherit;pointer-events:none}
+.hub-scene-coffee{color:#9c512c}.hub-scene-gym{color:#d2e48a;opacity:.35}.hub-scene-padel{color:#a2bae9;opacity:.8}.hub-scene-table{color:#f4ba91}
+.hub-scene-badge{position:relative;z-index:1;width:64%;aspect-ratio:1;object-fit:contain;border-radius:50%;box-shadow:0 16px 28px #0002;transform:rotate(-7deg)}
+.hub-scene-stamp{position:absolute;z-index:2;right:0;bottom:10px;display:grid;place-content:center;text-align:center;background:var(--hero-button);color:var(--hero-button-ink);border-radius:50%;width:87px;height:87px;font-size:10px;font-weight:800;letter-spacing:.8px;line-height:1.5;transform:rotate(10deg);border:1px dashed currentColor;outline:5px solid var(--hero-button)}
+.hub-section-intro{margin:30px 0 18px;display:flex;justify-content:space-between;align-items:end;gap:20px}
+.hub-section-intro .hub-eyebrow{font-size:9px;margin-bottom:8px;letter-spacing:1.4px}
+.hub-app.hub-wide .hub-section-intro h2{font-size:24px;font-weight:700;letter-spacing:-.7px}
+.hub-section-intro>p{font-size:12px;max-width:160px;color:#667066}
+.hub-mood-home .hub-app-destinations>a{border:0;box-shadow:none;transition:transform .2s}
+.hub-mood-home .hub-app-destinations>a:hover{transform:translateY(-4px)}
+.hub-mood-home .hub-app-destinations>a:nth-child(1){background:#f6e7d5}.hub-mood-home .hub-app-destinations>a:nth-child(2){background:#e6edce}.hub-mood-home .hub-app-destinations>a:nth-child(3){background:#e2e9fb}
+.hub-mood-home .hub-app-shortcuts a:first-child{background:#f6e7d5}.hub-mood-home .hub-app-shortcuts a:last-child{background:#f0e2e7;color:#633547}
+.hub-mood-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 8px;font-size:11px;font-weight:650;border-bottom:1px solid var(--hub-line);margin-bottom:6px}
+.hub-mood-strip span{display:flex;align-items:center;gap:8px}.hub-mood-strip span:before{content:'✳';font-size:17px;color:var(--hub-accent)}
+.hub-app .hub-next .hub-section-heading{display:block;margin-bottom:18px}.hub-app .hub-next .hub-section-heading h2{font-size:24px;font-weight:700;letter-spacing:-.6px}.hub-next .hub-section-heading .hub-eyebrow{display:none}
+.hub-app.hub-wide .hub-actions a{box-shadow:0 4px 16px #19352905;border-color:var(--hub-line);background:#ffffffb8}.hub-app.hub-wide .hub-actions b{font-size:18px}.hub-app.hub-wide .hub-actions p{font-size:12px}
+.hub-app .hub-service-bottom{background:var(--hub-tint);border:0;border-radius:24px;padding:26px;gap:24px}.hub-app .hub-service-bottom .hub-note h3{font-size:22px;line-height:1.2}.hub-app .hub-service-bottom .hub-note p{font-size:13px;line-height:1.7}.hub-app .hub-service-contact h2{font-size:20px}.hub-app .hub-service-contact>a{font-size:12px;gap:6px}
+.hub-michelle-note{display:flex;align-items:flex-start;gap:20px;margin:22px 0;padding:26px 22px;background:#f3e8d7;border:1px solid #e9dbc8;border-radius:24px}
+.hub-chef-monogram{position:relative;display:grid;place-items:center;flex-shrink:0;background:#743d4c;color:#f7dbba;width:66px;height:76px;border-radius:35px 35px 18px 18px;font:italic 42px Georgia,serif}.hub-chef-monogram>span{position:absolute;right:-7px;bottom:-7px;color:#743d4c;background:#ebbb87;border-radius:50%;font:24px Arial;padding:3px}
+.hub-michelle-note .hub-eyebrow{font-size:9px;letter-spacing:1.1px;margin:0 0 8px;color:#795052}.hub-app.hub-wide .hub-michelle-note h2{font:28px Georgia,serif;letter-spacing:-.5px;margin-bottom:12px}.hub-michelle-note p{font-size:13px;line-height:1.8;max-width:600px}.hub-michelle-note a{display:inline-flex;align-items:center;gap:12px;font-size:12px;font-weight:750;border-bottom:1px solid #b38e83;padding-bottom:3px;margin-top:12px}
+.hub-mood-functions .function-booking-form{scroll-margin-top:18px;background:#fffdfa;gap:22px;border-color:#e7d9cf;padding:28px}
+.hub-mood-functions .function-booking-form>div>h2{font:30px Georgia,serif!important;letter-spacing:-.5px}.hub-mood-functions .function-booking-form .hub-eyebrow{color:#84554f;margin-bottom:10px}
+.hub-function-styles{margin:0;padding:0;border:0;min-width:0}.hub-function-styles legend{font-size:13px;font-weight:750;margin-bottom:10px}.hub-style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.hub-style-options button{display:flex;align-items:center;gap:9px;border:1px solid #e7d9cf;background:#faf3e9;border-radius:13px;padding:13px 12px;text-align:left;min-height:62px;font-size:12px;font-weight:700}.hub-style-options button svg{color:#94603e;width:22px;height:22px}.hub-style-options button[aria-pressed=true]{background:#743d4c;color:#fff9ef;border-color:#743d4c}.hub-style-options button[aria-pressed=true] svg{color:#f4ba91}.hub-style-options button:hover{border-color:#743d4c}
+.hub-mood-functions .function-date{background:#faf4e9;border-color:#e7d9cf}.hub-mood-functions .function-days button{background:#ede3d6;aspect-ratio:auto;min-height:42px}.hub-mood-functions .function-days button:disabled{background:#f2ede5;color:#82756b;opacity:.55}.hub-mood-functions .function-days button[aria-pressed=true]{background:#743d4c;color:white}.hub-mood-functions .function-date>small,.hub-mood-functions .hub-helper,.hub-mood-functions .hub-form small{color:#78695e!important}.hub-mood-functions .hub-form input,.hub-mood-functions .hub-form select,.hub-mood-functions .hub-form textarea{background:#fffefa}.hub-mood-functions .hub-form .hub-primary{border-radius:14px}
+@media(max-width:700px){
+ .hub-personality-hero{grid-template-columns:1fr;min-height:0;border-radius:25px;padding:27px 24px 23px;gap:0}
+ .hub-app.hub-wide .hub-personality-hero h1{font-size:40px;letter-spacing:-1.8px;margin:10px 0 16px}
+ .hub-personality-copy>p{font-size:13px;line-height:1.7;max-width:340px}
+ .hub-personality-hero .hub-eyebrow{font-size:8px;letter-spacing:1.3px;max-width:270px}
+ .hub-shell .hub-hero-cta{margin-top:20px;font-size:12px;padding:13px 16px;gap:14px}
+ .hub-scene-wrap{width:170px;justify-self:end;margin-top:-12px;margin-bottom:-5px}
+ .hub-scene-stamp{width:66px;height:66px;font-size:8px;right:-3px;bottom:0;outline-width:3px}
+ .hub-food-hero .hub-scene-wrap{margin-top:-20px;width:155px}
+ .hub-app.hub-wide .hub-feast-hero h1{font-size:45px;letter-spacing:-1.2px}
+ .hub-feast-hero .hub-personality-copy>p{max-width:250px}
+ .hub-feast-hero .hub-scene-wrap{width:190px;margin-top:-14px}
+ .hub-section-intro{display:block;margin-top:25px}.hub-section-intro>p{max-width:none;margin-top:8px}.hub-app.hub-wide .hub-section-intro h2{font-size:22px}
+ .hub-mood-strip{gap:10px;align-items:flex-start;font-size:10px;padding:17px 0}.hub-mood-strip span{flex:1;display:block;line-height:1.5}.hub-mood-strip span:before{display:block;margin-bottom:4px}
+ .hub-app .hub-service-bottom{padding:22px}.hub-app.hub-wide .hub-actions b{font-size:18px}.hub-app.hub-wide .hub-actions p{font-size:12px}
+ .hub-michelle-note{gap:15px;padding:22px 18px}.hub-chef-monogram{width:48px;height:61px;font-size:34px}.hub-app.hub-wide .hub-michelle-note h2{font-size:24px}.hub-michelle-note p{font-size:12px}.hub-michelle-note .hub-eyebrow{font-size:8px;letter-spacing:.8px}
+ .hub-mood-functions .function-booking-form{padding:22px 16px}.hub-style-options{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-style-options button{font-size:11px;gap:7px;padding:12px 9px;min-height:56px}.hub-style-options button svg{width:19px;height:19px}
+ .hub-mood-functions .function-days button{min-height:34px}
+}
+@media(max-width:370px){.hub-personality-hero{padding:24px 20px}.hub-app.hub-wide .hub-personality-hero h1{font-size:35px}.hub-app.hub-wide .hub-feast-hero h1{font-size:40px}.hub-page-label{font-size:8px;max-width:140px}.hub-scene-wrap{width:145px}.hub-feast-hero .hub-scene-wrap{width:170px}.hub-app.hub-wide .hub-actions b{font-size:16px}}
