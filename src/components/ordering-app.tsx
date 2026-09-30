@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search } from 'lucide-react';
+import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingBag, Truck, Utensils, X, Download, Search, UserRound, ArrowLeft } from 'lucide-react';
 import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSection, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 
 import {CategoryNavigation} from './category-navigation';
 import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
+import './fond-ordering.css';
 import { submissionKey, clearSubmission } from '@/lib/submission';
 import {basketPrepMinutes} from '@/lib/preparation-estimates';
 import {tradingWindow,withinTradingWindow,tradingDayNames} from '@/lib/trading-hours';
@@ -44,6 +45,7 @@ export function OrderingApp() {
   const [paying,setPaying]=useState(false);
   const [menu, setMenu] = useState<Meal[]>([]);
   const [category, setCategory] = useState<Category>(categories[0]);
+  const [menuSearch,setMenuSearch]=useState('');
   const [foodTruckMenu, setFoodTruckMenu] = useState<FoodTruckSection>('Build Your Plate');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pendingMods, setPendingMods] = useState<Record<string, string[]>>({});
@@ -221,32 +223,36 @@ export function OrderingApp() {
     setTracked(data);
   }
 
-  const visibleMenu = menu.filter((item) => item.category === category && (category !== 'Food Truck' || foodTruckSection(item) === foodTruckMenu));
+  const searchTerm=menuSearch.trim().toLowerCase();
+  const visibleMenu = menu.filter((item) => searchTerm ? `${item.name} ${item.description} ${item.category}`.toLowerCase().includes(searchTerm) : item.category === category && (category !== 'Food Truck' || foodTruckSection(item) === foodTruckMenu));
 
-  return <>
-    <a href="/hub" aria-label="Back to Midpoint Hub" style={{display:'flex',alignItems:'center',gap:8,padding:'12px 20px',background:'#edf3e9',color:'#073b31',fontSize:13,fontWeight:650,textDecoration:'none',minHeight:44}}>← Midpoint Hub</a>
-    <header className="header"><a href="/fond" className="brand-link" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-header" /></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Collect from FOND</small></div></div><nav><a className="quiet" href="/account">My account</a><a className="quiet" href="/rewards">Coffee rewards</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
+  return <div className="fond-ordering-app">
+    <a className="fond-hub-back" href="/hub" aria-label="Back to Midpoint Hub"><ArrowLeft size={15}/> Midpoint Hub</a>
+    <header className="header fond-order-header"><a href="/fond" className="brand-link" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-header" /></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Your everyday food stop</small></div></div><nav className="fond-header-actions" aria-label="FOND account navigation"><a className="quiet" href="/account">My account</a><a className="quiet" href="/rewards">Coffee rewards</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
     <main id="main">
-      <section className="hero"><img className="hero-bg" src="/images/fond-hero.jpg" alt="The FOND Eatery entrance at Midpoint Hub" loading="eager" /><div className="hero-copy"><p className="eyebrow"><span />YOUR EVERYDAY FOOD STOP</p><h1>{store?.content.headline??<>Good food.<br/>One less thing<br/><em>to think about.</em></>}</h1><p className="intro">{store?.content.intro??'From your first meeting to your last set. Fresh breakfast, proper lunch and a little lift. Made for your day at Midpoint.'}</p><a className="primary hero-cta" href="#menu">Find your favourite <ArrowRight size={18} /></a><div className="hero-foot"><Leaf size={16} /> Freshly made <span>·</span><ShoppingBag size={16} /> Order ahead, pay on collection</div></div><span className="hero-photo-caption">FOND · MIDPOINT HUB</span></section>
-      <section className="promise"><span><Coffee size={20} /> Before work.</span><span><Utensils size={20} /> Between meetings.</span><span><Leaf size={20} /> After your workout.</span><strong>We&rsquo;ve got your day.</strong></section>
+      <section className="fond-order-start" aria-label="Start your order"><div className="fond-order-greeting"><div><p className="eyebrow">FRESH FROM FOND</p><h1>Good food.<br/><em>On your terms.</em></h1></div><span className={`fond-trading-pill ${store&&restaurantAvailable?'is-open':''}`} role="status">{!store?'Checking hours…':restaurantAvailable?'Taking orders':'Currently closed'}</span></div><div className="fond-order-mode" role="group" aria-label="Choose how to get your order"><button aria-pressed={fulfillment==='collection'} disabled={!store||store.settings.collectionEnabled===false} onClick={()=>setFulfillment('collection')}><ShoppingBag size={18}/>Collection</button><button aria-pressed={fulfillment==='delivery'} disabled={!store||store.settings.deliveryEnabled===false||!store.onlinePayments} onClick={()=>{setFulfillment('delivery');setPayOnline(true);}}><Truck size={18}/>Delivery</button></div><p className="fond-order-location"><MapPin size={15}/>{fulfillment==='collection'?'Collect from FOND · Midpoint Hub':store?.settings.deliveryArea||'Delivery to supported Midpoint businesses'}<span>{fulfillment==='collection'?'Choose your time in the basket':'Choose your building in the basket'}</span></p>{store&&(!store.settings.deliveryEnabled||!store.onlinePayments)&&<p className="fond-mode-help">Delivery is currently unavailable. Collection is available when ordering is open.</p>}</section>
       {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
       {store&&!store.open&&<div role="status" className="store-announcement">{store.settings.closedMessage}</div>}
       {store?.paymentMode==='sandbox'&&<div role="status" className="sandbox-payment-banner"><strong>YOCO TEST PAYMENT MODE</strong><span>No real money will be charged. Orders and payment confirmations are for controlled FOND testing only.</span></div>}
-      <InstallApp onHelpChange={setInstallHelp}/>
-      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category))setCategory(target as Category);document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
-      <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">SOMETHING GOOD, WHEN YOU NEED IT</p><h2>What are you in the mood for?</h2></div><div className="collection-badge"><Clock3 size={18} /><span>Order ahead.<br /><strong>Collect at Midpoint.</strong></span></div></div>
-        <div className="menu-toolbar"><CategoryNavigation value={category} onChange={setCategory}/></div>
-        {category==='Food Truck'&&<div className="food-truck-intro"><span className="food-truck-intro-icon" aria-hidden="true"><Truck size={26}/></span><div><p className="eyebrow">FOND SHISA NYAMA</p><h3>Food Truck Menu</h3><p>Built for delivery or collection. Choose a complete favourite, or build a plate with separate protein, sides and sauce.</p><p><strong>Food Truck orders close at {hours.foodTruckClosingTime}.</strong> {tradingDayNames(hours.foodTruckOpenDays)} · from {hours.foodTruckOpeningTime}.</p></div></div>}
-        {category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
-        <div className="meal-grid" role="tabpanel" aria-label={category==='Food Truck'?`Food Truck · ${foodTruckMenu}`:category}>{visibleMenu.map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
+      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category)){setCategory(target as Category);setMenuSearch('');}document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
+      <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">YOUR NEXT FAVOURITE</p><h2>What sounds good?</h2></div></div>
+        <div className="fond-menu-search"><Search size={19}/><input type="search" aria-label="Search the menu" placeholder="Find a dish, coffee or craving" value={menuSearch} onChange={e=>setMenuSearch(e.target.value)}/>{menuSearch&&<button aria-label="Clear menu search" onClick={()=>setMenuSearch('')}><X size={18}/></button>}</div>
+        <div className="menu-toolbar"><CategoryNavigation value={category} onChange={value=>{setCategory(value);setMenuSearch('');}}/></div>
+        {searchTerm&&<p className="fond-search-count" role="status">{visibleMenu.length} {visibleMenu.length===1?'match':'matches'} for “{menuSearch.trim()}”</p>}
+        {!searchTerm&&category==='Food Truck'&&<div className="food-truck-intro"><span className="food-truck-intro-icon" aria-hidden="true"><Truck size={26}/></span><div><p className="eyebrow">FOND SHISA NYAMA</p><h3>Food Truck Menu</h3><p>Built for delivery or collection. Choose a complete favourite, or build a plate with separate protein, sides and sauce.</p><p><strong>Food Truck orders close at {hours.foodTruckClosingTime}.</strong> {tradingDayNames(hours.foodTruckOpenDays)} · from {hours.foodTruckOpeningTime}.</p></div></div>}
+        {!searchTerm&&category==='Food Truck'&&<div className="food-truck-subnav tabs" role="tablist" aria-label="Food Truck menu section">{FOOD_TRUCK_SECTIONS.map(section=><button key={section} role="tab" aria-selected={foodTruckMenu===section} onClick={()=>setFoodTruckMenu(section)}>{section}</button>)}</div>}
+        <div className="meal-grid" role="tabpanel" aria-label={searchTerm?'Menu search results':category==='Food Truck'?`Food Truck · ${foodTruckMenu}`:category}>{visibleMenu.map((m) => { const selectedMods = pendingMods[m.id] ?? []; const modPriceSum = (m.modifiers ?? []).filter((mod) => selectedMods.includes(mod.id)).reduce((n, mod) => n + mod.price, 0); const qty = lineQuantity(m.id, selectedMods); return <article className="meal-card" key={m.id}><div className="meal-art"><div className="food-symbol" aria-hidden="true">{m.symbol}</div>{(m.isSpecial || m.diet) && <span className="meal-tag">{m.isSpecial ? (m.specialLabel || 'Special') : m.diet!.join(' · ')}</span>}</div><div className="meal-content"><h3>{m.name}</h3><p>{m.description}</p>
           <p className="meal-prep">Approx. {Math.ceil((m.prepMinutes??10)*(1+(store?.settings.preparationWeightPercent??7)/100))} min preparation</p>{!!m.modifiers?.length && <div className="meal-modifiers">{m.modifiers.map((mod) => <label className="modifier-check" key={mod.id}><input type="checkbox" checked={selectedMods.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)} /> {mod.name}{mod.price !== 0 ? ` (${mod.price > 0 ? '+' : ''}${money(mod.price)})` : ''}</label>)}</div>}
           <div className="meal-bottom"><strong>{money(m.price + modPriceSum)}{m.isSpecial && m.basePrice ? <span className="was-price"> {money(m.basePrice)}</span> : null}</strong><button className="add" aria-label={`Add ${m.name}`} disabled={!restaurantAvailable||(m.category==='Food Truck'&&!foodTruckAvailable)} onClick={() => change(m.id, 1, selectedMods)}><Plus size={18} /> {!restaurantAvailable||(m.category==='Food Truck'&&!foodTruckAvailable)?'Closed':`Add${qty ? ` (${qty})` : ''}`}</button></div></div></article>; })}</div>
+        {searchTerm&&!visibleMenu.length&&<div className="fond-search-empty"><Search size={26}/><h3>No matches just yet.</h3><p>Try another dish or browse a category.</p><button className="outline" onClick={()=>setMenuSearch('')}>Browse the menu</button></div>}
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
 
+      <InstallApp onHelpChange={setInstallHelp}/>
     </main>
     <footer className="fond-public-footer"><a className="brand-link" href="/fond" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><a href="/hub">Midpoint Hub</a><a href="mailto:ray@midpointhub.com">Contact Ray</a><a href="/hub/privacy">Privacy policy</a><a href="/hub/terms">Terms and conditions</a>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
     <button className="mobile-basket" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
+    <nav className="fond-app-nav" aria-label="FOND app navigation"><a href="#menu" aria-label="Menu"><Utensils size={20}/><span>Menu</span></a><a href="/rewards" aria-label="Coffee rewards"><Coffee size={20}/><span>Rewards</span></a><button aria-label="Track order" onClick={()=>{setPanel('track');setTracked(null);setTrackError('');}}><Search size={20}/><span>Track order</span></button><a href="/account" aria-label="My account"><UserRound size={20}/><span>Account</span></a></nav>
     {panel && <div className="overlay" onClick={() => setPanel(null)}><section className="drawer" role="dialog" aria-modal="true" aria-label={panel === 'basket' ? 'Your basket' : 'Track your order'} onClick={(e) => e.stopPropagation()}>
       <header><div><p className="eyebrow">FOND · MIDPOINT</p><h2>{panel === 'basket' ? 'Your basket' : 'Track your order'}</h2></div><button autoFocus className="icon-button" aria-label="Close" onClick={() => setPanel(null)}><X /></button></header>
       <div className="drawer-scroll">
@@ -288,5 +294,5 @@ export function OrderingApp() {
         </> : <div className="empty"><ShoppingBag /><h3>A little something good?</h3><p>Your basket is waiting for its first favourite.</p><button className="primary" onClick={() => setPanel(null)}>Explore the menu <ArrowRight size={18} /></button></div>}
       </div>
     </section></div>}
-  </>;
+  </div>;
 }

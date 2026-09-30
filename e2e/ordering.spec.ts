@@ -56,9 +56,10 @@ test('available email and SMS notifications are preselected while WhatsApp stays
 test('delivery checkout uses the configured business and building directory',async({page})=>{
  await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.onlinePayments=true;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.deliveryLocations=['Redington South Africa | OnPoint · L2-1-08','Blend Property Management | K8 · Kingfisher Avenue'];await route.fulfill({response,json:body});});
  await page.goto('/');
+ await page.getByRole('button',{name:'Delivery',exact:true}).click();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
- await page.getByRole('tab',{name:'Delivery'}).click();
+ await expect(page.getByRole('tab',{name:'Delivery'})).toHaveAttribute('aria-selected','true');
  await page.getByLabel('Business and building').selectOption('Redington South Africa | OnPoint · L2-1-08');
  await expect(page.getByLabel('Business and building')).toHaveValue('Redington South Africa | OnPoint · L2-1-08');
  await expect(page.getByLabel('Email address (optional)')).not.toHaveAttribute('required');

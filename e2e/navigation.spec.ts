@@ -31,7 +31,7 @@ test('customer PWA fits a narrow Android screen without scaled or clipped contro
  const viewport=await page.evaluate(()=>({layout:document.documentElement.clientWidth,visual:visualViewport?.width??innerWidth,scroll:document.documentElement.scrollWidth}));
  expect(viewport.layout).toBeLessThanOrEqual(viewport.visual+1);
  expect(viewport.scroll).toBeLessThanOrEqual(viewport.visual+1);
- for(const selector of ['.header','nav','.category-navigation','[aria-label="Next menu categories"]','.mobile-basket']){
+ for(const selector of ['.header','.fond-app-nav','.category-navigation','[aria-label="Next menu categories"]','.mobile-basket']){
   const bounds=await page.locator(selector).evaluate(element=>{const rect=element.getBoundingClientRect();return{left:rect.left,right:rect.right,width:rect.width,visual:visualViewport?.width??innerWidth};});
   expect(bounds.left,`${selector} starts inside the screen`).toBeGreaterThanOrEqual(-1);
  expect(bounds.right,`${selector} ends inside the screen`).toBeLessThanOrEqual(bounds.visual+1);
@@ -45,4 +45,21 @@ test('customer PWA fits a narrow Android screen without scaled or clipped contro
  expect(drawerBounds.left).toBeGreaterThanOrEqual(-1);
  expect(drawerBounds.right).toBeLessThanOrEqual(drawerBounds.visual+1);
  await page.screenshot({path:testInfo.outputPath('android-320-pwa.png'),fullPage:true});
+});
+
+
+test('mobile menu search finds food across categories and clears cleanly',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/');
+ await page.getByRole('searchbox',{name:'Search the menu'}).fill('Golden Goddess');
+ await expect(page.getByRole('heading',{name:'Golden Goddess Bowl'})).toBeVisible();
+ await expect(page.locator('.meal-card')).toHaveCount(1);
+ await page.getByRole('searchbox',{name:'Search the menu'}).fill('nonexistentdish');
+ await expect(page.getByText('No matches just yet.')).toBeVisible();
+ await page.getByRole('button',{name:'Clear menu search'}).click();
+ await expect(page.getByRole('heading',{name:'Smashed Avo'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Delivery',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
+ await page.getByRole('button',{name:'Basket',exact:true}).click();
+ await expect(page.getByRole('tab',{name:'Collection',exact:true})).toHaveAttribute('aria-selected','true');
 });
