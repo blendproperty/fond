@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       smsOptIn: !!body.smsOptIn,
       emailOptIn: !!body.emailOptIn,
       userId: user?.id,
-      customerEmail: body.emailOptIn ? (typeof body.customerEmail === 'string' ? body.customerEmail : user?.email) : user?.email,
+      customerEmail: typeof body.customerEmail === 'string' ? body.customerEmail : user?.email,
       paymentMethod:body.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection',
     });
     const redirectUrl=order.paymentMethod==='yoco_online'&&order.totalCents>0?await createCustomerCheckout(order.reference):null;

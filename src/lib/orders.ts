@@ -260,7 +260,7 @@ export function createOrder(input: {
     const orderId=randomUUID();
     if(input.membershipCode&&(input.source!=='staff'||input.staffRewardCode||input.rewardCode||!input.rewardEnvironment))throw new Error('Attach membership to a paid staff order; redeem free-coffee codes separately.');
     const memberId=input.membershipCode?attachCounterMember(orderId,input.membershipCode,input.lines,availableMenu,input.rewardEnvironment!):null;
-    const reward=attachOrderRewards({orderId,userId:input.userId,source:input.source,environment:input.rewardEnvironment,code:input.staffRewardCode??input.rewardCode,counter:!!input.staffRewardCode,actor:input.actor,lines:input.lines,menu:availableMenu});
+    const reward=attachOrderRewards({orderId,userId:input.userId,customerEmail,source:input.source,environment:input.rewardEnvironment,code:input.staffRewardCode??input.rewardCode,counter:!!input.staffRewardCode,actor:input.actor,lines:input.lines,menu:availableMenu});
     const totalCents = priced.reduce((sum, line) => sum + line.subtotal, 0)-reward.discountCents;
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;

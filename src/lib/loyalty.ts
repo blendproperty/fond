@@ -29,7 +29,7 @@ export function quoteCounterReward(environment:RewardEnvironment,code:string,lin
  return {...quoteReward(u.id,environment,code,lines,menu),userId:u.id};
 }
 // Called within the order transaction. Counter redemption never earns stamps.
-export function attachOrderRewards(input:{orderId:string;userId?:string|null;source:string;environment?:RewardEnvironment;code?:string;counter?:boolean;actor?:string;lines:CartLine[];menu:Meal[]}):{discountCents:number;lineIndex:number;userId?:string}{
+export function attachOrderRewards(input:{orderId:string;userId?:string|null;customerEmail?:string|null;source:string;environment?:RewardEnvironment;code?:string;counter?:boolean;actor?:string;lines:CartLine[];menu:Meal[]}):{discountCents:number;lineIndex:number;userId?:string}{
  if(input.counter){
   if(input.source!=='staff'||!input.environment||!input.code)throw new Error('Staff coffee redemption requires the staff order workflow.');
   const q=quoteCounterReward(input.environment,input.code,input.lines,input.menu),db=getDb();
@@ -39,12 +39,21 @@ export function attachOrderRewards(input:{orderId:string;userId?:string|null;sou
   return {discountCents:q.discountCents,lineIndex:q.lineIndex,userId:q.userId};
  }
  const db=getDb();if(input.code&&(!input.userId||input.source!=='customer'))throw new Error('Redeem coffee rewards while signed in through the FOND app.');
- if(input.source!=='customer'||!input.userId||!input.environment)return {discountCents:0,lineIndex:-1};
- const u=db.prepare('SELECT email_verified_at FROM users WHERE id=?').get(input.userId);if(!u?.email_verified_at){if(input.code)verified(input.userId);return {discountCents:0,lineIndex:-1};}
- const priced=quoteCart(input.lines,input.menu);const quote=input.code?quoteReward(input.userId,input.environment,input.code,input.lines,input.menu):null;
+ if(input.source!=='customer'||!input.environment)return {discountCents:0,lineIndex:-1};
+ const u=input.userId?db.prepare('SELECT email,email_verified_at FROM users WHERE id=?').get(input.userId):undefined;
+ if(!u?.email_verified_at){
+  if(input.code)verified(input.userId!);
+  const email=String(input.customerEmail??u?.email??'').trim().toLowerCase();
+  if(email.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+   const quantity=quoteCart(input.lines,input.menu).reduce((sum,l)=>sum+(input.menu.find(m=>m.id===l.id)?.category==='Coffee'&&input.menu.find(m=>m.id===l.id)!.price>0?l.quantity:0),0);
+   db.prepare('INSERT INTO guest_loyalty_orders (order_id,email,environment,quantity) VALUES (?,?,?,?)').run(input.orderId,email,input.environment,quantity);
+  }
+  return {discountCents:0,lineIndex:-1};
+ }
+ const priced=quoteCart(input.lines,input.menu);const quote=input.code?quoteReward(input.userId!,input.environment,input.code,input.lines,input.menu):null;
  const quantity=priced.reduce((sum,l)=>sum+(input.menu.find(m=>m.id===l.id)?.category==='Coffee'&&input.menu.find(m=>m.id===l.id)!.price>0?l.quantity:0),0)-(quote?1:0);
- if(quote){const changed=db.prepare("UPDATE loyalty_rewards SET status='reserved',order_id=? WHERE id=? AND status='available'").run(input.orderId,quote.reward.id);if(!changed.changes)throw new Error('This coffee code has just been used.');event(quote.reward.id,'reserved',input.userId,input.orderId);}
- db.prepare('INSERT INTO loyalty_orders (order_id,user_id,environment,quantity,discount_cents,reward_id,line_index) VALUES (?,?,?,?,?,?,?)').run(input.orderId,input.userId,input.environment,quantity,quote?.discountCents??0,quote?.reward.id??null,quote?.lineIndex??null);
+ if(quote){const changed=db.prepare("UPDATE loyalty_rewards SET status='reserved',order_id=? WHERE id=? AND status='available'").run(input.orderId,quote.reward.id);if(!changed.changes)throw new Error('This coffee code has just been used.');event(quote.reward.id,'reserved',input.userId!,input.orderId);}
+ db.prepare('INSERT INTO loyalty_orders (order_id,user_id,environment,quantity,discount_cents,reward_id,line_index) VALUES (?,?,?,?,?,?,?)').run(input.orderId,input.userId!,input.environment,quantity,quote?.discountCents??0,quote?.reward.id??null,quote?.lineIndex??null);
  return {discountCents:quote?.discountCents??0,lineIndex:quote?.lineIndex??-1};
 }
 export function loyaltyCredits(userId:string,environment:RewardEnvironment){const db=getDb();return Number(db.prepare('SELECT coalesce(sum(credited),0) AS n FROM loyalty_orders WHERE user_id=? AND environment=?').get(userId,environment)?.n)+Number(db.prepare('SELECT coalesce(sum(credited),0) AS n FROM counter_reward_sales WHERE user_id=? AND environment=?').get(userId,environment)?.n);}
@@ -57,6 +66,9 @@ export function reconcileBalance(userId:string,environment:RewardEnvironment){
 // Called inside payment/status transactions; any refund reverses the entire order's stamps conservatively.
 export function reconcileOrderRewards(orderId:string){
  reconcileLinkedCounterOrder(orderId);
+ // The verified owner claims stamps by email; guest order ownership stays unchanged.
+ const guest=getDb().prepare('SELECT g.*,u.id AS user_id FROM guest_loyalty_orders g JOIN users u ON u.email=g.email AND u.email_verified_at IS NOT NULL WHERE g.order_id=?').get(orderId);
+ if(guest)getDb().prepare('INSERT INTO loyalty_orders (order_id,user_id,environment,quantity) VALUES (?,?,?,?) ON CONFLICT(order_id) DO NOTHING').run(orderId,guest.user_id,guest.environment,guest.quantity);
  const db=getDb(),row=db.prepare('SELECT l.*,o.status,o.total_cents FROM loyalty_orders l JOIN orders o ON o.id=l.order_id WHERE l.order_id=?').get(orderId) as {user_id:string;environment:RewardEnvironment;quantity:number;credited:number;reward_id:string|null;status:string;total_cents:number}|undefined;if(!row)return;
  const pay=db.prepare('SELECT coalesce(sum(amount_cents),0) AS paid,coalesce(sum(CASE WHEN amount_cents<0 THEN 1 ELSE 0 END),0) AS refunds FROM payment_records WHERE order_id=?').get(orderId) as {paid:number;refunds:number};
  const credit=row.status==='completed'&&pay.paid>=row.total_cents&&!pay.refunds?row.quantity:0;
@@ -66,7 +78,12 @@ export function reconcileOrderRewards(orderId:string){
   else if(row.status==='cancelled'){db.prepare("UPDATE loyalty_rewards SET status='available',order_id=NULL WHERE id=?").run(reward.id);event(reward.id,'released','system',orderId);}
  }}reconcileBalance(row.user_id,row.environment);
 }
-export function customerRewards(userId:string,environment:RewardEnvironment){const db=getDb(),u=verified(userId),credits=loyaltyCredits(userId,environment);const rewards=db.prepare('SELECT id,code,kind,status,created_at,order_id FROM loyalty_rewards WHERE recipient_email=? AND environment=? ORDER BY created_at DESC LIMIT 100').all(u.email,environment);const spent=Number(db.prepare("SELECT count(*) AS n FROM loyalty_rewards WHERE recipient_email=? AND environment=? AND kind='earned' AND status!='revoked'").get(u.email,environment)?.n)*10;return {environment,stamps:Math.max(0,credits-spent),stampsToNext:Math.max(1,10+spent-credits),rewards,preferences:rewardPreferences(userId)};}
+export function customerRewards(userId:string,environment:RewardEnvironment){const db=getDb(),u=verified(userId);
+ db.exec('BEGIN IMMEDIATE');try{
+  for(const row of db.prepare('SELECT order_id FROM guest_loyalty_orders WHERE email=? AND environment=?').all(u.email,environment))reconcileOrderRewards(String(row.order_id));
+  db.exec('COMMIT');
+ }catch(e){db.exec('ROLLBACK');throw e;}
+ const credits=loyaltyCredits(userId,environment);const rewards=db.prepare('SELECT id,code,kind,status,created_at,order_id FROM loyalty_rewards WHERE recipient_email=? AND environment=? ORDER BY created_at DESC LIMIT 100').all(u.email,environment);const spent=Number(db.prepare("SELECT count(*) AS n FROM loyalty_rewards WHERE recipient_email=? AND environment=? AND kind='earned' AND status!='revoked'").get(u.email,environment)?.n)*10;return {environment,stamps:Math.max(0,credits-spent),stampsToNext:Math.max(1,10+spent-credits),rewards,preferences:rewardPreferences(userId)};}
 export function orderRewardSummary(orderId:string){return getDb().prepare('SELECT discount_cents AS discountCents,quantity AS eligibleCoffees,environment FROM loyalty_orders WHERE order_id=?').get(orderId)??null;}
 export function adminRewards(){return {rewards:getDb().prepare('SELECT id,recipient_email,environment,kind,status,created_at,reason FROM loyalty_rewards ORDER BY rowid DESC LIMIT 100').all(),messages:getDb().prepare('SELECT channel,status,error,updated_at FROM loyalty_messages ORDER BY rowid DESC LIMIT 100').all(),events:getDb().prepare('SELECT subject,action,actor,detail,created_at FROM loyalty_events ORDER BY rowid DESC LIMIT 100').all()};}
 

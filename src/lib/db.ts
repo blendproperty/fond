@@ -265,6 +265,8 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS loyalty_preferences (user_id TEXT PRIMARY KEY,email_enabled INTEGER NOT NULL DEFAULT 0,sms_enabled INTEGER NOT NULL DEFAULT 0,phone TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS loyalty_rewards (id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,recipient_email TEXT NOT NULL,environment TEXT NOT NULL,kind TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'available',order_id TEXT,created_at TEXT NOT NULL,actor TEXT NOT NULL,reason TEXT NOT NULL,request_key TEXT UNIQUE);
     CREATE INDEX IF NOT EXISTS loyalty_recipient ON loyalty_rewards(recipient_email,environment);
+    CREATE TABLE IF NOT EXISTS guest_loyalty_orders (order_id TEXT PRIMARY KEY,email TEXT NOT NULL,environment TEXT NOT NULL,quantity INTEGER NOT NULL);
+    CREATE INDEX IF NOT EXISTS guest_loyalty_email ON guest_loyalty_orders(email,environment);
     CREATE TABLE IF NOT EXISTS loyalty_orders (order_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,environment TEXT NOT NULL,quantity INTEGER NOT NULL,credited INTEGER NOT NULL DEFAULT 0,discount_cents INTEGER NOT NULL DEFAULT 0,reward_id TEXT,line_index INTEGER);
     CREATE TABLE IF NOT EXISTS loyalty_events (id TEXT PRIMARY KEY,subject TEXT NOT NULL,action TEXT NOT NULL,actor TEXT NOT NULL,detail TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS loyalty_messages (id TEXT PRIMARY KEY,reward_id TEXT NOT NULL,channel TEXT NOT NULL,recipient TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',provider_id TEXT,error TEXT,updated_at TEXT NOT NULL,UNIQUE(reward_id,channel));

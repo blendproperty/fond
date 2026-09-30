@@ -43,3 +43,18 @@ test('counter code cancellation releases once; invalid identity, mode and custom
  const a=createOrder({source:'staff',customerName:'Counter',contactNumber:'0821234567',collectionTime:'ASAP',lines,staffRewardCode:r.code,rewardEnvironment:'test'});assert.equal(a.totalCents,0);assert.equal(getDb().prepare('SELECT count(*) n FROM payment_records').get()?.n,0);updateOrderStatus(a.id,'cancelled');assert.equal(quoteCounterReward('test',r.code,lines,menu).discountCents,menu.find(m=>m.id==='espresso-single')!.price);
  revokeGift(r.id,'admin');assert.throws(()=>createOrder({source:'staff',customerName:'Counter',contactNumber:'0821234567',collectionTime:'ASAP',lines,staffRewardCode:r.code,rewardEnvironment:'test'}));assert.equal(getDb().prepare('SELECT count(*) n FROM orders').get()?.n,1);
 });
+
+test('guest email earns coffee quantities without a session; claim is idempotent and refunds reverse',()=>{
+ const u=customer();const a=order(u.id,4,{userId:undefined,customerEmail:'  COFFEE@EXAMPLE.COM  ',emailOptIn:false});
+ assert.equal(a.userId,null);assert.equal(customerRewards(u.id,'test').stamps,0);
+ complete(a);assert.equal(customerRewards(u.id,'test').stamps,4);assert.equal(customerRewards(u.id,'test').stamps,4);
+ assert.equal(customerRewards(u.id,'live').stamps,0);
+ recordPayment({orderId:a.id,amountCents:1,method:'refund',reference:randomUUID()},'finance');
+ assert.equal(customerRewards(u.id,'test').stamps,0);
+});
+test('guest stamps survive until account creation and email verification, then issue one reward',()=>{
+ const email='later@example.com';const a=order('',10,{userId:undefined,customerEmail:email});complete(a);
+ assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_orders WHERE order_id=?').get(a.id)?.n,0);
+ const u=customer(email);assert.equal(customerRewards(u.id,'test').rewards.length,1);
+ assert.equal(customerRewards(u.id,'test').rewards.length,1);
+});
