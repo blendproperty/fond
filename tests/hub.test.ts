@@ -59,8 +59,8 @@ test('notification contains no applicant identity or contact details and is idem
   saveProviderSecret('email-api','re_isolated_fake_key','shared-admin');saveDocument('email-from','orders@fond.mid-point.co.za','shared-admin');
   const input=request(),id=submitHubRequest(input,randomUUID()),original=globalThis.fetch;let calls=0;
   process.env.MIDPOINT_HUB_EMAIL_ENABLED='true';
-  globalThis.fetch=async(_url,init)=>{calls++;const body=String(init?.body);for(const value of [input.identity,input.phone,input.email])assert.ok(!body.includes(value));assert.ok(body.includes('christine@midpointhub.com'));return Response.json({id:'example-provider-id'});};
-  try{await notifyHubRequest(id);await notifyHubRequest(id);assert.equal(calls,1);}finally{globalThis.fetch=original;delete process.env.MIDPOINT_HUB_EMAIL_ENABLED;}
+  globalThis.fetch=async(_url,init)=>{calls++;const body=String(init?.body);assert.ok(!body.includes(input.identity));assert.ok(!body.includes(input.phone));const message=JSON.parse(body);if(message.to[0]===input.email){assert.match(message.subject,/Thank you/);assert.match(message.html,/What happens next/);}else{assert.ok(!body.includes(input.email));assert.ok(body.includes('christine@midpointhub.com'));}return Response.json({id:'example-provider-id'});};
+  try{await notifyHubRequest(id);await notifyHubRequest(id);assert.equal(calls,2);}finally{globalThis.fetch=original;delete process.env.MIDPOINT_HUB_EMAIL_ENABLED;}
 });
 test('cutover redirects preserve order references and leave provider callbacks untouched',()=>{
   assert.equal(hubRedirect(new URL('https://fond.mid-point.co.za/?payment=return&reference=EXAMPLE'),'GET',true),'https://midpointhub.com/fond?payment=return&reference=EXAMPLE');
@@ -75,4 +75,18 @@ test('provider callback base can stay on legacy host while customers use the Hub
   process.env.FOND_PUBLIC_URL='https://midpointhub.com';process.env.FOND_CALLBACK_URL='https://fond.mid-point.co.za';process.env.MIDPOINT_HUB_ENABLED='true';
   try{assert.equal(callbackBaseUrl(),'https://fond.mid-point.co.za');assert.equal(orderingUrl(),'https://midpointhub.com/fond');process.env.FOND_CALLBACK_URL='https://wrong.example';assert.throws(()=>callbackBaseUrl());}
   finally{delete process.env.FOND_PUBLIC_URL;delete process.env.FOND_CALLBACK_URL;delete process.env.MIDPOINT_HUB_ENABLED;}
+});
+
+test('failed applicant mail retries independently and historic requests are not backfilled',async()=>{
+  const input=request('padel'),id=submitHubRequest(input,randomUUID()),original=globalThis.fetch;let applicant=0,staff=0;
+  process.env.MIDPOINT_HUB_EMAIL_ENABLED='true';
+  globalThis.fetch=async(_url,init)=>{const message=JSON.parse(String(init?.body));if(message.to[0]===input.email){applicant++;if(applicant===1)throw new Error('Isolated provider failure');}else staff++;return Response.json({id:'example-retry-id'});};
+  try{
+    await notifyHubRequest(id);
+    assert.equal(listRequests('padel','test-owner').find(r=>r.id===id)?.notification,'sent');
+    assert.equal((hubDb().prepare('SELECT status FROM hub_acknowledgements WHERE id=?').get(id) as {status:string}).status,'failed');
+    await notifyHubRequest(id);await notifyHubRequest(id);assert.equal(applicant,2);assert.equal(staff,1);
+    const historical=submitHubRequest(request('padel'),randomUUID());hubDb().prepare('DELETE FROM hub_acknowledgements WHERE id=?').run(historical);
+    await notifyHubRequest(historical);assert.equal(applicant,2);assert.equal(staff,2);
+  }finally{globalThis.fetch=original;delete process.env.MIDPOINT_HUB_EMAIL_ENABLED;}
 });

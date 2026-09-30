@@ -1,15 +1,14 @@
+import {buildHubEmail,queueAcknowledgement,sendAcknowledgement,acknowledgementDb} from './hub-mail';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
-import { getDb } from './db';
 import { vaultKey } from './provider-secrets';
 import { audit } from './management';
 import { HUB_CONTACTS, type HubService, type HubCalendar } from './hub-config';
 import { sendEmailMessage } from './email';
-import { publicBaseUrl } from './public-url';
 
 export type HubEvent = { id: string; service: HubService; calendar: HubCalendar; title: string; description: string; startsAt: string; endsAt: string; location: string; published: boolean };
 export class HubError extends Error {}
 export function hubDb() {
-  const db = getDb();
+  const db = acknowledgementDb();
   db.exec(`CREATE TABLE IF NOT EXISTS hub_requests (
     id TEXT PRIMARY KEY, request_key TEXT UNIQUE NOT NULL, fingerprint TEXT NOT NULL, service TEXT NOT NULL,
     kind TEXT NOT NULL, event_id TEXT, details TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new',
@@ -87,11 +86,13 @@ export function submitHubRequest(input: Record<string, unknown>, key: string) {
     if (count.count > max) throw new HubError('Too many requests. Please try again later or contact the team.');
   }
   const id = randomUUID(), timestamp = new Date(now).toISOString();
-  db.prepare('INSERT INTO hub_requests (id,request_key,fingerprint,service,kind,event_id,details,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)').run(id,key,fingerprint,service,kind,eventId,seal(details,id),timestamp,timestamp);
+  db.exec('BEGIN IMMEDIATE');
+  try{db.prepare('INSERT INTO hub_requests (id,request_key,fingerprint,service,kind,event_id,details,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)').run(id,key,fingerprint,service,kind,eventId,seal(details,id),timestamp,timestamp);
+  queueAcknowledgement(id);db.exec('COMMIT');}catch(error){db.exec('ROLLBACK');throw error;}
   return id;
 }
 export function listRequests(service: HubService, actor: string) {
-  const rows = hubDb().prepare('SELECT id,kind,event_id AS eventId,status,notification,created_at AS createdAt,details FROM hub_requests WHERE service=? ORDER BY created_at DESC LIMIT 200').all(service) as {id:string;kind:string;eventId:string|null;status:string;notification:string;createdAt:string;details:string}[];
+  const rows = hubDb().prepare('SELECT id,kind,event_id AS eventId,status,notification,(SELECT status FROM hub_acknowledgements a WHERE a.id=hub_requests.id) AS acknowledgement,created_at AS createdAt,details FROM hub_requests WHERE service=? ORDER BY created_at DESC LIMIT 200').all(service) as {id:string;kind:string;eventId:string|null;status:string;notification:string;createdAt:string;details:string}[];
   audit(actor, 'hub-requests-viewed', service);
   return rows.map(({details,...r}) => ({...r, details: openRequest(details,r.id)}));
 }
@@ -102,13 +103,14 @@ export function updateRequest(service: HubService, id: string, status: unknown, 
 }
 export async function notifyHubRequest(id: string) {
   const db = hubDb();
+  const full=db.prepare('SELECT service,kind,event_id,details FROM hub_requests WHERE id=?').get(id) as {service:HubService;kind:string;event_id:string|null;details:string}|undefined;
+  if(full){const event=full.event_id?db.prepare('SELECT title FROM hub_events WHERE id=?').get(full.event_id) as {title:string}|undefined:null;await sendAcknowledgement(full.service,id,{...openRequest(full.details,id),kind:full.kind,eventTitle:event?.title??''});}
   const row = db.prepare('SELECT service,notification,updated_at FROM hub_requests WHERE id=?').get(id) as {service:HubService;notification:string;updated_at:string}|undefined;
   if (!row || row.notification === 'sent' || process.env.MIDPOINT_HUB_EMAIL_ENABLED !== 'true') return;
   const claim = db.prepare("UPDATE hub_requests SET notification='sending',updated_at=? WHERE id=? AND (notification IN ('pending','failed') OR (notification='sending' AND updated_at<?))").run(new Date().toISOString(),id,new Date(Date.now()-60000).toISOString());
   if (!claim.changes) return;
   try {
-    const url = `${publicBaseUrl()}/hub/manage`, label = row.service === 'gym' ? 'Gym' : 'Padel';
-    await sendEmailMessage(HUB_CONTACTS[row.service].email, {subject:`Midpoint ${label}: new request`,text:`A new ${label} request is ready in the protected Hub workspace. Sign in to review it: ${url}\nReference: ${id}`,html:`<p>A new ${label} request is ready.</p><p><a href="${url}">Sign in to the Hub workspace</a> to review it.</p>`}, `hub-request-${id}`);
+    await sendEmailMessage(HUB_CONTACTS[row.service].email,buildHubEmail(row.service,id,{test:!!full&&/^TEST\b/i.test(String(openRequest(full.details,id).firstName))},true),`hub-request-${id}`,'Midpoint Hub');
     db.prepare("UPDATE hub_requests SET notification='sent',updated_at=? WHERE id=?").run(new Date().toISOString(),id);
   } catch { db.prepare("UPDATE hub_requests SET notification='failed',updated_at=? WHERE id=?").run(new Date().toISOString(),id); }
 }

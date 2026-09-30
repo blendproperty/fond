@@ -18,13 +18,13 @@ function codeHash(userId: string, code: string) {
   if (!key || !/^[a-f0-9]{64}$/i.test(key)) throw new Error('Email verification key unavailable.');
   return createHmac('sha256', Buffer.from(key, 'hex')).update(`${userId}:${code}`).digest('hex');
 }
-export async function sendEmailMessage(to: string, message: EmailMessage, idempotencyKey: string) {
+export async function sendEmailMessage(to: string, message: EmailMessage & {reply_to?:string}, idempotencyKey: string, senderName='FOND Midpoint') {
   const key = providerSecret('email-api'), from = emailSender();
   if (!key || !from) throw new Error('Email provider is not configured.');
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST', signal: AbortSignal.timeout(12000),
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-    body: JSON.stringify({ from: `FOND Midpoint <${from}>`, to: [to], ...message }),
+    body: JSON.stringify({ from: `${senderName} <${from}>`, to: [to], ...message }),
   });
   if (!response.ok) throw new Error(`Email provider rejected this message (${response.status}).`);
   const result = await response.json() as { id?: string };
