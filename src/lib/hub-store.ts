@@ -5,7 +5,7 @@ import { audit } from './management';
 import { HUB_CONTACTS, type HubService, type HubCalendar } from './hub-config';
 import { sendEmailMessage } from './email';
 
-export type HubEvent = { id: string; service: HubService; calendar: HubCalendar; title: string; description: string; startsAt: string; endsAt: string; location: string; published: boolean };
+export type HubEvent = { id: string; service: HubService; calendar: HubCalendar; title: string; description: string; startsAt: string; endsAt: string; location: string; imageUrl: string; imageAlt: string; published: boolean };
 export class HubError extends Error {}
 export function hubDb() {
   const db = acknowledgementDb();
@@ -18,6 +18,10 @@ export function hubDb() {
     location TEXT NOT NULL, published INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS hub_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS hub_settings (service TEXT PRIMARY KEY, booking_url TEXT NOT NULL DEFAULT '');`);
+  const columns=db.prepare('PRAGMA table_info(hub_events)').all() as {name:string}[];
+  if(!columns.some(c=>c.name==='image_id'))db.exec("ALTER TABLE hub_events ADD COLUMN image_id TEXT NOT NULL DEFAULT ''");
+  if(!columns.some(c=>c.name==='image_alt'))db.exec("ALTER TABLE hub_events ADD COLUMN image_alt TEXT NOT NULL DEFAULT ''");
+  db.exec(`CREATE TABLE IF NOT EXISTS hub_event_images(id TEXT PRIMARY KEY,service TEXT NOT NULL,bytes BLOB NOT NULL,created_at TEXT NOT NULL)`);
   return db;
 }
 export function serviceOf(value: unknown): HubService {
@@ -40,7 +44,7 @@ export function openRequest(value: string, id: string): Record<string, string | 
   return JSON.parse(Buffer.concat([cipher.update(encrypted), cipher.final()]).toString('utf8'));
 }
 export function listEvents(service: HubService, publicOnly = true): HubEvent[] {
-  return (hubDb().prepare(`SELECT id,service,calendar,title,description,starts_at AS startsAt,ends_at AS endsAt,location,published FROM hub_events WHERE service=? ${publicOnly ? 'AND published=1' : ''} ORDER BY starts_at`).all(service) as unknown as HubEvent[]).map(e => ({...e, published: !!e.published}));
+  return (hubDb().prepare(`SELECT id,service,calendar,title,description,starts_at AS startsAt,ends_at AS endsAt,location,CASE WHEN image_id='' THEN '' ELSE '/api/hub/event-images/'||image_id END AS imageUrl,image_alt AS imageAlt,published FROM hub_events WHERE service=? ${publicOnly ? 'AND published=1' : ''} ORDER BY starts_at`).all(service) as unknown as HubEvent[]).map(e => ({...e, published: !!e.published}));
 }
 export function saveEvent(service: HubService, input: Record<string, unknown>, actor: string) {
   const calendar = text(input.calendar, 'calendar', 30) as HubCalendar;
@@ -50,7 +54,12 @@ export function saveEvent(service: HubService, input: Record<string, unknown>, a
   if (!/Z$|[+-]\d\d:\d\d$/.test(starts) || !/Z$|[+-]\d\d:\d\d$/.test(ends) || !Number.isFinite(Date.parse(starts)) || !Number.isFinite(Date.parse(ends)) || Date.parse(ends) <= Date.parse(starts)) throw new HubError('Choose valid start and end times.');
   const id = input.id ? text(input.id, 'event', 80) : randomUUID(), db = hubDb();
   if (input.id && !db.prepare('SELECT id FROM hub_events WHERE id=? AND service=?').get(id, service)) throw new HubError('Event not found.');
-  db.prepare(`INSERT INTO hub_events VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET calendar=excluded.calendar,title=excluded.title,description=excluded.description,starts_at=excluded.starts_at,ends_at=excluded.ends_at,location=excluded.location,published=excluded.published,updated_at=excluded.updated_at`).run(id, service, calendar, title, description, new Date(starts).toISOString(), new Date(ends).toISOString(), location, input.published === true ? 1 : 0, new Date().toISOString());
+  const prior=db.prepare('SELECT image_id,image_alt FROM hub_events WHERE id=? AND service=?').get(id,service) as {image_id:string;image_alt:string}|undefined;
+  const imageUrl=input.imageUrl===undefined?(prior?.image_id?'/api/hub/event-images/'+prior.image_id:''):text(input.imageUrl,'event image',120,false);
+  const imageId=imageUrl.replace('/api/hub/event-images/','');
+  if(imageUrl&&(!/^\/api\/hub\/event-images\/[a-f0-9-]{36}$/.test(imageUrl)||!db.prepare('SELECT id FROM hub_event_images WHERE id=? AND service=?').get(imageId,service)))throw new HubError('Upload an image for this service.');
+  const imageAlt=imageUrl?text(input.imageAlt??prior?.image_alt??'','image description',200,false):'';
+  db.prepare(`INSERT INTO hub_events (id,service,calendar,title,description,starts_at,ends_at,location,published,updated_at,image_id,image_alt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET calendar=excluded.calendar,title=excluded.title,description=excluded.description,starts_at=excluded.starts_at,ends_at=excluded.ends_at,location=excluded.location,published=excluded.published,updated_at=excluded.updated_at,image_id=excluded.image_id,image_alt=excluded.image_alt`).run(id, service, calendar, title, description, new Date(starts).toISOString(), new Date(ends).toISOString(), location, input.published === true ? 1 : 0, new Date().toISOString(),imageId,imageAlt);
   audit(actor, input.published === true ? 'hub-event-published' : 'hub-event-saved', id); return id;
 }
 export function bookingUrl(service: HubService): string | null {
