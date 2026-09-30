@@ -465,7 +465,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
   }
 
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay staff-order-overlay" onClick={onClose}>
       <section className="drawer staff-manual" role="dialog" aria-modal="true" aria-label="Add order manually" onClick={(e) => e.stopPropagation()}>
         <header>
           <div>
