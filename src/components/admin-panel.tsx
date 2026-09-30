@@ -5,7 +5,7 @@ import { money, categories, type Category, type Meal, type Modifier } from '@/li
 
 import { ReportsDashboard } from './reports-dashboard';
 import { CustomersPanel,MarketingPanel,FinancePanel,SettingsPanel } from './management-panels';
-import {BrandLogo} from './brand-logo';
+
 
 type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
 
@@ -116,7 +116,7 @@ export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
       <div className="admin-main">
         <header className="staff-header">
           <div>
-            <BrandLogo className="brand-logo-admin-mobile" />
+            <img className="brand-logo-admin-mobile" src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="65" height="54" />
             <p className="eyebrow">FOND · ADMIN</p>
             <h1>{NAV.find((n) => n.key === tab)?.label}</h1>
           </div>
@@ -419,3 +419,4 @@ function OrdersAdmin() {
     </div>
   );
 }
+

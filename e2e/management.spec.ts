@@ -6,7 +6,7 @@ test('admin sections save customer, publish CMS, record receipts and create name
  const tag=randomUUID().slice(0,8);
  await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();
  await expect(page.getByRole('navigation',{name:'Admin sections'})).toBeVisible();await expect(page.getByText('soon',{exact:true})).toHaveCount(0);
- await expect(page.locator('.brand-logo:visible').first()).toBeVisible();
+ await expect(page.getByRole('img',{name:'Midpoint Hub',exact:true}).first()).toBeVisible();
  await page.getByRole('button',{name:'Customers',exact:true}).click();await page.getByRole('button',{name:'Add customer',exact:true}).click();
  await page.getByLabel('Name',{exact:true}).fill('Customer '+tag);await page.getByLabel('Email',{exact:true}).fill(tag+'@example.test');
  await page.getByRole('button',{name:'Save customer',exact:true}).click();await expect(page.getByRole('button',{name:new RegExp('Customer '+tag)})).toBeVisible();
@@ -67,3 +67,4 @@ test('messaging studio shows the two-message journey and promotion previews for 
  await page.getByLabel('Include this banner in received and ready emails').check();
  await expect(page.locator('.email-mini-banner')).toBeVisible();
 });
+
