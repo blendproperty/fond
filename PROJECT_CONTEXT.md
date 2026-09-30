@@ -1,3 +1,7 @@
+## 2026-09-30 - Canva poster link recovery
+
+User reported the final Canva link returned 404. Read-only inspection found the exact A4 Print Master in Canva Trash. Restored it through Canva UI; the restore toast confirmed return to Your Projects. Reopened original design DAHWqXBBQmc and verified correct title and All changes saved. Evidence: ../output/pdf/Canva-restored-proof.png. No poster content, sharing permissions, website code, deployment or configuration changed. Documentation-only commit/push on existing main; no PR/merge. Original QR and print checks remain recorded above; launch gates unchanged. Cause of trash placement not inferred. No tracker in scope.
+
 ## 2026-09-30 - A4 QR poster and soft-launch assessment
 
 Implementation/artifact: created professional one-page A4 portrait Midpoint Hub poster, equal FOND/Gym/Padel/Functions cards, original approved marks, direct QR https://midpointhub.com/. Local print PDF ../output/pdf/Midpoint-Hub-A4-Scan-and-Explore.pdf. Canva master https://www.canva.com/design/DAHWqXBBQmc/AlabCoVokMG2EYC9p3uGIg/edit, title Midpoint Hub | Scan & Explore | A4 Print Master. Canva connector required reauthentication; used existing authenticated browser UI to import. First text-layer PDF conversion shifted typography; retained as clearly titled superseded import draft. Final import uses outlined vector lettering to preserve layout (lettering is artwork rather than directly editable text).
