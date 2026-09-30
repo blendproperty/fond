@@ -1,0 +1,8 @@
+import {after} from 'next/server';
+import {functionActor} from '@/lib/function-auth';
+import {validRequestOrigin} from '@/lib/request-origin';
+import {HubError} from '@/lib/hub-store';
+import {listFunctions,updateFunction,notifyFunction,functionDb} from '@/lib/function-store';
+const headers={'Cache-Control':'no-store'};
+export async function GET(request:Request){const actor=await functionActor();if(!actor)return Response.json({message:'Sign in with Functions or owner access.'},{status:403,headers});try{return Response.json({bookings:listFunctions(new URL(request.url).searchParams.get('month')??'',actor),emailEnabled:process.env.MIDPOINT_HUB_EMAIL_ENABLED==='true'},{headers});}catch(e){return Response.json({message:e instanceof HubError?e.message:'Unable to load calendar.'},{status:400,headers});}}
+export async function POST(request:Request){const actor=await functionActor();if(!actor)return Response.json({message:'Functions access required.'},{status:403,headers});if(!validRequestOrigin(request))return Response.json({message:'Invalid origin.'},{status:403,headers});try{const raw=await request.text();if(raw.length>2000)throw new HubError('Request too large.');const b=JSON.parse(raw);if(!b||typeof b.id!=='string')throw new HubError('Choose a request.');if(b.action==='status')updateFunction(b.id,b.status,actor);else if(b.action==='retry'){if(!functionDb().prepare('SELECT id FROM function_bookings WHERE id=?').get(b.id))throw new HubError('Booking not found.');after(()=>notifyFunction(b.id));}else throw new HubError('Choose an action.');return Response.json({ok:true},{headers});}catch(e){return Response.json({message:e instanceof HubError?e.message:'Unable to save.'},{status:400,headers});}}

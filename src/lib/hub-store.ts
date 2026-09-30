@@ -29,7 +29,7 @@ function text(value: unknown, label: string, max: number, required = true) {
   if (typeof value !== 'string' || value.trim().length > max || (required && !value.trim())) throw new HubError(`Enter a valid ${label}.`);
   return value.trim();
 }
-function seal(value: object, id: string) {
+export function seal(value: object, id: string) {
   const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', vaultKey(), iv);
   cipher.setAAD(Buffer.from(`hub-request:${id}`));
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(value), 'utf8'), cipher.final()]);

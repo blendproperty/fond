@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Dumbbell, MapPin, ShieldCheck, Volleyball, UserRoundPlus } from 'lucide-react';
+import { Coffee, ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Dumbbell, MapPin, ShieldCheck, Volleyball, UserRoundPlus } from 'lucide-react';
 import { HUB_CONTACTS, type HubService } from '@/lib/hub-config';
 import './hub.css';
+import { FunctionBookingForm } from './function-booking';
 import { HubAppNav } from './hub-app-nav';
 
 export function HubShell({children,service,wide=false}:{children:React.ReactNode;service?:HubService;wide?:boolean}) {
@@ -26,7 +27,7 @@ export function HubHome() {
     {href:'/gym',title:'Gym',copy:'Classes & membership',badge:'gym.png'},
     {href:'/padel',title:'Padel',copy:'Courts & community',badge:'padel.png'},
   ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt=""/><h2>{item.title}</h2><p>{item.copy}</p><span>Let’s go <ArrowUpRight size={16}/></span></Link>)}</nav>
-  <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/gym/classes"><Dumbbell/><span>Find a class<small>Make time to move</small></span><ArrowRight size={17}/></Link><a href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
+  <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/fond"><Coffee/><span>Grab a bite<small>Order something good from FOND</small></span><ArrowRight size={17}/></Link><a href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
  </HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
@@ -39,12 +40,4 @@ export function HubLanding({service}:{service:HubService}) {
     <section className="hub-service-bottom"><HubNote title={gym?'Your membership starts here':'A Midpoint tenant? Let’s get you playing.'}>{gym?'Send us your details, then visit the gym. Our team will complete your Itensity registration, finalise payment and set up your gym access.':'Request your tenant setup. Our team will verify your details and help get your Playtomic profile ready. Court bookings are confirmed separately.'}</HubNote><div className="hub-service-contact"><span className="hub-eyebrow">LET’S GET YOU STARTED</span><h2>Talk to {contact.name}.</h2><a href={`mailto:${contact.email}`}>{contact.email} <ArrowUpRight size={18}/></a><p className="hub-provider">{gym?'Membership & gym access':'Court bookings'} <strong>{gym?'Itensity':'Playtomic'}</strong></p></div></section>
   </HubShell>;
 }
-export function HubFunctions() {
-  const enquiry = 'mailto:michelle@midpointhub.com?subject=Midpoint%20function%20enquiry&body=Hi%20Michelle%2C%0A%0AI%20would%20like%20to%20plan%20a%20gathering%20at%20Midpoint.%0A%0AOccasion%3A%0APreferred%20date%3A%0AApproximate%20number%20of%20guests%3A%0ACatering%20ideas%3A%0AContact%20number%3A%0A';
-  return <HubShell wide>
-    <HubBack href="/hub">Midpoint Hub</HubBack>
-    <section className="hub-app-function-heading"><span className="hub-app-function-icon"><CalendarDays size={34}/></span><span className="hub-eyebrow">BETTER TOGETHER</span><h1>Make it<br/>an occasion.</h1><p>Your people. Your plans. One great place to meet.</p></section>
-    <section className="hub-functions-occasions" aria-label="Gathering ideas"><article><span>01 / CONNECT</span><h3>Meet &amp; mingle.</h3><p>Team catch-ups and informal meetings with a change of scene.</p></article><article><span>02 / CELEBRATE</span><h3>Make a moment.</h3><p>Birthdays, milestones and a reason to bring everyone together.</p></article><article><span>03 / PLAY</span><h3>Mix things up.</h3><p>Ask about FOND catering or adding padel to your team day.</p></article></section>
-    <section className="hub-functions-enquiry" id="plan-your-function"><div><span className="hub-eyebrow">LET’S GET TOGETHER</span><h2>What’s the occasion?</h2><p>Tell Michelle your preferred date, guest count and what you have in mind.</p><a className="hub-functions-email" href={enquiry}>Enquire with Michelle <ArrowUpRight size={22}/></a><a className="hub-functions-address" href="mailto:michelle@midpointhub.com">michelle@midpointhub.com</a><p className="hub-app-enquiry-note">Availability, catering, pricing and court arrangements are confirmed by the team.</p></div></section>
-  </HubShell>;
-}
+export function HubFunctions(){return <HubShell wide><HubBack href="/hub">Midpoint Hub</HubBack><section className="hub-app-function-heading"><span className="hub-app-function-icon"><CalendarDays size={34}/></span><span className="hub-eyebrow">BETTER TOGETHER</span><h1>Make it<br/>an occasion.</h1><p>Your people. Your plans. Let’s find your date.</p></section><FunctionBookingForm/></HubShell>;}

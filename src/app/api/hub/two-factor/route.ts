@@ -4,7 +4,7 @@ import { teamSession } from '@/lib/team';
 import { activateTwoFactor, beginTwoFactor, twoFactorActive } from '@/lib/two-factor';
 import { validRequestOrigin } from '@/lib/request-origin';
 const headers={'Cache-Control':'no-store'};
-async function member(){const m=teamSession((await cookies()).get(HUB_COOKIE)?.value);return m&&['gym','padel','owner','super-admin'].includes(m.role)?m:null;}
+async function member(){const m=teamSession((await cookies()).get(HUB_COOKIE)?.value);return m&&['gym','padel','functions','owner','super-admin'].includes(m.role)?m:null;}
 export async function GET(){const m=await member();return m?Response.json({active:twoFactorActive(m.id)},{headers}):Response.json({message:'Sign in with your named Hub account.'},{status:403,headers});}
 export async function POST(request:Request){
   const m=await member();if(!m)return Response.json({message:'Sign in required.'},{status:403,headers});

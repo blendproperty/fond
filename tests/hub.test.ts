@@ -43,7 +43,7 @@ test('Gym and Padel records, edits and published calendars remain separate',()=>
   assert.throws(()=>saveEvent('gym',{...event,endsAt:'2099-10-01T07:00:00+02:00'},'test-owner'),/valid start/);
 });
 test('Hub service accounts cannot authenticate to FOND admin or order queue',()=>{
-  for(const role of ['gym','padel']){
+  for(const role of ['gym','padel','functions']){
     saveMember({name:`Example ${role}`,username:`test-${role}`,role,active:true,password:'A-test-password-123'},'shared-admin');
     const login=loginMember(`test-${role}`,'A-test-password-123');assert.ok(login);
     assert.equal(isValidAdminToken(login.token),false);assert.equal(isValidStaffToken(login.token),false);
