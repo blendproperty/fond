@@ -76,3 +76,6 @@
 @media(max-width:700px){.hub-michelle-note{display:block;padding:23px 20px}.hub-chef-portrait{display:flex;align-items:center;gap:18px;margin-bottom:22px}.hub-chef-portrait img{width:108px;height:108px;border-radius:40px 40px 13px 13px}.hub-chef-portrait figcaption{text-align:left;max-width:110px;margin:0;font-size:9px;line-height:1.8}.hub-michelle-note .hub-chef-intro{font-size:21px}.hub-chef-story>p{font-size:13px}.hub-chef-social{gap:12px}}
 
 .hub-style-hint{font-size:11px;line-height:1.5;color:#78695e!important;margin:0 0 12px!important}
+
+.hub-mood-home .hub-app-shortcuts a.hub-shortcut-gym{background:#e9efdd;color:#073c32}
+.hub-mood-home .hub-app-shortcuts a.hub-shortcut-padel{background:#e7edf8;color:#073c32}

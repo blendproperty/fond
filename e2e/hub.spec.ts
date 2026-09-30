@@ -1,6 +1,12 @@
 import {test,expect} from '@playwright/test';
 test('Hub destinations, real empty calendars and forms work on desktop and phones',async({page})=>{
   await page.goto('/hub');await expect(page.getByRole('heading',{name:'First, something delicious.'})).toBeVisible();
+  const shortcuts=page.locator('.hub-app-shortcuts');
+  await expect(shortcuts.getByRole('link')).toHaveCount(4);
+  await expect(shortcuts.getByRole('link',{name:/Find a class/})).toHaveAttribute('href','/gym/classes');
+  await expect(shortcuts.getByRole('link',{name:/Grab a bite/})).toHaveAttribute('href','/fond');
+  await expect(shortcuts.getByRole('link',{name:/Book a court/})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');
+  await expect(shortcuts.getByRole('link',{name:/Get together/})).toHaveAttribute('href','/functions');
   await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/Gym/}).click();
   await expect(page).toHaveURL(/\/gym$/);await page.getByRole('link',{name:'Midpoint Gym Sign up',exact:true}).click();
   await expect(page.getByLabel('ID or passport number')).toBeVisible();
@@ -37,4 +43,29 @@ test('Hub app navigation returns from FOND and retains separate app launch route
  await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true})).toHaveAttribute('aria-current','page');
  const hub=await (await request.get('/hub/manifest.webmanifest')).json();expect(hub.start_url).toBe('/hub');expect(hub.display).toBe('standalone');
  const fond=await (await request.get('/manifest.webmanifest')).json();expect(fond.id).toBe('/');expect(fond.name).toContain('FOND');
+});
+
+
+test('Legal pages are reachable from Hub and FOND and readable on small screens',async({page})=>{
+ await page.goto('/hub');
+ await page.locator('footer').getByRole('link',{name:'Privacy policy',exact:true}).click();
+ await expect(page.getByRole('heading',{level:1,name:'Privacy policy'})).toBeVisible();
+ const article=page.getByRole('article',{name:'Privacy policy'});
+ await expect(article.getByText(/registration 2016\/031577\/07/)).toBeVisible();
+ await expect(article.getByRole('link',{name:/Mark Corbishley/})).toHaveAttribute('href','mailto:legal@blendproperty.co.za');
+ await page.getByText('Jump to a section',{exact:true}).click();
+ await page.getByRole('link',{name:'Your rights and complaints',exact:true}).click();
+ await expect(page).toHaveURL(/#rights$/);
+ await page.getByRole('navigation',{name:'Legal pages'}).getByRole('link',{name:'Terms and conditions'}).click();
+ await expect(page.getByRole('heading',{level:1,name:'Terms and conditions'})).toBeVisible();
+ for(const width of [320,390,768]){
+  await page.setViewportSize({width,height:844});
+  for(const path of ['/hub/privacy','/hub/terms','/fond']){
+   await page.goto(path);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  }
+ }
+ await page.locator('footer').getByRole('link',{name:'Terms and conditions',exact:true}).click();
+ await expect(page).toHaveURL(/\/hub\/terms$/);
+ await page.getByRole('link',{name:'Midpoint Hub',exact:true}).click();
+ await expect(page).toHaveURL(/\/hub$/);
 });

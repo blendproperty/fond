@@ -469,3 +469,5 @@ footer span:last-child{margin-left:auto}
 @media(max-width:380px){.staff-device-controls{min-width:0}.staff-toggle{gap:4px}.staff-toggle>span{font-size:10px}}
 
 @media(max-width:800px){.staff-header-actions>.staff-payment-mode{grid-column:1/-1;grid-row:2;justify-self:start}.staff-coffee-actions>button{grid-row:3}}
+
+.fond-public-footer{flex-wrap:wrap}.fond-public-footer>a:not(.brand-link){font-size:13px;text-underline-offset:3px}

@@ -32,6 +32,7 @@ export function AccountAccess({onSignedIn}:{onSignedIn:()=>Promise<void>}){
    {!challenge&&(mode!=='reset'||resetToken)&&<label className={styles.field}>{resetToken?'New password':'Password'}<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} maxLength={128} autoComplete={mode==='login'?'current-password':'new-password'}/></label>}
    {!!resetToken&&<label className={styles.field}>Confirm new password<input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} required minLength={8} maxLength={128} autoComplete="new-password"/></label>}
    {mode==='signup'&&<p className={styles.hint}>Choose at least 8 characters. We'll help you verify your email next.</p>}
+   {mode==='signup'&&<p className={styles.hint}>Read our <a href="/hub/terms" target="_blank" rel="noopener noreferrer">Terms and conditions (opens a new tab)</a> and <a href="/hub/privacy" target="_blank" rel="noopener noreferrer">Privacy policy (opens a new tab)</a> before creating your account.</p>}
    {challenge&&<p className={styles.hint}>You can also use one of the recovery codes you saved when enabling two-factor sign-in.</p>}
    {error&&<p role="alert" className={styles.error}>{error}</p>}{message&&<p role="status" className={styles.success}>{message}</p>}
    <button className={styles.primary} type="submit" disabled={busy}>{busy?'Please wait…':challenge?'Verify and sign in':mode==='reset'?resetToken?'Save new password':'Send reset code':mode==='login'?'Sign in':'Create account'}<ArrowRight size={17}/></button>

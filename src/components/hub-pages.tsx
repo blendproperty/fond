@@ -16,7 +16,7 @@ export function HubShell({children,service,wide=false,mood}:{children:React.Reac
     </header>
     <div className="hub-content">{children}</div>
     <HubAppNav/>
-    <footer className="hub-footer"><div><strong>A little more to your day.</strong><p>162 Tonetti Street, Halfway House, Midrand</p></div><nav aria-label="Footer destinations"><Link href="/fond">FOND</Link><Link href="/gym">Gym</Link><Link href="/padel">Padel</Link><Link href="/functions">Functions</Link></nav><div><Link href="/hub/privacy">Your details</Link><Link href="/hub/manage">Team sign in</Link></div></footer>
+    <footer className="hub-footer"><div><strong>A little more to your day.</strong><p>162 Tonetti Street, Halfway House, Midrand</p></div><nav aria-label="Footer destinations"><Link href="/fond">FOND</Link><Link href="/gym">Gym</Link><Link href="/padel">Padel</Link><Link href="/functions">Functions</Link></nav><div><Link href="/hub/privacy">Privacy policy</Link><Link href="/hub/terms">Terms and conditions</Link><Link href="/hub/manage">Team sign in</Link></div></footer>
   </main>;
 }
 export function HubBack({href,children}:{href:string;children:React.ReactNode}) {return <Link href={href} className="hub-back"><ArrowLeft size={16}/>{children}</Link>;}
@@ -30,7 +30,7 @@ export function HubHome() {
     {href:'/gym',title:'Gym',copy:'Find your feel-good',badge:'gym.png'},
     {href:'/padel',title:'Padel',copy:'A little friendly rivalry',badge:'padel.png'},
   ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt=""/><h2>{item.title}</h2><p>{item.copy}</p><span>Let’s go <ArrowUpRight size={16}/></span></Link>)}</nav>
-  <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/fond"><Coffee/><span>Grab a bite<small>Order something good from FOND</small></span><ArrowRight size={17}/></Link><a href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
+  <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/fond"><Coffee/><span>Grab a bite<small>Order something good from FOND</small></span><ArrowRight size={17}/></Link><Link className="hub-shortcut-gym" href="/gym/classes"><Dumbbell/><span>Find a class<small>Make time to move</small></span><ArrowRight size={17}/></Link><a className="hub-shortcut-padel" href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
  </HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
