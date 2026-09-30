@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('department ownership, signup, publishing and new home operate together',async({page,request,playwright,baseURL},info)=>{
-  await page.goto('/');await expect(page.getByRole('heading',{name:'First, something delicious.'})).toBeVisible();
+  await page.goto('/');await expect(page.getByRole('heading',{name:'Your day. Your Midpoint.'})).toBeVisible();
   expect((await(await request.get('/manifest.webmanifest')).json()).start_url).toBe('/fond');
   await page.goto('/?payment=return&reference=example');await expect(page).toHaveURL(/\/fond\?payment=return&reference=example$/);
   const login=await request.post('/api/admin/login',{data:{code:'isolated-hub-admin'}});expect(login.ok(),await login.text()).toBe(true);
