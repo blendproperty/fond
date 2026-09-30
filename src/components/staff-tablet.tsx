@@ -1,5 +1,6 @@
 'use client';
 import {MembershipScanner} from './membership-scanner';
+import {CoffeeRewardScanner} from './coffee-reward-scanner';
 import {CounterStamps} from './counter-rewards';
 import {CategoryNavigation} from './category-navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -403,8 +404,8 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
   const sending = useRef(false);
   const [rewardCode,setRewardCode]=useState(''),[rewardQuote,setRewardQuote]=useState<{discountCents:number;totalCents:number;environment:string}|null>(null),[checkingReward,setCheckingReward]=useState(false),[rewardError,setRewardError]=useState('');
   const [membershipCode,setMembershipCode]=useState('');
-  const rewardVersion=useRef(0);
-  useEffect(()=>{rewardVersion.current++;setRewardQuote(null);setRewardError('');},[cart,rewardCode]);
+  const rewardVersion=useRef(0),scannedReward=useRef<string|null>(null);
+  useEffect(()=>{rewardVersion.current++;setRewardQuote(null);setRewardError('');if(scannedReward.current===rewardCode&&cart.length){scannedReward.current=null;void checkReward();}},[cart,rewardCode]);
   async function checkReward(){const version=++rewardVersion.current;setCheckingReward(true);setRewardError('');try{const r=await fetch('/api/staff/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:rewardCode,lines:cart})}),d=await r.json();if(version!==rewardVersion.current)return;if(!r.ok)throw new Error(d.message);setRewardQuote(d);}catch(e){if(version===rewardVersion.current){setRewardQuote(null);setRewardError((e as Error).message);}}finally{setCheckingReward(false);}}
 
   const pricedCart = useMemo(() => {
@@ -475,7 +476,8 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
           <button className="icon-button" aria-label="Close" onClick={onClose}><X /></button>
         </header>
         <div className="drawer-scroll">
-          {rewardMode&&<p className="notice">Choose the customer's coffee, enter their code below and validate it. Adding the order reserves the code; collection completes redemption. Record the same discount in Yoco and add its reference before preparation. Counter purchases do not earn stamps.</p>}
+          {rewardMode&&<p className="notice">Choose the customer's coffee, then scan their free-coffee QR below. The scanned reward is validated automatically. Adding the order reserves the code; collection completes redemption. Record the same discount in Yoco and add its reference before preparation. Counter purchases do not earn stamps.</p>}
+          {rewardMode&&<CoffeeRewardScanner onScanned={code=>{if(code===rewardCode&&cart.length){scannedReward.current=null;void checkReward();}else{scannedReward.current=code;setRewardCode(code);}}}/>}
           <div className="staff-menu-navigation">
             <label className="field">Jump to category<select value={category} onChange={event=>setCategory(event.target.value as Category)}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
             <CategoryNavigation value={category} onChange={setCategory} revealSelection/>
@@ -515,7 +517,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
             </div>
           )}
           {!rewardMode&&<MembershipScanner value={membershipCode} onChange={setMembershipCode}/>}
-          <section className="basket-rewards"><h3>Customer coffee code</h3><label className="field">Coffee reward code<input maxLength={40} value={rewardCode} onChange={e=>setRewardCode(e.target.value)} placeholder="COFFEE-…"/></label><button className="outline" disabled={checkingReward||!rewardCode.trim()||!cart.length} onClick={checkReward}>{checkingReward?'Checking…':'Validate coffee code'}</button>{rewardError&&<p role="alert">{rewardError}</p>}{rewardQuote&&<p role="status">{rewardQuote.environment==='test'?'TEST code verified.':'Code verified.'} One coffee discounted; extras remain payable. {rewardQuote.totalCents===0?'Nothing to collect.':`${money(rewardQuote.totalCents)} remains due.`}</p>}</section>
+          <section className="basket-rewards"><h3>Customer coffee reward</h3>{!rewardMode&&<CoffeeRewardScanner onScanned={code=>{if(code===rewardCode&&cart.length){scannedReward.current=null;void checkReward();}else{scannedReward.current=code;setRewardCode(code);}}}/>}<label className="field">Coffee reward code<input maxLength={40} value={rewardCode} onChange={e=>setRewardCode(e.target.value)} placeholder="COFFEE-…"/></label><button className="outline" disabled={checkingReward||!rewardCode.trim()||!cart.length} onClick={checkReward}>{checkingReward?'Checking…':'Validate coffee code'}</button>{rewardError&&<p role="alert">{rewardError}</p>}{rewardQuote&&<p role="status">{rewardQuote.environment==='test'?'TEST code verified.':'Code verified.'} One coffee discounted; extras remain payable. {rewardQuote.totalCents===0?'Nothing to collect.':`${money(rewardQuote.totalCents)} remains due.`}</p>}</section>
           <label className="field">Name / table / desk<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Table 4, or Jane (OnPoint 2nd floor)" /></label>
           <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Customer's phone number" /></label>
           <label className="field">Collection time

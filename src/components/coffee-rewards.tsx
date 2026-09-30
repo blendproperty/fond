@@ -1,11 +1,13 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {Coffee,Check,Ticket,X} from 'lucide-react';
+import QRCode from 'qrcode';
 type Reward={id:string;code:string;status:string;kind:string};
 type RewardsData={membership?:{code:string;enabled:boolean;qr:string|null};verified:boolean;environment:string;stamps:number;stampsToNext:number;rewards:Reward[]};
 export function CoffeeRewards(){
  const [data,setData]=useState<RewardsData|null>(null),[email,setEmail]=useState(false),[sms,setSms]=useState(false),[phone,setPhone]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[shown,setShown]=useState<string|null>(null);
  const dialog=useRef<HTMLDialogElement>(null);
+ const [rewardQr,setRewardQr]=useState<string|null>(null);
  async function load(preferences=false){
   const r=await fetch('/api/account/rewards',{cache:'no-store'});if(!r.ok)throw new Error('Could not refresh your rewards. Please sign in again if your session has ended.');
   const d=await r.json();setData(d);setError('');
@@ -14,6 +16,7 @@ export function CoffeeRewards(){
  useEffect(()=>{let active=true;const refresh=()=>{if(active)load().catch(e=>setError(e.message));};load(true).catch(e=>setError(e.message));const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh);return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
  useEffect(()=>{if(shown)dialog.current?.showModal();else dialog.current?.close();},[shown]);
  const visibleReward=data?.rewards?.find(r=>r.id===shown);
+ useEffect(()=>{let active=true;setRewardQr(null);if(visibleReward?.status==='available')QRCode.toDataURL(visibleReward.code,{width:280,margin:4,errorCorrectionLevel:'M'}).then(qr=>{if(active)setRewardQr(qr);}).catch(()=>{});return()=>{active=false;};},[visibleReward?.code,visibleReward?.status]);
  async function send(rewardId:string){setBusy(true);try{const r=await fetch('/api/account/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send',rewardId})});const d=await r.json();setMessage(r.ok?'Code delivery requested using your saved preferences. Previously submitted codes are not sent twice.':d.message);}catch{setMessage('Could not request code delivery.');}finally{setBusy(false);}}
  async function save(){setBusy(true);try{const r=await fetch('/api/account/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'preferences',email,sms,phone})});const d=await r.json();if(!r.ok)throw new Error(d.message);setMessage('Reward notification preferences saved.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
  const earnedReady=data?.rewards?.some(r=>r.kind==='earned'&&r.status==='available')??false;
@@ -53,7 +56,7 @@ export function CoffeeRewards(){
   <dialog ref={dialog} className="reward-code-dialog" onCancel={()=>setShown(null)} onClose={()=>setShown(null)} aria-labelledby="reward-code-title">
    <button className="icon-button reward-code-close" aria-label="Close reward code" onClick={()=>setShown(null)}><X/></button><Coffee size={50} aria-hidden="true"/><p className="eyebrow">MIDPOINT CAFE · FOND</p><h2 id="reward-code-title">One free coffee</h2>
    {data?.environment==='test'&&<p className="reward-test-label">TEST CODE · NOT VALID FOR LIVE PAYMENT</p>}
-   {!error&&visibleReward?.status==='available'?<><p>Show this screen to the FOND team.</p><code className="large-reward-code">{visibleReward.code}</code><p>Any one Coffee item.<br/>Extras charged separately.</p><small>Staff will validate this code and record your coffee. It can only be used once.</small></>:<p role="status">{error?'Connect and refresh your rewards before showing your code.':visibleReward?.status==='reserved'?'Your code is reserved on an order.':visibleReward?.status==='redeemed'?'This coffee has been redeemed. Enjoy!':'This code is no longer available.'}</p>}
+   {!error&&visibleReward?.status==='available'?<><p>Show this QR to the FOND team to scan.</p>{rewardQr&&<img className="coffee-redemption-qr" src={rewardQr} width={280} height={280} alt="Free coffee redemption QR code"/>}<details className="reward-code-fallback"><summary>Show code instead</summary><code className="large-reward-code">{visibleReward.code}</code></details><p>Any one Coffee item.<br/>Extras charged separately.</p><small>Staff will validate this code and record your coffee. It can only be used once.</small></>:<p role="status">{error?'Connect and refresh your rewards before showing your code.':visibleReward?.status==='reserved'?'Your code is reserved on an order.':visibleReward?.status==='redeemed'?'This coffee has been redeemed. Enjoy!':'This code is no longer available.'}</p>}
    <button className="outline" onClick={()=>load().catch(e=>setError(e.message))}>Refresh code status</button>
   </dialog>
  </section>;
