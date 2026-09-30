@@ -16,12 +16,4 @@ export async function POST(request: Request) {
   clearLoginFailures(key); const response = NextResponse.json({ok:true},{headers});
   response.cookies.set(HUB_COOKIE,member.token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:12*3600}); return response;
 }
-export async function DELETE(request: Request) {
-  if (!validRequestOrigin(request)) return NextResponse.json({message:'Invalid origin.'},{status:403,headers});
-  const store=await cookies();
-  // Owner oversight can come from the existing admin session; end that too so
-  // refreshing after Hub sign-out cannot silently restore access to requests.
-  revokeSession(store.get(HUB_COOKIE)?.value); revokeSession(store.get(ADMIN_COOKIE)?.value);
-  const response = NextResponse.json({ok:true},{headers});
-  response.cookies.delete(HUB_COOKIE); response.cookies.delete(ADMIN_COOKIE); return response;
-}
+export {DELETE} from '@/app/api/team/session/route';

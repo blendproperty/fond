@@ -36,7 +36,7 @@ type AdminOrder = {
   createdAt: string;
 };
 
-export function AdminPanel() {
+export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
@@ -68,19 +68,21 @@ export function AdminPanel() {
   }
 
   async function logout() {
+    if(onLogout){await onLogout();return;}
     await fetch('/api/admin/logout', { method: 'POST' });
     setLocked(true);
   }
 
   if (checking) return null;
 
+  if(locked&&onLogout)return <button className="team-back" onClick={onLogout}>Session ended. Return to team sign-in</button>;
   if (locked) {
     return (
       <div className="staff-lock admin-login">
         <form onSubmit={submitCode} className="admin-login-card">
-          <div className="admin-login-top"><BrandLogo className="brand-logo-login" /><span className="admin-login-badge">ADMIN PORTAL</span></div>
+          <div className="admin-login-top"><img src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="85" height="70" /><span className="admin-login-badge">ADMIN PORTAL</span></div>
           <div className="admin-login-icon"><Lock size={24} strokeWidth={1.8}/></div>
-          <p className="admin-login-kicker">MIDPOINT HUB · FOND</p>
+          <p className="admin-login-kicker">MIDPOINT HUB</p>
           <h1>Welcome back.</h1>
           <p className="admin-login-intro">Sign in to manage your menu, orders and business.</p>
           <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
@@ -89,7 +91,7 @@ export function AdminPanel() {
           {named && <label className="admin-login-field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="After 2FA enrollment"/></label>}
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full admin-login-submit" type="submit">Unlock</button>
-          <p className="admin-login-foot">Private access for the FOND team.</p>
+          <p className="admin-login-foot">Private access for the Midpoint Hub team.</p>
         </form>
       </div>
     );
@@ -98,7 +100,7 @@ export function AdminPanel() {
   return (
     <div className="admin-shell">
       <nav className="admin-nav" aria-label="Admin sections">
-        <div className="admin-nav-brand"><BrandLogo className="brand-logo-admin-nav" /></div>
+        <div className="admin-nav-brand"><img src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="75" height="65" /></div>
         {NAV.map((n) => {
           const Icon = n.icon;
           return (

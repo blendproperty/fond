@@ -25,7 +25,7 @@ test('Hub destinations, real empty calendars and forms work on desktop and phone
   await page.goto('/gym/classes');await expect(page.getByText('The next dates are on their way.')).toBeVisible();await page.getByRole('button',{name:'Next month'}).click();
   await page.goto('/padel');await expect(page.getByRole('link',{name:'Midpoint Padel Book a court',exact:true})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');
   for(const path of ['/hub','/gym','/gym/signup','/gym/classes','/gym/events','/padel','/padel/signup','/padel/events','/functions','/hub/manage']){
-    await page.goto(path);await expect(page.locator('.hub-shell')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await page.goto(path);await expect(page.locator('.hub-shell, .team-portal, .admin-login')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   }
 });
 test('Hub management requires authentication and rejects foreign origins',async({request})=>{
