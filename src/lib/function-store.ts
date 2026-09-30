@@ -13,8 +13,11 @@ export function submitFunction(input:Record<string,unknown>,key:string){
  if(input.consent!==true)throw new HubError('Please agree to the use of your details for this enquiry.');
  if(!validFunctionDate(input.date))throw new HubError('Choose a date from today within the next two years.');
  const pax=Number(input.pax);if(!Number.isInteger(pax)||pax<1||pax>10000)throw new HubError('Enter a valid number of guests.');
- if(!FUNCTION_CUISINES.includes(input.cuisine as typeof FUNCTION_CUISINES[number]))throw new HubError('Choose a cuisine option.');
- const details={pax:String(pax),cuisine:String(input.cuisine),contactPerson:field(input.contactPerson,'contact person',120),company:field(input.company??'','company',160,false),theme:field(input.theme??'','theme',300,false),email:field(input.email,'email',254).toLowerCase(),phone:field(input.phone,'contact number',30),consent:true};
+ if(!FUNCTION_CUISINES.includes(input.cuisine as typeof FUNCTION_CUISINES[number]))throw new HubError('Choose a function style.');
+ const budgetRaw=field(input.budget??'','budget',16,false);
+ if(budgetRaw&&(!/^\d+(\.\d{1,2})?$/.test(budgetRaw)||Number(budgetRaw)<=0||Number(budgetRaw)>100000000))throw new HubError('Enter a positive budget in rand, with up to two decimal places.');
+ const budgetBasis=input.budgetBasis??'total';if(!['total','per-person'].includes(String(budgetBasis)))throw new HubError('Choose total or per-person budget.');
+ const details={budget:budgetRaw?Number(budgetRaw).toFixed(2):'',budgetBasis:budgetRaw?String(budgetBasis):'',pax:String(pax),cuisine:String(input.cuisine),contactPerson:field(input.contactPerson,'contact person',120),company:field(input.company??'','company',160,false),theme:field(input.theme??'','theme',300,false),email:field(input.email,'email',254).toLowerCase(),phone:field(input.phone,'contact number',30),consent:true};
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email)||!/^\+?[\d ()-]{7,30}$/.test(details.phone))throw new HubError('Enter a valid email and contact number.');
  const db=functionDb(),date=input.date,fingerprint=createHash('sha256').update(vaultKey()).update(JSON.stringify({date,details})).digest('hex');
  const prior=db.prepare('SELECT id,fingerprint FROM function_bookings WHERE request_key=?').get(key) as {id:string;fingerprint:string}|undefined;
