@@ -1,3 +1,4 @@
+import {hubMetadata} from '@/lib/hub-metadata';
 import { notFound } from 'next/navigation';
 import { HubShell, HubBack, HubLanding } from '@/components/hub-pages';
 import { HubSignup } from '@/components/hub-signup';
@@ -5,7 +6,7 @@ import { HubCalendarView } from '@/components/hub-calendar';
 import { listEvents } from '@/lib/hub-store';
 export const dynamic = 'force-dynamic';
 type Props = {params:Promise<{service:string;section?:string[]}>};
-export async function generateMetadata({params}:Props){const {service}=await params;return {title:`Midpoint ${service==='gym'?'Gym':service==='padel'?'Padel':'Hub'}`};}
+export async function generateMetadata({params}:Props){const {service}=await params;return {...hubMetadata,title:`Midpoint ${service==='gym'?'Gym':service==='padel'?'Padel':'Hub'}`};}
 export default async function Page({params}:Props) {
   const {service,section=[]}=await params; if(service!=='gym'&&service!=='padel')notFound();
   if(!section.length)return <HubLanding service={service}/>;

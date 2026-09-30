@@ -24,3 +24,17 @@ test('Hub management requires authentication and rejects foreign origins',async(
   expect((await request.post('/api/hub/requests',{headers:{Origin:'https://unrelated.example'},data:{}})).status()).toBe(403);
   expect((await request.post('/api/hub/session',{headers:{Origin:'https://unrelated.example'},data:{username:'example',password:'dummy'}})).status()).toBe(403);
 });
+
+test('Hub app navigation returns from FOND and retains separate app launch routes',async({page,request})=>{
+ await page.goto('/hub');
+ await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
+ await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/FOND/}).click();
+ await expect(page).toHaveURL(/\/fond$/);
+ await expect(page.getByRole('button',{name:'Basket',exact:true})).toBeVisible();
+ await page.getByRole('link',{name:'Back to Midpoint Hub',exact:true}).click();
+ await expect(page).toHaveURL(/\/hub$/);
+ await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true}).click();
+ await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true})).toHaveAttribute('aria-current','page');
+ const hub=await (await request.get('/hub/manifest.webmanifest')).json();expect(hub.start_url).toBe('/hub');expect(hub.display).toBe('standalone');
+ const fond=await (await request.get('/manifest.webmanifest')).json();expect(fond.id).toBe('/');expect(fond.name).toContain('FOND');
+});
