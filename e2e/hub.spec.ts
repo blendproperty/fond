@@ -1,6 +1,10 @@
 import {test,expect} from '@playwright/test';
 test('Hub destinations, real empty calendars and forms work on desktop and phones',async({page})=>{
-  await page.goto('/hub');await expect(page.getByRole('heading',{name:'First, something delicious.'})).toBeVisible();
+  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Your day. Your Midpoint.'})).toBeVisible();
+  const destinations=page.getByRole('navigation',{name:'Choose a destination'});
+  await expect(destinations.getByRole('link')).toHaveCount(4);
+  await expect(destinations.getByRole('link',{name:/Functions/})).toHaveAttribute('href','/functions');
+  await expect(page.getByRole('link',{name:'Grab a bite at FOND',exact:true})).toHaveCount(0);
   const shortcuts=page.locator('.hub-app-shortcuts');
   await expect(shortcuts.getByRole('link')).toHaveCount(4);
   await expect(shortcuts.getByRole('link',{name:/Find a class/})).toHaveAttribute('href','/gym/classes');

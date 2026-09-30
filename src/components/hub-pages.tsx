@@ -23,13 +23,13 @@ export function HubBack({href,children}:{href:string;children:React.ReactNode}) 
 export function HubNote({title,children}:{title:string;children:React.ReactNode}) {return <aside className="hub-note"><ShieldCheck/><div><h3>{title}</h3><p>{children}</p></div></aside>;}
 export function HubHome() {
  return <HubShell wide mood="home">
-  <section className="hub-personality-hero hub-food-hero"><div className="hub-personality-copy"><span className="hub-eyebrow">GOOD DAYS START WITH SOMETHING GOOD</span><h1>First, something<br/><em>delicious.</em></h1><p>A proper coffee. A bite from FOND. A little pause that makes the rest of your day better.</p><Link className="hub-hero-cta" href="/fond">Grab a bite at FOND <ArrowRight size={18}/></Link></div><div className="hub-scene-wrap"><HubScene kind="coffee"/><img className="hub-scene-badge" src="/hub-assets/original/fond-corrected.png" alt="FOND"/><span className="hub-scene-stamp">YOUR DAILY<br/>GOOD THING</span></div></section>
-  <div className="hub-section-intro"><div><span className="hub-eyebrow">WELCOME TO YOUR MIDPOINT</span><h2>Make a little time for you.</h2></div><p>Eat well. Move a little. Stay for a game.</p></div>
-  <nav className="hub-app-destinations" aria-label="Choose a destination">{[
-    {href:'/fond',title:'FOND',copy:'Your happy food place',badge:'fond-corrected.png'},
-    {href:'/gym',title:'Gym',copy:'Find your feel-good',badge:'gym.png'},
-    {href:'/padel',title:'Padel',copy:'A little friendly rivalry',badge:'padel.png'},
-  ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt=""/><h2>{item.title}</h2><p>{item.copy}</p><span>Let’s go <ArrowUpRight size={16}/></span></Link>)}</nav>
+  <section className="hub-app-welcome hub-home-welcome"><span className="hub-eyebrow">WELCOME TO MIDPOINT HUB</span><h1>Your day.<br/>Your Midpoint.</h1><p>A bite, a workout, a game or a get-together.<br/>Make it yours.</p></section>
+  <nav className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
+    {href:'/fond',title:'FOND',copy:'Something delicious',badge:'fond-corrected.png'},
+    {href:'/gym',title:'Gym',copy:'Move. Reset. Feel good.',badge:'gym.png'},
+    {href:'/padel',title:'Padel',copy:'Your next good game',badge:'padel.png'},
+    {href:'/functions',title:'Functions',copy:'Bring your people together',badge:null},
+  ].map(item=><Link href={item.href} key={item.href}>{item.badge?<img src={`/hub-assets/original/${item.badge}`} alt=""/>:<div className="hub-functions-tile-icon" aria-hidden="true"><CalendarDays/></div>}<h2>{item.title}</h2><p>{item.copy}</p><span>Let’s go <ArrowUpRight size={16}/></span></Link>)}</nav>
   <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/fond"><Coffee/><span>Grab a bite<small>Order something good from FOND</small></span><ArrowRight size={17}/></Link><Link className="hub-shortcut-gym" href="/gym/classes"><Dumbbell/><span>Find a class<small>Make time to move</small></span><ArrowRight size={17}/></Link><a className="hub-shortcut-padel" href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
  </HubShell>;
 }
