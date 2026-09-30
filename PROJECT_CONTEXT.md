@@ -1,3 +1,8 @@
+## 2026-09-30 - Clear event dates and responsive poster cards
+
+Implementation: shared Gym/Padel calendar now highlights scheduled days with visible event/class counts instead of a small dot, including accessible descriptions. Customer event cards use a full-width proportional poster on phones and poster/details columns on wider screens. Removed the constrained-height public poster treatment that created empty side panels; originals and stored events unchanged. Interest-page artwork also retains its natural full-width ratio.
+
+Testing: production build and TypeScript passed; image workflow passed on desktop/mobile for both services (2 tests), including date badge text, natural image proportions, overflow, uploads, privacy, replacement and removal. Mobile calendar screenshot visually inspected. Commit/push pending from clean main 8ccc9bb; established direct-main workflow, no PR/merge. Deployment and live verification pending exact-SHA CI/staging/production. Existing provider, legal/retention, training/device UAT, payment/finance and backup gates remain unchanged. No tracker in scope.
 ## 2026-09-30 - Americana Padel event populated
 
 Implementation/data: populated the supplied Americana Padel Game Night poster in the live Padel calendar, event 7a24799d-e1b9-4642-810e-e075f245ce7b. 9 October 2026, 18:00-20:00 SAST, Midpoint Padel, 12 player spots, R100 per person payable at the Proshop. User explicitly requested estimating the finish; 20:00 is labelled estimated in the description. Original supplied poster uploaded. The resumed form had Publish selected; save returned Saved and Published.

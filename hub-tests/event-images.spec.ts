@@ -35,6 +35,11 @@ test('Gym and Padel event image upload, privacy, publishing, replacement and rem
       const events=(await(await page.request.get(`/api/hub/manage?service=${service}`,{headers:{Cookie:cookie}})).json()).events;const id=events.find((e:any)=>e.title===title).id;
       await page.goto(`/${service}/events`);await expect(page.getByRole('img',{name:`${service} fixture poster`,exact:true})).toBeVisible();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+      await expect(page.getByRole('button',{name:today,exact:true})).toContainText('event');
+      const artwork=page.locator('.hub-event > .hub-event-image');
+      const geometry=await artwork.evaluate((el:any)=>({ratio:el.clientWidth/el.clientHeight,natural:el.naturalWidth/el.naturalHeight}));
+      expect(Math.abs(geometry.ratio-geometry.natural)).toBeLessThan(.02);
+      await page.screenshot({path:`hub-results/calendar-card-${service}-${info.project.name}.png`,fullPage:true});
       await page.goto(`/${service}/interest/${id}`);await expect(page.getByRole('img',{name:`${service} fixture poster`,exact:true})).toBeVisible();
       await page.screenshot({path:`hub-results/event-image-${service}-${info.project.name}.png`,fullPage:true});
       await page.goto(`/hub/manage?service=${service}`);await row.getByRole('button',{name:'Edit entry'}).click();
