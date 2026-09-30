@@ -66,3 +66,11 @@
  .hub-mood-functions .function-days button{min-height:34px}
 }
 @media(max-width:370px){.hub-personality-hero{padding:24px 20px}.hub-app.hub-wide .hub-personality-hero h1{font-size:35px}.hub-app.hub-wide .hub-feast-hero h1{font-size:40px}.hub-page-label{font-size:8px;max-width:140px}.hub-scene-wrap{width:145px}.hub-feast-hero .hub-scene-wrap{width:170px}.hub-app.hub-wide .hub-actions b{font-size:16px}}
+
+/* User-supplied chef portrait and evidence-backed, personal introduction. */
+.hub-michelle-note{display:grid;grid-template-columns:180px minmax(0,1fr);gap:26px;align-items:start}
+.hub-chef-portrait{margin:0;min-width:0}.hub-chef-portrait img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:70px 70px 18px 18px;border:5px solid #fff8ed}.hub-chef-portrait figcaption{font-size:8px;letter-spacing:1px;line-height:1.7;text-align:center;margin-top:12px;color:#785453}
+.hub-chef-story{min-width:0}.hub-michelle-note .hub-chef-intro{font:italic 21px/1.35 Georgia,serif;color:#743d4c;margin-bottom:15px}.hub-chef-story>p+p{margin-top:12px}
+.hub-chef-flavours{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 4px}.hub-chef-flavours span{padding:5px 9px;border-radius:20px;background:#e9d7c3;color:#654237;font-size:10px;font-weight:650}
+.hub-chef-social{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}.hub-chef-social a{font-size:10px;font-weight:500;gap:4px;border:0;color:#76504f;min-height:36px;margin-top:0}
+@media(max-width:700px){.hub-michelle-note{display:block;padding:23px 20px}.hub-chef-portrait{display:flex;align-items:center;gap:18px;margin-bottom:22px}.hub-chef-portrait img{width:108px;height:108px;border-radius:40px 40px 13px 13px}.hub-chef-portrait figcaption{text-align:left;max-width:110px;margin:0;font-size:9px;line-height:1.8}.hub-michelle-note .hub-chef-intro{font-size:21px}.hub-chef-story>p{font-size:13px}.hub-chef-social{gap:12px}}
