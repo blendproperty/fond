@@ -91,8 +91,43 @@
 @media(max-width:700px){.hub-home-destinations{grid-template-columns:repeat(4,minmax(0,1fr));margin:24px 0 30px;padding:20px 0}.hub-mood-home .hub-home-destinations>a{padding:8px 4px;gap:12px}.hub-home-destinations>a>svg{width:28px;height:28px}.hub-app.hub-wide .hub-home-destinations h2{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.hub-mood-home .hub-home-destinations>a{transition:none}}
 
-/* Midpoint home: shared place, destinations and community. */
-.hub-home-image-hero{display:grid;grid-template-columns:1fr 1.15fr;background:#eedecb;border-radius:28px;overflow:hidden;padding:0;align-items:stretch;margin-bottom:30px}.hub-home-hero-copy{padding:48px 38px;align-self:center}.hub-home-image-hero h1{font-size:clamp(38px,4vw,60px);line-height:1.04;margin:18px 0}.hub-home-image-hero p{line-height:1.7;margin-bottom:24px}.hub-home-hero-image{width:100%;height:100%;min-height:360px;object-fit:cover;object-position:62% center}.hub-at-point{margin:38px 0;padding:32px;border:1px solid #d9dfd3;border-radius:24px;background:#f0f2e9}.hub-at-point-heading{display:flex;justify-content:space-between;gap:20px;align-items:center}.hub-at-point h2{font-size:30px;letter-spacing:.06em;margin:8px 0}.hub-at-point p{color:#586c65;line-height:1.6}.hub-at-point-label{font-size:12px;border:1px solid #bdcbbb;border-radius:100px;padding:10px 15px;white-space:nowrap}.hub-at-point-empty{display:flex;align-items:center;gap:20px;border-top:1px solid #d5ddd0;padding:24px 0;margin-top:20px}.hub-at-point-empty svg{flex-shrink:0}.hub-at-point-empty h3{margin:0 0 6px;font-size:20px}.hub-at-point-empty p{margin:0;max-width:640px}.hub-at-point-links{display:flex;gap:24px;border-top:1px solid #d5ddd0;padding-top:20px}.hub-at-point-links a{display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600}.hub-at-point-events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px 0}.hub-at-point-event{border-radius:16px;background:#fffdf7;overflow:hidden;border:1px solid #d9dfd3}.hub-at-point-event>img{width:100%;max-height:230px;object-fit:contain;background:#e6eadd}.hub-at-point-event>div{padding:24px}.hub-at-point-event time{display:block;font-size:13px;margin:12px 0}.hub-at-point-event h3{font-size:22px;margin:10px 0}.hub-at-point-event div>span:last-child{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}.hub-home-destinations{scroll-margin-top:24px}.hub-mood-home .install.install-feature{max-width:none;margin:30px 0}.hub-mood-home .install-dialog h2{color:#082121}
-@media(max-width:700px){.hub-home-image-hero{grid-template-columns:1fr;border-radius:22px}.hub-home-hero-copy{padding:30px 24px}.hub-home-hero-image{height:230px;min-height:0}.hub-at-point{padding:24px 20px;margin:28px 0}.hub-at-point-heading{align-items:flex-start;flex-direction:column;gap:10px}.hub-at-point-events{grid-template-columns:1fr}.hub-at-point-empty{align-items:flex-start;gap:14px}.hub-at-point-links{gap:20px;flex-wrap:wrap}.hub-mood-home .install.install-feature{margin:24px 0}}
 
-.hub-mood-home .hub-home-welcome.hub-home-image-hero{padding:0}
+/* Compact home composition follows the supplied app reference. */
+.hub-shell.hub-mood-home{background:#faf9f6}
+.hub-mood-home .hub-top{min-height:72px;padding-top:22px;padding-bottom:14px;align-items:center}
+.hub-home-wordmark{display:block;font-size:17px;font-weight:400;letter-spacing:4px;line-height:1.1;color:#4e5550}
+.hub-home-wordmark small{display:block;font-size:11px;letter-spacing:4px;margin-top:4px}
+.hub-mood-home .hub-page-label{display:none}
+.hub-home-account{width:34px;height:34px;border:1px solid #d9dad4;border-radius:50%;display:grid;place-items:center;color:#263b32}
+.hub-home-greeting{padding:6px 0 8px}
+.hub-app.hub-wide .hub-home-greeting h1{font-size:30px;line-height:1.08;letter-spacing:-1.1px;font-weight:650;margin:0 0 7px;max-width:260px;color:#18241f}
+.hub-home-greeting p{font-size:14px;margin:0;color:#68706a}
+.hub-home-photo{position:relative;margin:0 -28px;overflow:hidden;height:300px;clip-path:polygon(0 20%,100% 0,100% 100%,0 100%);background:#1b3028}
+.hub-home-photo .hub-home-hero-image{width:100%;height:100%;object-fit:cover;object-position:center 52%;display:block}
+.hub-home-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,#081810cc 100%);pointer-events:none}
+.hub-home-photo>p{position:absolute;left:28px;bottom:22px;z-index:1;color:#fff;font-size:13px;line-height:1.4;letter-spacing:1.3px;font-weight:500;margin:0}
+.hub-home-destinations{margin:0;padding:22px 0;border-top:0;border-bottom:1px solid #e2e2dc}
+.hub-mood-home .hub-home-destinations>a{gap:11px;padding:4px 10px}
+.hub-mood-home .hub-home-destinations>a+a{border-left:0}
+.hub-home-destinations>a>svg{width:27px;height:27px}
+.hub-app.hub-wide .hub-home-destinations h2{font-size:12px;font-weight:500}
+.hub-at-point{margin:22px 0 24px;padding:0;background:transparent;border:0;border-radius:0}
+.hub-at-point-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:13px;border-bottom:1px solid #e2e2dc}
+.hub-app.hub-wide .hub-at-point h2{font-size:12px;line-height:1.2;font-weight:600;letter-spacing:1.2px;margin:0;color:#27342c}
+.hub-at-point-heading>a{display:flex;align-items:center;gap:6px;font-size:12px;color:#555e58}
+.hub-upcoming-row{display:grid;grid-template-columns:58px minmax(0,1fr) 40px 15px;gap:12px;align-items:center;min-height:56px;border-bottom:1px solid #e9e8e2;color:#26382d;padding:10px 0}
+.hub-upcoming-row time{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#6c746d;white-space:nowrap}
+.hub-upcoming-row time small{font-size:11px}
+.hub-app.hub-wide .hub-upcoming-row h3{font-size:14px;line-height:1.3;font-weight:550;letter-spacing:0;margin:0}
+.hub-upcoming-service{font-size:11px;text-align:right;color:#68716a}
+.hub-upcoming-empty{font-size:13px;line-height:1.5;color:#68716a;margin:16px 0}
+.hub-at-point-footnote{font-size:11px;color:#737971;margin:10px 0 0}
+.hub-all-events{padding:20px 0 28px}.hub-app.hub-wide .hub-all-events h1{font-size:30px;letter-spacing:-1px;margin-bottom:12px}.hub-all-events>p{font-size:13px;color:#68716a;margin-bottom:22px}.hub-all-events>nav{display:flex;gap:24px;margin-top:22px;font-size:13px}.hub-all-events>nav>a{display:flex;gap:8px;align-items:center}
+.hub-mood-home .install.install-feature{margin:24px 0;padding:18px 20px;max-width:none;gap:14px;border-radius:12px;background:#f0f0eb;color:#26382d;flex-wrap:wrap;border:1px solid #e3e3dc;box-shadow:none}
+.hub-mood-home .install-feature .install-device-icons{color:#344a3d;gap:5px}.hub-mood-home .install-device-icons svg{width:20px;height:20px}
+.hub-mood-home .install-feature .eyebrow{color:#6b756c;font-size:9px;letter-spacing:1px;margin-bottom:5px}
+.hub-mood-home .install-feature h3{color:#26382d;font-size:15px;line-height:1.3;margin:0}.hub-mood-home .install-feature p{display:none}
+.hub-mood-home .install-feature .install-primary{background:#26382d;color:#fff;font-size:12px;min-height:40px;padding:10px 16px;width:auto;box-shadow:none;border-radius:7px}
+.hub-mood-home .install-feature .install-primary svg{width:16px;height:16px}
+.hub-mood-home .install-dialog h2{color:#26382d}
+@media(max-width:700px){.hub-mood-home .hub-top{padding:20px 20px 12px;min-height:68px}.hub-app.hub-wide .hub-home-greeting h1{font-size:28px;max-width:220px}.hub-home-photo{margin:0 -18px;height:220px}.hub-home-photo>p{left:18px;bottom:18px;font-size:11px;letter-spacing:1px}.hub-home-destinations{padding:18px 0}.hub-at-point{margin:20px 0}.hub-upcoming-row{grid-template-columns:50px minmax(0,1fr) 34px 12px;gap:8px;min-height:51px}.hub-app.hub-wide .hub-upcoming-row h3{font-size:12px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:10px}.hub-mood-home .install.install-feature{margin:22px 0;padding:15px;gap:12px}.hub-mood-home .install-feature .install-copy{flex-basis:70%}.hub-mood-home .install-feature .install-primary{width:100%;justify-content:center}}

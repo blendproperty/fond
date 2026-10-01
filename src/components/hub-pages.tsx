@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Coffee, ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Dumbbell, MapPin, ShieldCheck, Volleyball, UserRoundPlus } from 'lucide-react';
+import { Coffee, ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Dumbbell, MapPin, ShieldCheck, Volleyball, UserRoundPlus, UserRound } from 'lucide-react';
 import { HUB_CONTACTS, type HubService } from '@/lib/hub-config';
 import './hub.css';
 import './hub-personality.css';
@@ -13,9 +13,9 @@ import { HubDestinationIcon, type HubDestination } from './hub-destination-icon'
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
     <header className="hub-top">
-      <Link href="/hub" aria-label="Midpoint Hub home"><img src="/hub-assets/hub-logo-stacked.svg" width="180" height="120" alt="Midpoint Hub"/></Link>
+      <Link href="/hub" aria-label="Midpoint Hub home">{mood==='home'?<span className="hub-home-wordmark">MIDPOINT<small>HUB</small></span>:<img src="/hub-assets/hub-logo-stacked.svg" width="180" height="120" alt="Midpoint Hub"/>}</Link>
       <nav aria-label="Hub navigation"><Link href="/fond">FOND</Link><Link href="/gym" aria-current={service==='gym'?'page':undefined}>Gym</Link><Link href="/padel" aria-current={service==='padel'?'page':undefined}>Padel</Link><Link href="/functions">Functions</Link></nav>
-      <span className="hub-page-label">{mood==='functions'?'GATHER · FEAST · CELEBRATE':service==='gym'?'MOVE · RESET · REPEAT':service==='padel'?'MEET · PLAY · REPEAT':'A LITTLE MORE TO YOUR DAY'}</span>
+      <span className="hub-page-label">{mood==='functions'?'GATHER · FEAST · CELEBRATE':service==='gym'?'MOVE · RESET · REPEAT':service==='padel'?'MEET · PLAY · REPEAT':'A LITTLE MORE TO YOUR DAY'}</span>{mood==='home'&&<Link className="hub-home-account" href="/account" aria-label="My account"><UserRound size={20} strokeWidth={1.6}/></Link>}
     </header>
     <div className="hub-content">{children}</div>
     <HubAppNav/>
@@ -26,9 +26,12 @@ export function HubBack({href,children}:{href:string;children:React.ReactNode}) 
 export function HubNote({title,children}:{title:string;children:React.ReactNode}) {return <aside className="hub-note"><ShieldCheck/><div><h3>{title}</h3><p>{children}</p></div></aside>;}
 export function HubHome() {
  const upcoming=[...listEvents('gym'),...listEvents('padel')].filter(e=>e.calendar!=='gym-classes'&&Date.parse(e.endsAt)>Date.now()).sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)).slice(0,4);
- const eventDate=(value:string)=>new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+ const hour=Number(new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',hour:'numeric',hourCycle:'h23'}).format(new Date()));
+ const greeting=hour<12?'Good morning.':hour<18?'Good afternoon.':'Good evening.';
  return <HubShell wide mood="home">
-  <section className="hub-app-welcome hub-home-welcome hub-home-image-hero"><div className="hub-home-hero-copy"><span className="hub-eyebrow">WELCOME TO MIDPOINT HUB</span><h1>Your day.<br/>Your Midpoint.</h1><p>A bite, a workout, a game or a get-together.<br/>Make it yours.</p><a className="hub-hero-cta" href="#explore-midpoint">Explore your Midpoint <ArrowRight size={18}/></a></div><img className="hub-home-hero-image" src="/hub-assets/midpoint-amenities.jpg" alt="Midpoint rooftop padel courts, café terraces and landscaped shared spaces" width="1600" height="900"/></section>
+  <section className="hub-home-greeting"><h1>{greeting}</h1><p>More to your day.</p></section>
+  <section className="hub-home-photo" aria-label="Life at Midpoint"><img className="hub-home-hero-image" src="/hub-assets/midpoint-hub-exterior.webp" alt="The Midpoint Hub building with FOND, rooftop padel courts and landscaped terraces" width="1280" height="853"/><p>COFFEE. WORKOUT.<br/>A GAME OR A GATHERING.<br/>IT ALL HAPPENS HERE.</p></section>
+
   <nav id="explore-midpoint" className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
     {href:'/fond',title:'FOND',icon:'fond'},
     {href:'/gym',title:'Gym',icon:'gym'},
@@ -36,10 +39,20 @@ export function HubHome() {
     {href:'/functions',title:'Functions',icon:'functions'},
   ].map(item=><Link href={item.href} key={item.href}><HubDestinationIcon destination={item.icon as HubDestination} size={34}/><h2>{item.title}</h2></Link>)}</nav>
 
-  <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><div><span className="hub-eyebrow">THE MIDPOINT COMMUNITY</span><h2 id="at-point-title">AT POINT</h2><p>Good things coming up. Be part of them.</p></div><span className="hub-at-point-label">Upcoming events</span></div>{upcoming.length?<div className="hub-at-point-events">{upcoming.map(event=><Link className="hub-at-point-event" href={`/${event.service}/interest/${event.id}`} key={event.id}>{event.imageUrl&&<img src={event.imageUrl} alt={event.imageAlt||event.title} loading="lazy"/>}<div><span className="hub-eyebrow">MIDPOINT {event.service.toUpperCase()}</span><time dateTime={event.startsAt}>{eventDate(event.startsAt)}</time><h3>{event.title}</h3><p>{event.location}</p><span>Discover the event <ArrowRight size={16}/></span></div></Link>)}</div>:<div className="hub-at-point-empty"><CalendarDays size={28}/><div><h3>More good things are on the way.</h3><p>Our next community events will appear here as they’re announced. Check back for something to join.</p></div></div>}<nav className="hub-at-point-links" aria-label="Explore event calendars"><Link href="/gym/events">Gym events <ArrowUpRight size={16}/></Link><Link href="/padel/events">Padel events <ArrowUpRight size={16}/></Link></nav></section>
+  <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT POINT</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><p className="hub-at-point-footnote">Upcoming events at Midpoint</p></section>
+
   <InstallApp/>
 
  </HubShell>;
+}
+export function HubUpcomingRows({events}:{events:ReturnType<typeof listEvents>}) {
+ const date=(value:string)=>new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',day:'2-digit',month:'short'}).format(new Date(value));
+ const time=(value:string)=>new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
+ return events.length?<div className="hub-upcoming-rows">{events.map(event=><Link className="hub-upcoming-row" href={`/${event.service}/interest/${event.id}`} key={event.id}><time dateTime={event.startsAt}><span>{date(event.startsAt)}</span><small>{time(event.startsAt)}</small></time><h3>{event.title}</h3><span className="hub-upcoming-service">{event.service==='gym'?'Gym':'Padel'}</span><ArrowRight size={15}/></Link>)}</div>:<p className="hub-upcoming-empty">New events will appear here as they’re announced.</p>;
+}
+export function HubAllEvents(){
+ const events=[...listEvents('gym'),...listEvents('padel')].filter(e=>e.calendar!=='gym-classes'&&Date.parse(e.endsAt)>Date.now()).sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt));
+ return <HubShell wide mood="home"><HubBack href="/hub">Home</HubBack><section className="hub-all-events"><h1>Upcoming at Midpoint.</h1><p>Find your next event. All times are South African time.</p><HubUpcomingRows events={events}/><nav aria-label="Explore event calendars"><Link href="/gym/events">Gym events <ArrowUpRight size={15}/></Link><Link href="/padel/events">Padel events <ArrowUpRight size={15}/></Link></nav></section></HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
   const gym=service==='gym', contact=HUB_CONTACTS[service];

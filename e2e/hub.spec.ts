@@ -1,14 +1,13 @@
 import {test,expect} from '@playwright/test';
 test('Hub destinations, real empty calendars and forms work on desktop and phones',async({page})=>{
-  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Your day. Your Midpoint.'})).toBeVisible();
+  await page.goto('/hub');await expect(page.getByRole('heading',{name:/Good (morning|afternoon|evening)\./})).toBeVisible();
   const destinations=page.getByRole('navigation',{name:'Choose a destination'});
   await expect(destinations.getByRole('link')).toHaveCount(4);
   await expect(destinations.getByRole('link',{name:/Functions/})).toHaveAttribute('href','/functions');
   await expect(page.getByRole('link',{name:'Grab a bite at FOND',exact:true})).toHaveCount(0);
   await expect(page.locator('.hub-app-shortcuts')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'AT POINT',exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Gym events',exact:true})).toHaveAttribute('href','/gym/events');
-  await expect(page.getByRole('link',{name:'Padel events',exact:true})).toHaveAttribute('href','/padel/events');
+  await expect(page.getByRole('link',{name:'View all'})).toHaveAttribute('href','/hub/events');
   await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/Gym/}).click();
   await expect(page).toHaveURL(/\/gym$/);await page.getByRole('link',{name:'Midpoint Gym Sign up',exact:true}).click();
   await expect(page.getByLabel('ID or passport number')).toBeVisible();
