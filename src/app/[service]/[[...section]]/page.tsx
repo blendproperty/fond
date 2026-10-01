@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { HubShell, HubBack, HubLanding } from '@/components/hub-pages';
 import { HubSignup } from '@/components/hub-signup';
 import { HubCalendarView } from '@/components/hub-calendar';
+import { GymClasses } from '@/components/gym-classes';
 import { listEvents } from '@/lib/hub-store';
 import {GymShell,GymInformation} from '@/components/gym-pages';
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export default async function Page({params}:Props) {
   if(service==='gym'&&section.length===1&&['membership','access','info'].includes(section[0]))return <GymInformation section={section[0] as 'membership'|'access'|'info'}/>;
   let content:React.ReactNode;
   if(section.length===1&&section[0]==='signup')content=<HubSignup service={service}/>;
-  else if(section.length===1&&(section[0]==='events'||service==='gym'&&section[0]==='classes'))content=<HubCalendarView service={service} kind={section[0] as 'classes'|'events'} events={listEvents(service)}/>;
+  else if(service==='gym'&&section.length===1&&section[0]==='classes')content=<GymClasses/>;
+  else if(section.length===1&&section[0]==='events')content=<HubCalendarView service={service} kind={section[0] as 'classes'|'events'} events={listEvents(service)}/>;
   else if(section.length===2&&section[0]==='interest'){const event=listEvents(service).find(e=>e.id===section[1]&&Date.parse(e.endsAt)>Date.now());if(!event)notFound();content=<HubSignup service={service} eventId={event.id} eventTitle={event.title} eventImage={event.imageUrl} eventImageAlt={event.imageAlt}/>;}
   else notFound();
   if(service==='gym')return <GymShell><div className="gym-inner-content">{content}</div></GymShell>;
