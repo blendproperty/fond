@@ -11,6 +11,7 @@ import { listEvents } from '@/lib/hub-store';
 import {settings} from '@/lib/management';
 import {orderingHoursMessage} from '@/lib/trading-hours';
 import {HubFondHours} from './hub-fond-hours';
+import {GymLanding} from './gym-pages';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
@@ -59,6 +60,9 @@ export function HubAllEvents(){
  return <HubShell wide mood="home"><HubBack href="/hub">Home</HubBack><section className="hub-all-events"><h1>Upcoming at Midpoint.</h1><p>Find your next event. All times are South African time.</p><HubUpcomingRows events={events}/><nav aria-label="Explore event calendars"><Link href="/gym/events">Gym events <ArrowUpRight size={15}/></Link><Link href="/padel/events">Padel events <ArrowUpRight size={15}/></Link></nav></section></HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
+  return service==='gym'?<GymLanding/>:<HubServiceLanding service={service}/>;
+}
+function HubServiceLanding({service}:{service:HubService}) {
   const gym=service==='gym', contact=HUB_CONTACTS[service];
   const actions=gym?[{href:'/gym/signup',label:'Sign up',copy:'Start your membership journey.',icon:UserRoundPlus},{href:'/gym/events',label:'Join an event',copy:'Find your next shared challenge.',icon:CalendarDays},{href:'/gym/classes',label:'Join a class',copy:'Make movement part of your day.',icon:Dumbbell}]:[{href:'/padel/signup',label:'Tenant signup',copy:'Get your Midpoint tenant profile ready.',icon:UserRoundPlus},{href:'https://playtomic.com/clubs/midpoint-padel',label:'Book a court',copy:'Find your next game on Playtomic.',icon:Volleyball},{href:'/padel/events',label:'Join an event',copy:'Meet the community on court.',icon:CalendarDays}];
   return <HubShell service={service} wide>

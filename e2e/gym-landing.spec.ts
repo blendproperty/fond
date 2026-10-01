@@ -1,0 +1,12 @@
+import {test,expect} from '@playwright/test';
+test('Gym reference landing connects real classes, signup and information with persistent navigation',async({page},info)=>{
+  await page.goto('/gym');
+  await expect(page.getByRole('heading',{name:'Move better. Work happier.',exact:true})).toBeVisible();
+  await expect(page.locator('.gym-photo-hero img')).toHaveJSProperty('naturalWidth',1280);
+  const actions=page.getByRole('navigation',{name:'Gym actions',exact:true});await expect(actions.getByRole('link')).toHaveCount(6);
+  await page.getByRole('link',{name:'View classes',exact:true}).click();await expect(page).toHaveURL(/\/gym\/classes$/);await expect(page.getByRole('heading',{name:'Find your next class.',exact:true})).toBeVisible();
+  for(const [label,path,heading] of [['Membership options','membership','Make movement a habit.'],['Your access','access','Your next step inside.'],['Gym info','info','A little more movement.']]){await page.goto('/gym');await page.getByRole('navigation',{name:'Gym actions',exact:true}).getByRole('link',{name:label,exact:true}).click();await expect(page).toHaveURL(new RegExp(`/gym/${path}$`));await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true})).toHaveAttribute('aria-current','page');}
+  await page.goto('/gym/access');await expect(page.getByText('Your current membership or access status is not displayed in this app.',{exact:false})).toBeVisible();
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:844});for(const path of ['/gym','/gym/membership','/gym/access','/gym/info']){await page.goto(path);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const nav=await page.getByRole('navigation',{name:'App navigation'}).boundingBox();expect(nav!.y+nav!.height).toBeLessThanOrEqual(845);}}
+  await page.setViewportSize({width:390,height:844});await page.goto('/gym');await page.screenshot({path:info.outputPath('gym-landing-mobile.png'),fullPage:true});await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true}).click();await expect(page).toHaveURL(/\/hub$/);
+});
