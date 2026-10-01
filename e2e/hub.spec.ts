@@ -70,5 +70,3 @@ test('Legal pages are reachable from Hub and FOND and readable on small screens'
  await page.getByRole('link',{name:'Midpoint Hub',exact:true}).click();
  await expect(page).toHaveURL(/\/hub$/);
 });
-
-
