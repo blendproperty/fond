@@ -11,6 +11,7 @@ import { listEvents } from '@/lib/hub-store';
 import {settings} from '@/lib/management';
 import {orderingHoursMessage} from '@/lib/trading-hours';
 import {HubFondHours} from './hub-fond-hours';
+import {PadelLanding} from './padel-pages';
 import {GymLanding} from './gym-pages';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
@@ -60,7 +61,7 @@ export function HubAllEvents(){
  return <HubShell wide mood="home"><HubBack href="/hub">Home</HubBack><section className="hub-all-events"><h1>Upcoming at Midpoint.</h1><p>Find your next event. All times are South African time.</p><HubUpcomingRows events={events}/><nav aria-label="Explore event calendars"><Link href="/gym/events">Gym events <ArrowUpRight size={15}/></Link><Link href="/padel/events">Padel events <ArrowUpRight size={15}/></Link></nav></section></HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {
-  return service==='gym'?<GymLanding/>:<HubServiceLanding service={service}/>;
+  return service==='gym'?<GymLanding/>:<PadelLanding/>;
 }
 function HubServiceLanding({service}:{service:HubService}) {
   const gym=service==='gym', contact=HUB_CONTACTS[service];

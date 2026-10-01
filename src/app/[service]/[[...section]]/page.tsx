@@ -5,6 +5,7 @@ import { HubSignup } from '@/components/hub-signup';
 import { HubCalendarView } from '@/components/hub-calendar';
 import { GymClasses } from '@/components/gym-classes';
 import { listEvents } from '@/lib/hub-store';
+import {PadelShell,PadelInformation} from '@/components/padel-pages';
 import {GymShell,GymInformation} from '@/components/gym-pages';
 export const dynamic = 'force-dynamic';
 type Props = {params:Promise<{service:string;section?:string[]}>};
@@ -13,6 +14,7 @@ export default async function Page({params}:Props) {
   const {service,section=[]}=await params; if(service!=='gym'&&service!=='padel')notFound();
   if(!section.length)return <HubLanding service={service}/>;
   if(service==='gym'&&section.length===1&&['membership','access','info'].includes(section[0]))return <GymInformation section={section[0] as 'membership'|'access'|'info'}/>;
+  if(service==='padel'&&section.length===1&&['prices','info'].includes(section[0]))return <PadelInformation section={section[0] as 'prices'|'info'}/>;
   let content:React.ReactNode;
   if(section.length===1&&section[0]==='signup')content=<HubSignup service={service}/>;
   else if(service==='gym'&&section.length===1&&section[0]==='classes')content=<GymClasses/>;
@@ -20,5 +22,5 @@ export default async function Page({params}:Props) {
   else if(section.length===2&&section[0]==='interest'){const event=listEvents(service).find(e=>e.id===section[1]&&Date.parse(e.endsAt)>Date.now());if(!event)notFound();content=<HubSignup service={service} eventId={event.id} eventTitle={event.title} eventImage={event.imageUrl} eventImageAlt={event.imageAlt}/>;}
   else notFound();
   if(service==='gym')return <GymShell><div className="gym-inner-content">{content}</div></GymShell>;
-  return <HubShell service={service}><HubBack href={`/${service}`}>Midpoint Padel</HubBack>{content}</HubShell>;
+  return <PadelShell><div className="gym-inner-content">{content}</div></PadelShell>;
 }
