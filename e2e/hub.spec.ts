@@ -5,12 +5,10 @@ test('Hub destinations, real empty calendars and forms work on desktop and phone
   await expect(destinations.getByRole('link')).toHaveCount(4);
   await expect(destinations.getByRole('link',{name:/Functions/})).toHaveAttribute('href','/functions');
   await expect(page.getByRole('link',{name:'Grab a bite at FOND',exact:true})).toHaveCount(0);
-  const shortcuts=page.locator('.hub-app-shortcuts');
-  await expect(shortcuts.getByRole('link')).toHaveCount(4);
-  await expect(shortcuts.getByRole('link',{name:/Find a class/})).toHaveAttribute('href','/gym/classes');
-  await expect(shortcuts.getByRole('link',{name:/Grab a bite/})).toHaveAttribute('href','/fond');
-  await expect(shortcuts.getByRole('link',{name:/Book a court/})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');
-  await expect(shortcuts.getByRole('link',{name:/Get together/})).toHaveAttribute('href','/functions');
+  await expect(page.locator('.hub-app-shortcuts')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'AT POINT',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Gym events',exact:true})).toHaveAttribute('href','/gym/events');
+  await expect(page.getByRole('link',{name:'Padel events',exact:true})).toHaveAttribute('href','/padel/events');
   await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/Gym/}).click();
   await expect(page).toHaveURL(/\/gym$/);await page.getByRole('link',{name:'Midpoint Gym Sign up',exact:true}).click();
   await expect(page.getByLabel('ID or passport number')).toBeVisible();
