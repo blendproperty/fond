@@ -279,10 +279,17 @@ export const money = (cents: number) => new Intl.NumberFormat('en-ZA', { style: 
 // modifierIds identifies a line uniquely alongside id, so the same base item
 // can appear twice in a basket with different modifier selections (e.g. one
 // "no onion" and one plain) - lineKey() below is what "seen" dedupes on.
-export type CartLine = { id: string; quantity: number; modifierIds?: string[] };
+export type CartLine = { id: string; quantity: number; modifierIds?: string[]; note?: string };
+
+export function itemNote(value: unknown): string {
+  if (value === undefined) return '';
+  if (typeof value !== 'string' || value.length > 160) throw new Error('Item note must be at most 160 characters.');
+  return value.trim();
+}
 
 export function lineKey(line: CartLine): string {
-  return `${line.id}::${[...(line.modifierIds ?? [])].sort().join(',')}`;
+  const note = itemNote(line.note);
+  return `${line.id}::${[...(line.modifierIds ?? [])].sort().join(',')}${note ? `::${JSON.stringify(note)}` : ''}`;
 }
 
 // Pricing is always quoted against a caller-supplied menu, never trusted
@@ -309,6 +316,6 @@ export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
     seen.add(key);
     const unitPrice = meal.price + selectedModifiers.reduce((sum, m) => sum + m.price, 0);
     if (!Number.isSafeInteger(unitPrice) || unitPrice<0) throw new Error('Invalid item total.');
-    return { ...meal, quantity: line.quantity, selectedModifiers, unitPrice, subtotal: unitPrice * line.quantity };
+    return { ...meal, note: itemNote(line.note) || undefined, quantity: line.quantity, selectedModifiers, unitPrice, subtotal: unitPrice * line.quantity };
   });
 }

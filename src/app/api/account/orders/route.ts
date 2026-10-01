@@ -10,7 +10,7 @@ export async function GET() {
   const orders = listCustomerOrders(user.id).map(order => ({
     reference: order.reference, displayReference:order.displayReference, status: order.status, createdAt: order.createdAt,
     collectionTime: order.collectionTime, totalCents: order.totalCents,
-    lines: order.lines.map(line => ({ name: line.name, quantity: line.quantity, subtotalCents: line.subtotalCents })),
+    lines: order.lines.map(line => ({ id:line.id, name: line.name, quantity: line.quantity, subtotalCents: line.subtotalCents, modifierIds:line.modifierIds, note:line.note })),
     fulfillment: order.fulfillment, payment: paymentStatus(order.id),
   }));
   return NextResponse.json({ orders }, { headers: { 'Cache-Control': 'no-store' } });

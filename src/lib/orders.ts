@@ -281,6 +281,7 @@ export function createOrder(input: {
     const lines: PricedLine[] = priced.map((line,index) => ({
       id: line.id,
       quantity: line.quantity,
+      ...(line.note?{note:line.note}:{}),
       modifierIds: line.selectedModifiers.map((m) => m.id),
       modifiers: line.selectedModifiers.map(m => ({id:m.id,name:m.name,price:m.price})),
       name: line.name,

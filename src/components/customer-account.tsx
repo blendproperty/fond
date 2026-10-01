@@ -2,6 +2,8 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {ArrowLeft,ArrowRight,Coffee,Mail,ShieldCheck,ShoppingBag,CheckCircle2} from 'lucide-react';
+import {HubAppNav} from './hub-app-nav';
+import './fond-experience.css';
 import {CoffeeRewards} from './coffee-rewards';
 import {AccountAccess} from './account-access';
 import {AccountSecurity} from './account-security';
@@ -10,7 +12,7 @@ import {formatCollectionTime} from '@/lib/fulfilment';
 import styles from './customer-account.module.css';
 
 type User={id:string;email:string;emailVerified:boolean};
-type Order={reference:string;displayReference:string;status:string;createdAt:string;collectionTime:string;totalCents:number;lines:{name:string;quantity:number;subtotalCents:number}[];payment:{paidCents:number}};
+type Order={reference:string;displayReference:string;status:string;createdAt:string;collectionTime:string;totalCents:number;lines:{id?:string;name:string;quantity:number;subtotalCents:number;note?:string}[];payment:{paidCents:number}};
 export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
  const [counterEnabled,setCounterEnabled]=useState(false);
  useEffect(()=>{fetch('/api/store',{cache:'no-store'}).then(r=>r.json()).then(d=>setCounterEnabled(!!d.counterRewards)).catch(()=>{});},[]);
@@ -50,7 +52,7 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
  }
  async function logout(){setBusy(true);setError('');try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error('Could not sign out. Please try again.');setCode('');setVerificationMessage('');await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  return <main className={styles.page}>
-  <header className={styles.header}><Link href="/fond" aria-label="Midpoint Cafe home" className={styles.brand}><BrandLogo/></Link><Link className={styles.back} href="/fond"><ArrowLeft size={17} aria-hidden="true"/> Back to menu</Link></header>
+  <header className={styles.header}><Link href="/fond" aria-label="Midpoint Cafe home" className={styles.brand}><BrandLogo/></Link><Link className={styles.back} href="/fond/menu"><ArrowLeft size={17} aria-hidden="true"/> Back to menu</Link></header>
   <div className={styles.intro}><p className={styles.eyebrow}>A LITTLE MORE FOND OF EVERY DAY</p><h1>{view==='rewards'?'Coffee rewards':user?'Your orders':'Your daily FOND favourites.'}</h1><p>{user?'Your orders, your coffee rewards and your next little lift. All in one place.':'Good food, great coffee and something to look forward to. Make yourself at home.'}</p></div>
   <div className={`${styles.layout} ${user&&view==='rewards'?styles.rewardsLayout:''}`}>
    <div className={styles.content} id="customer-access">
@@ -68,7 +70,7 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
      {view!=='rewards'&&<AccountSecurity emailVerified={user.emailVerified}/>}
      {view==='rewards'?<><CoffeeRewards key={String(user.emailVerified)}/><AccountSecurity emailVerified={user.emailVerified}/></>:<>
       <div className={styles.historyTools}><p>Updates automatically every 15 seconds.</p><button className={styles.secondary} disabled={historyBusy} onClick={refreshHistory}>{historyBusy?'Refreshing…':'Refresh orders'}</button></div>
-      {orders.length?<div className={styles.orders}>{orders.map(order=><article key={order.reference} className={`${styles.card} ${styles.order}`}><div className={styles.orderHeading}><h2>{order.displayReference}</h2><span>{order.status.replaceAll('_',' ')}</span></div><p>{new Date(order.createdAt).toLocaleString()} · {formatCollectionTime(order.collectionTime)}</p><ul>{order.lines.map((line,i)=><li key={i}><span>{line.quantity} × {line.name}</span><span>R{(line.subtotalCents/100).toFixed(2)}</span></li>)}</ul><div className={styles.orderTotal}><strong>R{(order.totalCents/100).toFixed(2)}</strong><span>{order.totalCents===0?'Coffee reward':order.payment?.paidCents>=order.totalCents?'Paid':'Payment due or pending'}</span></div></article>)}</div>:historyLoaded?<section className={`${styles.card} ${styles.empty}`}><ShoppingBag size={30} aria-hidden="true"/><h2>Your next favourite is waiting.</h2><p>No orders are linked to this account yet. Guest orders using the same email appear after you verify it.</p><Link className={styles.primary} href="/fond">Explore the menu <ArrowRight size={17} aria-hidden="true"/></Link></section>:<p role="status">Your order history could not be loaded. Please try Refresh orders.</p>}
+      {orders.length?<div className={styles.orders}>{orders.map(order=><article key={order.reference} className={`${styles.card} ${styles.order}`}><div className={styles.orderHeading}><h2>{order.displayReference}</h2><span>{order.status.replaceAll('_',' ')}</span></div><p>{new Date(order.createdAt).toLocaleString()} · {formatCollectionTime(order.collectionTime)}</p><ul>{order.lines.map((line,i)=><li key={i}><span>{line.quantity} × {line.name}{line.note&&<small className="fond-line-note"> · {line.note}</small>}</span><span>R{(line.subtotalCents/100).toFixed(2)}</span></li>)}</ul><div className={styles.orderTotal}><strong>R{(order.totalCents/100).toFixed(2)}</strong><span>{order.totalCents===0?'Coffee reward':order.payment?.paidCents>=order.totalCents?'Paid':'Payment due or pending'}</span></div>{order.lines.every(l=>l.id)&&<Link className={styles.primary} href={`/fond/menu?reorder=${encodeURIComponent(order.reference)}`}>Order again <ArrowRight size={16}/></Link>}</article>)}</div>:historyLoaded?<section className={`${styles.card} ${styles.empty}`}><ShoppingBag size={30} aria-hidden="true"/><h2>Your next favourite is waiting.</h2><p>No orders are linked to this account yet. Guest orders using the same email appear after you verify it.</p><Link className={styles.primary} href="/fond/menu">Explore the menu <ArrowRight size={17} aria-hidden="true"/></Link></section>:<p role="status">Your order history could not be loaded. Please try Refresh orders.</p>}
       <p className={styles.hint}>Your latest 100 orders include signed-in purchases and guest orders sent to your verified email. Orders placed with another email or without an email can still be tracked from the menu using their reference.</p>
      </>}
     </>:<AccountAccess onSignedIn={refresh}/>}
@@ -78,5 +80,5 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'}){
     <p className={styles.asideNote}>Good food. Great coffee.<br/>A brighter Midpoint.</p>
    </aside>
   </div>
- </main>;
+ <div className="fond-account-nav"><HubAppNav/></div></main>;
 }

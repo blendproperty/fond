@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 test('Hub destinations, real empty calendars and forms work on desktop and phones',async({page})=>{
   await page.goto('/hub');await expect(page.getByRole('heading',{name:/Good (morning|afternoon|evening)\./})).toBeVisible();
   const destinations=page.getByRole('navigation',{name:'Choose a destination'});
-  await expect(destinations.getByRole('link')).toHaveCount(4);
+  await expect(destinations.getByRole('link')).toHaveCount(6);
   await expect(destinations.getByText('COMING SOON',{exact:true})).toHaveCount(2);
   await expect(destinations.locator('.hub-destination-coming a')).toHaveCount(0);
   await expect(destinations.getByRole('link',{name:/Functions/i})).toHaveAttribute('href','/functions');
@@ -39,8 +39,8 @@ test('Hub app navigation returns from FOND and retains separate app launch route
  await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
  await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/FOND/}).click();
  await expect(page).toHaveURL(/\/fond$/);
- await expect(page.getByRole('button',{name:'Basket',exact:true})).toBeVisible();
- await page.getByRole('link',{name:'Back to Midpoint Hub',exact:true}).click();
+ await expect(page.getByRole('link',{name:'Order now',exact:true})).toBeVisible();
+ await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true}).click();
  await expect(page).toHaveURL(/\/hub$/);
  await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true}).click();
  await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true})).toHaveAttribute('aria-current','page');

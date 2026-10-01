@@ -12,6 +12,7 @@ test('customer can sign up, place an order, then see it in their own account', a
   await expect(page.getByRole('heading', { name: 'Verify your email' })).toBeVisible();
   await page.getByRole('link', { name: 'Back to menu' }).click();
   await page.getByRole('button', { name: 'Add Smashed Avo', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Smashed Avo', exact: true }).getByRole('button', { name: /Add to basket/ }).click();
   await page.getByRole('button', { name: /Basket/ }).first().click();
   await page.getByLabel(/Your name/).fill('Account browser test');
   await page.getByLabel('Contact number').fill('0821234567');

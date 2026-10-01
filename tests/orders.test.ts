@@ -20,6 +20,7 @@ before(async () => {
 beforeEach(() => resetDbForTests());
 
 const lines = [{ id: 'espresso-single', quantity: 2 }];
+test('item notes persist independently through order storage and staff reads',()=>{const order=createOrder({customerName:'Notes test',lines:[{id:'smashed-avo',quantity:1,note:'Sauce on the side'},{id:'smashed-avo',quantity:1,note:'No chilli'}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});assert.deepEqual(getOrderByReference(order.reference)?.lines.map(l=>l.note),['Sauce on the side','No chilli']);assert.deepEqual(listActiveOrders()[0].lines.map(l=>l.note),['Sauce on the side','No chilli']);assert.equal(order.totalCents,24000);});
 
 test('customer orders start at received; staff orders start at accepted', () => {
   const customer = createOrder({ customerName: 'Jane', lines, collectionTime: 'ASAP', source: 'customer', contactNumber: '0821234567' });

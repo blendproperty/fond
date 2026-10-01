@@ -1,0 +1,4 @@
+import Link from 'next/link';
+import {ArrowRight} from 'lucide-react';
+import {HubShell} from './hub-pages';
+export function HubComingPage({service}:{service:'car-wash'|'suites'}){const wash=service==='car-wash';return <HubShell wide mood="home"><section className="hub-landing"><p className="hub-eyebrow">COMING SOON / MIDPOINT</p><h1>{wash?'Wash while you work.':'Stay a little longer.'}</h1><p>{wash?'A fresh start for your car, while you get on with your day.':'Corporate accommodation in the heart of Midpoint.'}</p><img src={`/hub-assets/tile-${wash?'car-wash':'suites'}.webp`} alt={wash?'Car wash concept':'Midpoint accommodation'} width="1400" height="933" style={{width:'100%',height:'auto',borderRadius:18,margin:'24px 0'}}/><p>{wash?'Car Wash':'The Suites'} is coming soon. Bookings and service details will appear here when available.</p><Link className="hub-primary" href="/hub">Explore Midpoint <ArrowRight size={18}/></Link></section></HubShell>}

@@ -11,6 +11,7 @@ process.env.FOND_DB_PATH=':memory:';
 process.env.FOND_PUBLIC_URL='https://fond-test.mid-point.co.za';
 const copy=()=>JSON.parse(JSON.stringify(DEFAULT_MESSAGE_TEMPLATES)) as MessageTemplateConfig;
 beforeEach(()=>{resetDbForTests();saveDocument('trading',{...DEFAULT_SETTINGS,enforceHours:false},'fixture');});
+test('item notes appear in confirmation emails and HTML is escaped',()=>{const order=createOrder({customerName:'Note test',lines:[{id:'smashed-avo',quantity:1,note:'Sauce <script> on side'}],collectionTime:'ASAP',source:'customer',contactNumber:'0821234567'});const email=buildOrderEmail(order,'received');assert.match(email.text,/Sauce <script> on side/);assert.match(email.html,/Sauce &lt;script&gt; on side/);assert.ok(!email.html.includes('<script>'));});
 
 test('message templates allow known placeholders and reject ambiguous or unsafe content',()=>{
  const valid=validateMessageTemplates(copy());
