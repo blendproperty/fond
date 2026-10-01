@@ -6,6 +6,8 @@ import './hub-personality.css';
 import { HubScene } from './hub-scene';
 import { FunctionBookingForm } from './function-booking';
 import { HubAppNav } from './hub-app-nav';
+import { InstallApp } from './install-app';
+import { listEvents } from '@/lib/hub-store';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
@@ -22,15 +24,19 @@ export function HubShell({children,service,wide=false,mood}:{children:React.Reac
 export function HubBack({href,children}:{href:string;children:React.ReactNode}) {return <Link href={href} className="hub-back"><ArrowLeft size={16}/>{children}</Link>;}
 export function HubNote({title,children}:{title:string;children:React.ReactNode}) {return <aside className="hub-note"><ShieldCheck/><div><h3>{title}</h3><p>{children}</p></div></aside>;}
 export function HubHome() {
+ const upcoming=[...listEvents('gym'),...listEvents('padel')].filter(e=>e.calendar!=='gym-classes'&&Date.parse(e.endsAt)>Date.now()).sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)).slice(0,4);
+ const eventDate=(value:string)=>new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
  return <HubShell wide mood="home">
-  <section className="hub-app-welcome hub-home-welcome"><span className="hub-eyebrow">WELCOME TO MIDPOINT HUB</span><h1>Your day.<br/>Your Midpoint.</h1><p>A bite, a workout, a game or a get-together.<br/>Make it yours.</p></section>
-  <nav className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
+  <section className="hub-app-welcome hub-home-welcome hub-home-image-hero"><div className="hub-home-hero-copy"><span className="hub-eyebrow">WELCOME TO MIDPOINT HUB</span><h1>Your day.<br/>Your Midpoint.</h1><p>A bite, a workout, a game or a get-together.<br/>Make it yours.</p><a className="hub-hero-cta" href="#explore-midpoint">Explore your Midpoint <ArrowRight size={18}/></a></div><img className="hub-home-hero-image" src="/hub-assets/midpoint-amenities.jpg" alt="Midpoint rooftop padel courts, café terraces and landscaped shared spaces" width="1600" height="900"/></section>
+  <nav id="explore-midpoint" className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
     {href:'/fond',title:'FOND',copy:'Something delicious',badge:'fond-corrected.png'},
     {href:'/gym',title:'Gym',copy:'Move. Reset. Feel good.',badge:'gym.png'},
     {href:'/padel',title:'Padel',copy:'Your next good game',badge:'padel.png'},
     {href:'/functions',title:'Functions',copy:'Bring your people together',badge:null},
   ].map(item=><Link href={item.href} key={item.href}>{item.badge?<img src={`/hub-assets/original/${item.badge}`} alt=""/>:<div className="hub-functions-tile-icon" aria-hidden="true"><CalendarDays/></div>}<h2>{item.title}</h2><p>{item.copy}</p><span>Let’s go <ArrowUpRight size={16}/></span></Link>)}</nav>
-  <section className="hub-app-shortcuts"><h2>What’s the plan?</h2><div><Link href="/fond"><Coffee/><span>Grab a bite<small>Order something good from FOND</small></span><ArrowRight size={17}/></Link><Link className="hub-shortcut-gym" href="/gym/classes"><Dumbbell/><span>Find a class<small>Make time to move</small></span><ArrowRight size={17}/></Link><a className="hub-shortcut-padel" href="https://playtomic.com/clubs/midpoint-padel" target="_blank" rel="noopener noreferrer"><Volleyball/><span>Book a court<small>Open Midpoint on Playtomic</small></span><ArrowUpRight size={17}/></a><Link href="/functions"><CalendarDays/><span>Get together<small>Plan a function with Michelle</small></span><ArrowRight size={17}/></Link></div></section>
+  <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><div><span className="hub-eyebrow">THE MIDPOINT COMMUNITY</span><h2 id="at-point-title">AT POINT</h2><p>Good things coming up. Be part of them.</p></div><span className="hub-at-point-label">Upcoming events</span></div>{upcoming.length?<div className="hub-at-point-events">{upcoming.map(event=><Link className="hub-at-point-event" href={`/${event.service}/interest/${event.id}`} key={event.id}>{event.imageUrl&&<img src={event.imageUrl} alt={event.imageAlt||event.title} loading="lazy"/>}<div><span className="hub-eyebrow">MIDPOINT {event.service.toUpperCase()}</span><time dateTime={event.startsAt}>{eventDate(event.startsAt)}</time><h3>{event.title}</h3><p>{event.location}</p><span>Discover the event <ArrowRight size={16}/></span></div></Link>)}</div>:<div className="hub-at-point-empty"><CalendarDays size={28}/><div><h3>More good things are on the way.</h3><p>Our next community events will appear here as they’re announced. Check back for something to join.</p></div></div>}<nav className="hub-at-point-links" aria-label="Explore event calendars"><Link href="/gym/events">Gym events <ArrowUpRight size={16}/></Link><Link href="/padel/events">Padel events <ArrowUpRight size={16}/></Link></nav></section>
+  <InstallApp/>
+
  </HubShell>;
 }
 export function HubLanding({service}:{service:HubService}) {

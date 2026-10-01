@@ -4,7 +4,6 @@ import { ArrowRight, Check, Clock3, Coffee, Leaf, MapPin, Minus, Plus, ShoppingB
 import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSection, type CartLine, type Category, type FoodTruckSection, type Meal } from '@/lib/menu';
 
 import {CategoryNavigation} from './category-navigation';
-import {InstallApp} from './install-app';
 import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
 import {HubScene} from './hub-scene';
@@ -40,7 +39,6 @@ function timingLabel(order:TrackedOrder){
 export function OrderingApp() {
   const [store,setStore]=useState<{settings:TradingSettings;content:SiteContent;open:boolean;onlinePayments:boolean;paymentMode?:'live'|'sandbox'|'none';queueDelayMinutes?:number}|null>(null);
   useEffect(()=>{const timer=setInterval(()=>{fetch('/api/store').then(r=>r.json()).then(setStore).catch(()=>{});},60000);return()=>clearInterval(timer);},[]);
-  const [installHelp,setInstallHelp]=useState(false);
   const [payOnline,setPayOnline]=useState(false);
   const rewardVersion=useRef(0);
   const [rewardCode,setRewardCode]=useState(''),[appliedReward,setAppliedReward]=useState(''),[rewardDiscount,setRewardDiscount]=useState(0),[rewardMessage,setRewardMessage]=useState(''),[rewardBusy,setRewardBusy]=useState(false);
@@ -288,7 +286,7 @@ export function OrderingApp() {
       {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
       {store&&!store.open&&<div role="status" className="store-announcement">{store.settings.closedMessage}</div>}
       {store?.paymentMode==='sandbox'&&<div role="status" className="sandbox-payment-banner"><strong>YOCO TEST PAYMENT MODE</strong><span>No real money will be charged. Orders and payment confirmations are for controlled FOND testing only.</span></div>}
-      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation||installHelp} onAction={target=>{if(target&&categories.includes(target as Category)){setCategory(target as Category);setMenuSearch('');}document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
+      <CustomerPromotions promotions={store?.content.promotions??[]} suspended={!!panel||!!confirmation} onAction={target=>{if(target&&categories.includes(target as Category)){setCategory(target as Category);setMenuSearch('');}document.getElementById('menu')?.scrollIntoView({behavior:'smooth'});}}/>
       <section id="menu" className="menu-section"><div className="section-top"><div><p className="eyebrow">YOUR NEXT FAVOURITE</p><h2>What sounds good?</h2></div></div>
         <div className="fond-menu-search"><Search size={19}/><input type="search" aria-label="Search the menu" placeholder="Find a dish, coffee or craving" value={menuSearch} onChange={e=>setMenuSearch(e.target.value)}/>{menuSearch&&<button aria-label="Clear menu search" onClick={()=>setMenuSearch('')}><X size={18}/></button>}</div>
         <div className="menu-toolbar"><CategoryNavigation value={category} onChange={value=>{setCategory(value);setMenuSearch('');}}/></div>
@@ -301,7 +299,6 @@ export function OrderingApp() {
         {searchTerm&&!visibleMenu.length&&<div className="fond-search-empty"><Search size={26}/><h3>No matches just yet.</h3><p>Try another dish or browse a category.</p><button className="outline" onClick={()=>setMenuSearch('')}>Browse the menu</button></div>}
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please let us know about any allergies when you collect.</p></section>
 
-      <InstallApp onHelpChange={setInstallHelp}/>
     </main>
     <footer className="fond-public-footer"><a className="brand-link" href="/fond" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><a href="/hub">Midpoint Hub</a><a href="mailto:ray@midpointhub.com">Contact Ray</a><a href="/hub/privacy">Privacy policy</a><a href="/hub/terms">Terms and conditions</a>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}

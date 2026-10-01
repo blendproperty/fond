@@ -22,6 +22,11 @@ test('department ownership, signup, publishing and new home operate together',as
     await page.goto(`/gym/interest/${id}`);await expect(page.getByRole('heading',{name:title})).toHaveCount(0);
     expect((await gym.post('/api/hub/manage',{data:{...event,id,published:true}})).ok()).toBe(true);
     await page.goto(`/gym/interest/${id}`);await expect(page.getByRole('heading',{name:title})).toBeVisible();
+    const communityTitle=`Community event ${suffix}`;
+    for(const [eventTitle,published,calendar,startsAt,endsAt] of [[communityTitle,true,'gym-events',starts,ends],[`Private event ${suffix}`,false,'gym-events',starts,ends],[`Past event ${suffix}`,true,'gym-events',new Date(Date.now()-7200000).toISOString(),new Date(Date.now()-3600000).toISOString()]] as const){expect((await gym.post('/api/hub/manage',{data:{...event,title:eventTitle,calendar,published,startsAt,endsAt}})).ok()).toBe(true);}
+    await page.goto('/hub');await expect(page.getByRole('heading',{name:communityTitle})).toBeVisible();await expect(page.getByRole('heading',{name:title,exact:true})).toHaveCount(0);await expect(page.getByRole('heading',{name:`Private event ${suffix}`})).toHaveCount(0);await expect(page.getByRole('heading',{name:`Past event ${suffix}`})).toHaveCount(0);
+    await page.getByRole('link').filter({has:page.getByRole('heading',{name:communityTitle})}).click();await expect(page.getByRole('heading',{name:communityTitle})).toBeVisible();
+
     expect((await padel.post('/api/hub/manage',{data:{...event,service:'padel',calendar:'padel-events',id}})).ok()).toBe(false);
     await page.goto('/hub/manage');await page.getByLabel('Team username').fill(`gym-${suffix}`);await page.getByLabel('Password',{exact:true}).fill('isolated-test-password');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByRole('heading',{name:'Signup & interest requests'})).toBeVisible();await expect(page.getByLabel('Service')).toHaveValue('gym');await expect(page.getByLabel('Service').locator('option')).toHaveCount(1);await page.getByText(`${firstName} Fixture · signup · new`,{exact:true}).click();await expect(page.locator('details').filter({hasText:firstName}).getByText('SYNTHETIC-PASSPORT',{exact:true})).toBeVisible();
     await page.screenshot({path:`test-results/hub-workspace-${info.project.name}.png`,fullPage:true});
