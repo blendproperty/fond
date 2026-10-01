@@ -8,6 +8,9 @@ import { FunctionBookingForm } from './function-booking';
 import { HubAppNav } from './hub-app-nav';
 import { InstallApp } from './install-app';
 import { listEvents } from '@/lib/hub-store';
+import {settings} from '@/lib/management';
+import {orderingHoursMessage} from '@/lib/trading-hours';
+import {HubFondHours} from './hub-fond-hours';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
@@ -38,7 +41,7 @@ export function HubHome() {
     {href:'/functions',title:'Functions',badge:'functions.svg'},
   ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt="" width="112" height="112"/><h2>{item.title}</h2></Link>)}</nav>
 
-  <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT POINT</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><p className="hub-at-point-footnote">Upcoming events at Midpoint</p></section>
+  <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT THE HUB</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><HubFondHours initialMessage={orderingHoursMessage(settings())}/></section>
 
   <InstallApp/>
 

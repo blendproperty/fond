@@ -138,3 +138,18 @@
 .hub-home-destinations>a>img{display:block;width:104px;max-width:100%;height:auto;aspect-ratio:1;object-fit:contain;border-radius:50%;margin:0}
 .hub-app.hub-wide .hub-home-destinations h2{font-size:14px;font-weight:600}
 @media(max-width:700px){.hub-home-destinations{padding:20px 0}.hub-mood-home .hub-home-destinations>a{padding:0 3px;gap:9px}.hub-home-destinations>a>img{width:76px}.hub-app.hub-wide .hub-home-destinations h2{font-size:12px}}
+
+/* Reference proportions and readable photo caption, with live FOND hours. */
+.hub-mood-home .hub-home-wordmark{font-size:20px;letter-spacing:4.5px}.hub-mood-home .hub-home-wordmark small{font-size:13px;letter-spacing:4.5px}
+.hub-app.hub-wide .hub-home-greeting h1{font-size:40px;line-height:1.06;letter-spacing:-1.3px;max-width:none;margin-bottom:10px}
+.hub-home-greeting{padding:14px 0 10px}.hub-home-greeting p{font-size:20px;color:#434d46;line-height:1.4}
+.hub-home-photo{height:340px;clip-path:polygon(0 24%,100% 0,100% 100%,0 100%)}
+.hub-home-photo:after{background:linear-gradient(180deg,transparent 24%,#08181026 42%,#081810d9 100%)}
+.hub-home-photo>p{font-size:17px;font-weight:600;line-height:1.45;letter-spacing:.9px;bottom:25px;text-shadow:0 1px 4px #0008}
+.hub-app.hub-wide .hub-at-point h2{font-size:14px}.hub-at-point-heading>a{font-size:14px}
+.hub-app.hub-wide .hub-upcoming-row h3{font-size:15px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:12px}
+.hub-fond-hours{display:flex;gap:8px;align-items:center;font-size:13px;color:#4c584f;line-height:1.4;margin-top:12px;min-height:24px}
+.hub-fond-hours-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+@media(max-width:700px){.hub-mood-home .hub-top{padding-top:22px;padding-bottom:18px}.hub-app.hub-wide .hub-home-greeting h1{font-size:34px;max-width:none}.hub-home-greeting{padding:9px 0 8px}.hub-home-greeting p{font-size:18px}.hub-home-photo{height:250px;clip-path:polygon(0 23%,100% 0,100% 100%,0 100%)}.hub-home-photo>p{font-size:14px;line-height:1.45;left:18px;bottom:20px;letter-spacing:.65px}.hub-app.hub-wide .hub-upcoming-row h3{font-size:14px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:11px}.hub-upcoming-row{min-height:58px}.hub-fond-hours{font-size:13px}}
+
+@media(max-width:700px){.hub-mood-home .hub-home-wordmark{font-size:22px}.hub-home-greeting p{font-size:20px}.hub-home-photo>p{font-size:16px}.hub-app.hub-wide .hub-at-point h2{font-size:15px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:12px}.hub-fond-hours{font-size:14px}}
