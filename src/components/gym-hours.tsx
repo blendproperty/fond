@@ -1,0 +1,2 @@
+import {gymHours} from '@/lib/gym-hours-store';
+export function GymHours(){const rows=gymHours();return <section className="gym-hours" aria-label="Gym opening hours"><h2>Opening hours</h2><dl>{rows.map(row=><div key={row.day}><dt>{row.day}</dt><dd>{row.status==='open'?`${row.opens} – ${row.closes}`:row.status==='closed'?'Closed':'Please confirm with the team'}</dd></div>)}</dl><p>South African time. Public holiday hours may differ.</p></section>;}
