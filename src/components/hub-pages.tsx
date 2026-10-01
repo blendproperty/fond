@@ -39,9 +39,9 @@ export function HubHome() {
     {href:'/gym',title:'GYM',photo:'gym-3',action:'CLASSES & ACCESS'},
     {href:'/padel',title:'PADEL',photo:'padel-2',action:'BOOK A COURT'},
     {href:'/functions',title:'FUNCTIONS',photo:'fond-1',action:'PLAN AN EVENT'},
-    {href:'/car-wash',title:'CAR WASH',photo:'car-wash',action:'Wash while you work'},
-    {href:'https://midpoint.onpointoffices.co.za/the-suites-at-midpoint',title:'THE SUITES',photo:'suites',action:'Corporate accommodation'},
-  ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/tile-${item.photo}.webp`} alt="" width="1400" height="933"/><div className="hub-destination-caption"><h2>{item.title}</h2><p>{item.action}</p></div></Link>)}</nav>
+    {href:null,title:'CAR WASH',photo:'car-wash',action:'Wash while you work'},
+    {href:null,title:'THE SUITES',photo:'suites',action:'Corporate accommodation'},
+  ].map(item=>{const content=<><img src={`/hub-assets/tile-${item.photo}.webp`} alt="" width="1400" height="933"/>{!item.href&&<span className="hub-coming-soon">COMING SOON</span>}<div className="hub-destination-caption"><h2>{item.title}</h2><p>{item.action}</p></div></>;return item.href?<Link className="hub-destination-tile" href={item.href} key={item.photo}>{content}</Link>:<article className="hub-destination-tile hub-destination-coming" key={item.photo}>{content}</article>;})}</nav>
 
   <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT THE HUB</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><HubFondHours initialMessage={orderingHoursMessage(settings())}/></section>
 
