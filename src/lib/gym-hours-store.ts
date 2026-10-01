@@ -1,7 +1,7 @@
 import {hubDb,HubError} from './hub-store';
 import {audit} from './management';
 import {GYM_DAYS,emptyGymHours,type GymHoursRow} from './gym-hours';
-function db(){const db=hubDb();db.exec("CREATE TABLE IF NOT EXISTS gym_hours (id INTEGER PRIMARY KEY CHECK(id=1), schedule TEXT NOT NULL)");return db;}
+function db(){const db=hubDb();db.exec("CREATE TABLE IF NOT EXISTS gym_hours (id INTEGER PRIMARY KEY CHECK(id=1), schedule TEXT NOT NULL)");const initial=emptyGymHours().map(row=>({...row,status:row.day==='Sunday'?'closed':row.day==='Public holidays'?'unconfirmed':'open',opens:row.day==='Sunday'||row.day==='Public holidays'?'':row.day==='Saturday'?'06:00':'05:00',closes:row.day==='Sunday'||row.day==='Public holidays'?'':row.day==='Saturday'?'16:00':'21:00'}));const seeded=db.prepare('INSERT OR IGNORE INTO gym_hours (id,schedule) VALUES (1,?)').run(JSON.stringify(initial));if(seeded.changes)audit('system:confirmed-gym-hours','gym-opening-hours-initialised','gym');return db;}
 export function gymHours():GymHoursRow[]{const row=db().prepare('SELECT schedule FROM gym_hours WHERE id=1').get() as {schedule:string}|undefined;return row?JSON.parse(row.schedule):emptyGymHours();}
 export function saveGymHours(service:string,value:unknown,actor:string){
  if(service!=='gym')throw new HubError('Opening hours are for the Gym team.');
