@@ -131,3 +131,10 @@
 .hub-mood-home .install-feature .install-primary svg{width:16px;height:16px}
 .hub-mood-home .install-dialog h2{color:#26382d}
 @media(max-width:700px){.hub-mood-home .hub-top{padding:20px 20px 12px;min-height:68px}.hub-app.hub-wide .hub-home-greeting h1{font-size:28px;max-width:220px}.hub-home-photo{margin:0 -18px;height:220px}.hub-home-photo>p{left:18px;bottom:18px;font-size:11px;letter-spacing:1px}.hub-home-destinations{padding:18px 0}.hub-at-point{margin:20px 0}.hub-upcoming-row{grid-template-columns:50px minmax(0,1fr) 34px 12px;gap:8px;min-height:51px}.hub-app.hub-wide .hub-upcoming-row h3{font-size:12px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:10px}.hub-mood-home .install.install-feature{margin:22px 0;padding:15px;gap:12px}.hub-mood-home .install-feature .install-copy{flex-basis:70%}.hub-mood-home .install-feature .install-primary{width:100%;justify-content:center}}
+
+/* Preserve the original destination identities; Functions joins the same badge family. */
+.hub-home-destinations{padding:24px 0}
+.hub-mood-home .hub-home-destinations>a{padding:4px 10px;gap:10px}
+.hub-home-destinations>a>img{display:block;width:104px;max-width:100%;height:auto;aspect-ratio:1;object-fit:contain;border-radius:50%;margin:0}
+.hub-app.hub-wide .hub-home-destinations h2{font-size:14px;font-weight:600}
+@media(max-width:700px){.hub-home-destinations{padding:20px 0}.hub-mood-home .hub-home-destinations>a{padding:0 3px;gap:9px}.hub-home-destinations>a>img{width:76px}.hub-app.hub-wide .hub-home-destinations h2{font-size:12px}}

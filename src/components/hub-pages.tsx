@@ -8,7 +8,6 @@ import { FunctionBookingForm } from './function-booking';
 import { HubAppNav } from './hub-app-nav';
 import { InstallApp } from './install-app';
 import { listEvents } from '@/lib/hub-store';
-import { HubDestinationIcon, type HubDestination } from './hub-destination-icon';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
@@ -33,11 +32,11 @@ export function HubHome() {
   <section className="hub-home-photo" aria-label="Life at Midpoint"><img className="hub-home-hero-image" src="/hub-assets/midpoint-hub-exterior.webp" alt="The Midpoint Hub building with FOND, rooftop padel courts and landscaped terraces" width="1280" height="853"/><p>COFFEE. WORKOUT.<br/>A GAME OR A GATHERING.<br/>IT ALL HAPPENS HERE.</p></section>
 
   <nav id="explore-midpoint" className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
-    {href:'/fond',title:'FOND',icon:'fond'},
-    {href:'/gym',title:'Gym',icon:'gym'},
-    {href:'/padel',title:'Padel',icon:'padel'},
-    {href:'/functions',title:'Functions',icon:'functions'},
-  ].map(item=><Link href={item.href} key={item.href}><HubDestinationIcon destination={item.icon as HubDestination} size={34}/><h2>{item.title}</h2></Link>)}</nav>
+    {href:'/fond',title:'FOND',badge:'fond-corrected.png'},
+    {href:'/gym',title:'Gym',badge:'gym.png'},
+    {href:'/padel',title:'Padel',badge:'padel.png'},
+    {href:'/functions',title:'Functions',badge:'functions.svg'},
+  ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt="" width="112" height="112"/><h2>{item.title}</h2></Link>)}</nav>
 
   <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT POINT</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><p className="hub-at-point-footnote">Upcoming events at Midpoint</p></section>
 
