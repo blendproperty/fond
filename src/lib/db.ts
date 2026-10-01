@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { generateOrderNumber } from './order-number';
 import { allocateStaffOrderNumber } from './staff-order-number';
+import {migrateBlendDeliveryDirectory} from './delivery-directory-migration';
 
 // Durable storage boundary for orders, accounts and configuration.
 // Node's built-in SQLite is used deliberately so the Alpine production image
@@ -100,6 +101,7 @@ export function getDb(): DatabaseSync {
     ['contact_number', `ALTER TABLE orders ADD COLUMN contact_number TEXT`],
     ['company', `ALTER TABLE orders ADD COLUMN company TEXT`],
     ['building', `ALTER TABLE orders ADD COLUMN building TEXT`],
+    ['delivery_location_json', `ALTER TABLE orders ADD COLUMN delivery_location_json TEXT`],
     ['whatsapp_opt_in', `ALTER TABLE orders ADD COLUMN whatsapp_opt_in INTEGER NOT NULL DEFAULT 0`],
     ['sms_opt_in', `ALTER TABLE orders ADD COLUMN sms_opt_in INTEGER NOT NULL DEFAULT 0`],
     ['email_opt_in', `ALTER TABLE orders ADD COLUMN email_opt_in INTEGER NOT NULL DEFAULT 1`],
@@ -287,6 +289,7 @@ export function getDb(): DatabaseSync {
     CREATE INDEX IF NOT EXISTS counter_reward_checks ON counter_reward_sales(environment,location_id,credited,checked_at);
     INSERT OR IGNORE INTO counter_reward_sync (id) VALUES (1);
   `);
+  migrateBlendDeliveryDirectory(db);
   instance = db;
   return db;
 }

@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       contactNumber: typeof body.contactNumber === 'string' ? body.contactNumber : null,
       company: typeof body.company === 'string' ? body.company : null,
       building: typeof body.building === 'string' ? body.building : null,
+      deliveryLocation: body.deliveryLocation,
       whatsappOptIn: !!body.whatsappOptIn,
       smsOptIn: !!body.smsOptIn,
       emailOptIn: !!body.emailOptIn,

@@ -12,6 +12,7 @@ import { quoteCart, type CartLine } from './menu';
 import { getAvailableMenu } from './menu-store';
 import { generateOrderNumber } from './order-number';
 import { allocateStaffOrderNumber } from './staff-order-number';
+import {validateDeliveryLocation,type DeliveryLocation} from './delivery-location';
 
 // Orders track kitchen fulfilment. Optional hosted payment is managed separately
 // in payments.ts; neither payment mode changes the staff acceptance workflow.
@@ -49,6 +50,7 @@ export type OrderRecord = {
   contactNumber: string | null;
   company: string | null;
   building: string | null;
+  deliveryLocation: DeliveryLocation | null;
   whatsappOptIn: boolean;
   smsOptIn: boolean;
   emailOptIn: boolean;
@@ -94,6 +96,7 @@ type OrderRow = {
   contact_number: string | null;
   company: string | null;
   building: string | null;
+  delivery_location_json: string | null;
   whatsapp_opt_in: number;
   sms_opt_in: number;
   email_opt_in: number;
@@ -131,6 +134,7 @@ function fromRow(row: OrderRow): OrderRecord {
     contactNumber: row.contact_number,
     company: row.company,
     building: row.building,
+    deliveryLocation: row.delivery_location_json ? validateDeliveryLocation(JSON.parse(row.delivery_location_json)) : null,
     whatsappOptIn: !!row.whatsapp_opt_in,
     smsOptIn: !!row.sms_opt_in,
     emailOptIn: !!row.email_opt_in,
@@ -174,6 +178,7 @@ export function createOrder(input: {
   contactNumber?: string | null;
   company?: string | null;
   building?: string | null;
+  deliveryLocation?: unknown;
   whatsappOptIn?: boolean;
   smsOptIn?: boolean;
   emailOptIn?: boolean;
@@ -184,6 +189,8 @@ export function createOrder(input: {
 }): OrderRecord {
   const db = getDb();
   const key = input.submissionKey;
+  const deliveryLocation=validateDeliveryLocation(input.deliveryLocation);
+  if(deliveryLocation&&input.fulfillment!=='delivery')throw new Error('A GPS pin is only used for delivery.');
   const customerEmail = input.customerEmail?.trim().toLowerCase() || null;
   if (input.emailOptIn && (!customerEmail || customerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail))) throw new Error('Enter a valid email address for order updates, or turn email updates off.');
   if (key !== undefined && !/^[0-9a-f-]{36}$/i.test(key)) throw new Error('Provide a valid submission key.');
@@ -203,6 +210,7 @@ export function createOrder(input: {
         phone: input.contactNumber ?? null,
         company: input.company ?? null,
         building: input.building ?? null,
+        ...(deliveryLocation?{deliveryLocation}:{}),
         whatsappOptIn: input.whatsappOptIn ?? false,
         smsOptIn: input.smsOptIn ?? false,
         emailOptIn: input.emailOptIn ?? false,
@@ -299,6 +307,7 @@ export function createOrder(input: {
       contactNumber,
       company,
       building,
+      deliveryLocation,
       whatsappOptIn,
       smsOptIn,
       emailOptIn,
@@ -315,8 +324,8 @@ export function createOrder(input: {
       paymentRequired:paymentMethod==='yoco_online',
     };
     db.prepare(
-      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,basket_prep_minutes,queue_delay_minutes,estimated_prep_minutes,payment_method,payment_required,staff_number)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO orders (id, reference, display_reference, customer_name, note, lines_json, collection_time, total_cents, status, source, created_at, updated_at, fulfillment, contact_number, company, building, whatsapp_opt_in, sms_opt_in, email_opt_in, user_id, customer_email, pos_required,basket_prep_minutes,queue_delay_minutes,estimated_prep_minutes,payment_method,payment_required,staff_number,delivery_location_json)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       record.id,
       record.reference,
@@ -346,6 +355,7 @@ export function createOrder(input: {
       record.paymentMethod,
       record.paymentRequired?1:0,
       record.staffNumber,
+      deliveryLocation?JSON.stringify(deliveryLocation):null,
     );
     if (key) db.prepare('INSERT INTO order_submissions VALUES (?, ?, ?)').run(key, fingerprint, record.id);
     db.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?, ?, ?)').run(

@@ -11,6 +11,7 @@ import { staffModifierInstruction } from '@/lib/staff-modifiers';
 import {BrandLogo} from './brand-logo';
 import {useStaffAlerts} from './use-staff-alerts';
 import {formatCollectionTime} from '@/lib/fulfilment';
+import {deliveryDirections,type DeliveryLocation} from '@/lib/delivery-location';
 
 import { submissionKey, clearSubmission } from '@/lib/submission';
 
@@ -35,6 +36,7 @@ type StaffOrder = {
   contactNumber: string | null;
   company: string | null;
   building: string | null;
+  deliveryLocation?:DeliveryLocation|null;
   posRequired: boolean;
   posRecordedAt: string | null;
   posReference: string | null;
@@ -75,6 +77,11 @@ function staffStatus(order:StaffOrder){
 function StaffItemChanges({names}:{names:string[]}){
   if(!names.length)return null;
   return <div className="staff-item-changes"><strong>CHANGES TO MAKE</strong><ul>{names.map((name,index)=>{const instruction=staffModifierInstruction(name);return <li data-change-kind={instruction.kind} key={`${name}-${index}`}><b>{instruction.label}</b><span>{instruction.detail}</span></li>;})}</ul></div>;
+}
+
+function DeliveryDirections({order}:{order:StaffOrder}){
+  if(order.fulfillment!=='delivery'||!order.deliveryLocation)return null;
+  return <a href={deliveryDirections(order.deliveryLocation)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Directions in Google Maps ↗ <small>Customer pin · accuracy approximately {Math.ceil(order.deliveryLocation.accuracy)} m</small></a>;
 }
 
 export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boolean }) {
@@ -312,7 +319,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       </div>
       {(alerts.alertError||alerts.permission==='denied')&&<div className="staff-alert-status" role="status"><span>{alerts.alertError||'Notifications are blocked. Allow them in the tablet’s app or browser settings.'}</span></div>}
       {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
-      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
+      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong><DeliveryDirections order={order}/></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/></li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
       <nav className="staff-stage-navigation" aria-label="Order stages">
         <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
         <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
@@ -349,9 +356,9 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
                     {order.fulfillment === 'delivery' ? (
-                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
                     ) : (
-                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
                     )}
                     <ul className="staff-lines">
                       {order.lines.map((line) => {

@@ -13,6 +13,8 @@ import { submissionKey, clearSubmission } from '@/lib/submission';
 import {basketPrepMinutes} from '@/lib/preparation-estimates';
 import {tradingWindow,withinTradingWindow,tradingDayNames} from '@/lib/trading-hours';
 import {collectionSlots,deliveryLocationValue,formatCollectionTime} from '@/lib/fulfilment';
+import {deliveryPinPreview,validateDeliveryLocation,type DeliveryLocation} from '@/lib/delivery-location';
+import {savedOrders,SAVED_ORDERS_KEY,type SavedOrder} from '@/lib/saved-orders';
 
 import type { TradingSettings,SiteContent } from '@/lib/management';
 
@@ -58,12 +60,18 @@ export function OrderingApp() {
   const [company, setCompany] = useState('');
   const [building, setBuilding] = useState('');
   const [deliveryLocation,setDeliveryLocation]=useState('');
+  const [gpsPin,setGpsPin]=useState<DeliveryLocation|null>(null);
+  const [gpsConfirmed,setGpsConfirmed]=useState(false);
+  const [gpsBusy,setGpsBusy]=useState(false);
+  const [gpsError,setGpsError]=useState('');
+  const gpsRequest=useRef(0);
   const [customerEmail, setCustomerEmail] = useState('');
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [smsOptIn, setSmsOptIn] = useState(true);
   const [emailOptIn, setEmailOptIn] = useState(true);
   const [note, setNote] = useState('');
-  const [placedReferences, setPlacedReferences] = useState<{lookup:string;label:string}[]>([]);
+  const [placedReferences, setPlacedReferences] = useState<SavedOrder[]>([]);
+  const savedOrderList=useRef<SavedOrder[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -73,8 +81,44 @@ export function OrderingApp() {
   const [trackInput, setTrackInput] = useState('');
   const [tracked, setTracked] = useState<TrackedOrder | null>(null);
   const [trackError, setTrackError] = useState('');
+  const [trackLocked,setTrackLocked]=useState(false);
+  const [trackBusy,setTrackBusy]=useState(false);
+  const trackRequest=useRef(0);
+
+  function rememberOrder(lookup:string,label:string){
+    const next=savedOrders([{lookup,label,savedAt:Date.now()},...savedOrderList.current.filter(order=>order.lookup!==lookup)]);
+    savedOrderList.current=next;setPlacedReferences(next);
+    try{localStorage.setItem(SAVED_ORDERS_KEY,JSON.stringify(next));}catch{/* Tracking still works when browser storage is unavailable. */}
+    setTrackInput(label);setTrackLocked(true);
+  }
+
+  function openTracking(){
+    setPanel('track');setTrackError('');
+    const latest=savedOrderList.current[0];
+    if(latest){setTrackInput(latest.label);setTrackLocked(true);void lookupOrder(latest.lookup);}
+  }
+
+  function clearGps(){gpsRequest.current++;setGpsPin(null);setGpsConfirmed(false);setGpsBusy(false);setGpsError('');}
+  useEffect(()=>{if(fulfillment!=='delivery')clearGps();},[fulfillment]);
+  useEffect(()=>()=>{gpsRequest.current++;trackRequest.current++;},[]);
+
+  function useMyLocation(){
+    clearGps();
+    if(!window.isSecureContext||!navigator.geolocation){setGpsError('Location is unavailable here. Use your business and building details instead.');return;}
+    const request=++gpsRequest.current;setGpsBusy(true);
+    try{navigator.geolocation.getCurrentPosition(position=>{
+      if(request!==gpsRequest.current)return;
+      try{setGpsPin(validateDeliveryLocation({latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy}));}
+      catch{setGpsError('Could not get a usable delivery pin. Try again or use your building details.');}
+      setGpsBusy(false);
+    },error=>{
+      if(request!==gpsRequest.current)return;
+      setGpsBusy(false);setGpsError(error.code===1?'Location permission was declined. You can still order using your business and building.':error.code===3?'Finding your location timed out. Try again or use your building details.':'Could not find your location. Try again or use your building details.');
+    },{enableHighAccuracy:true,timeout:15000,maximumAge:0});}catch{setGpsBusy(false);setGpsError('Location is unavailable here. Use your business and building details instead.');}
+  }
 
   useEffect(() => {
+    try{const recent=savedOrders(JSON.parse(localStorage.getItem(SAVED_ORDERS_KEY)??'[]'));savedOrderList.current=recent;setPlacedReferences(recent);if(recent[0]){setTrackInput(recent[0].label);setTrackLocked(true);}localStorage.setItem(SAVED_ORDERS_KEY,JSON.stringify(recent));}catch{/* Ignore malformed or unavailable browser storage. */}
     fetch('/api/store').then(r=>r.json()).then(data=>{setStore(data);setCollection('As soon as possible');if(!data.settings.collectionEnabled&&data.settings.deliveryEnabled)setFulfillment('delivery');}).catch(()=>{});
     fetch('/api/auth/session').then(r=>r.json()).then(data=>{const user=data.user as CustomerSession|null;if(user?.email)setCustomerEmail(user.email);setEmailOptIn(true);}).catch(()=>setEmailOptIn(true));
 
@@ -177,6 +221,8 @@ export function OrderingApp() {
       if(fulfillment==='collection'&&!collectionOptions.length)throw new Error(`Today's collection window has closed. ${hasFoodTruck?'The Food Truck':'The kitchen'} closes at ${orderClosingTime}.`);
       if(normalizedEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))throw new Error('Enter a valid email address, or leave the optional email field blank.');
       if (fulfillment === 'delivery') {
+        if(gpsBusy)throw new Error('Wait for your location, or remove it and use your building details.');
+        if(gpsPin&&!gpsConfirmed)throw new Error('Confirm the delivery pin, or remove it to use your building details only.');
         if (!building.trim()) throw new Error('Enter the building/office to deliver to.');
         if(!store?.onlinePayments)throw new Error('Delivery requires secure online payment, which is not available right now.');
       }
@@ -188,15 +234,16 @@ export function OrderingApp() {
     setSubmitting(true);
     try {
       const paymentMethod=fulfillment==='delivery'||payOnline?'yoco_online':'pay_at_collection';
-      const payload = JSON.stringify({rewardCode:appliedReward||undefined,lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,customerEmail:normalizedEmail||null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn:emailOptIn&&!!normalizedEmail});
+      const payload = JSON.stringify({rewardCode:appliedReward||undefined,lines:cart,collectionTime:collection,customerName,note,fulfillment,paymentMethod,contactNumber:contactNumber || null,company:company || null,building:building || null,deliveryLocation:fulfillment==='delivery'&&gpsConfirmed?gpsPin:null,customerEmail:normalizedEmail||null,whatsappOptIn:store?.settings.whatsappEnabled?whatsappOptIn:false,smsOptIn,emailOptIn:emailOptIn&&!!normalizedEmail});
       const key = await submissionKey(payload);
       const res = await fetch('/api/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Could not place that order.');
       clearSubmission(key);
+      rememberOrder(data.reference,data.displayReference);
+      clearGps();
       if(data.redirectUrl){location.assign(data.redirectUrl);return;}
       setConfirmation({ reference: data.reference, displayReference:data.displayReference, total: data.totalCents, collection, fulfillment,estimatedPrepMinutes:data.estimatedPrepMinutes });
-      setPlacedReferences((current) => [{lookup:data.reference,label:data.displayReference}, ...current]);
       setCart([]);
       setNote('');
       setRewardCode('');setAppliedReward('');setRewardDiscount(0);
@@ -216,12 +263,18 @@ export function OrderingApp() {
   }
 
   async function lookupOrder(reference: string) {
+    const request=++trackRequest.current;
     setTrackError(''); setTracked(null);
     if (!reference.trim()) return;
-    const res = await fetch(`/api/orders?reference=${encodeURIComponent(reference.trim())}`);
-    const data = await res.json();
-    if (!res.ok) { setTrackError(data.message ?? 'Order not found.'); return; }
-    setTracked(data);
+    setTrackBusy(true);
+    try{
+      const res = await fetch(`/api/orders?reference=${encodeURIComponent(reference.trim())}`,{cache:'no-store'});
+      const data = await res.json();
+      if(request!==trackRequest.current)return;
+      if (!res.ok) { setTrackError(data.message ?? 'Order not found.'); return; }
+      rememberOrder(data.reference,data.displayReference);setTracked(data);
+    }catch{if(request===trackRequest.current)setTrackError('Could not check your order. Check your connection and try again.');}
+    finally{if(request===trackRequest.current)setTrackBusy(false);}
   }
 
   const searchTerm=menuSearch.trim().toLowerCase();
@@ -229,7 +282,7 @@ export function OrderingApp() {
 
   return <div className="fond-ordering-app">
     <a className="fond-hub-back" href="/hub" aria-label="Back to Midpoint Hub"><ArrowLeft size={15}/> Midpoint Hub</a>
-    <header className="header fond-order-header"><a href="/fond" className="brand-link" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-header" /></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Your everyday food stop</small></div></div><nav className="fond-header-actions" aria-label="FOND account navigation"><a className="quiet" href="/account">My account</a><a className="quiet" href="/rewards">Coffee rewards</a><button className="quiet" onClick={() => { setPanel('track'); setTracked(null); setTrackError(''); }}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
+    <header className="header fond-order-header"><a href="/fond" className="brand-link" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-header" /></a><div className="location"><MapPin size={16} /><div><strong>Midpoint Hub</strong><small>Your everyday food stop</small></div></div><nav className="fond-header-actions" aria-label="FOND account navigation"><a className="quiet" href="/account">My account</a><a className="quiet" href="/rewards">Coffee rewards</a><button className="quiet" onClick={openTracking}><Search size={18} /> Track order</button><button className="basket-button" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /><span>Basket</span><b>{count}</b></button></nav></header>
     <main id="main">
       <section className="fond-order-start" aria-label="Start your order"><div className="fond-welcome-card"><div className="fond-welcome-copy"><p className="eyebrow">GOOD DAYS START WITH SOMETHING GOOD</p><h1>First, something<br/><em>delicious.</em></h1><p>A proper coffee. A bite from FOND. A little pause that makes the rest of your day better.</p><a href="#menu">Grab a bite <ArrowRight size={16}/></a></div><div className="fond-welcome-art"><HubScene kind="coffee"/><img src="/hub-assets/original/fond-corrected.png" alt="FOND Café & Eatery" width="240" height="240"/><span>YOUR DAILY<br/>GOOD THING</span></div></div><div className="fond-service-status"><span className={`fond-trading-pill ${store&&restaurantAvailable?'is-open':''}`} role="status">{!store?'Checking hours…':restaurantAvailable?'Taking orders':'Currently closed'}</span></div><div className="fond-order-mode" role="group" aria-label="Choose how to get your order"><button aria-pressed={fulfillment==='collection'} disabled={!store||store.settings.collectionEnabled===false} onClick={()=>setFulfillment('collection')}><ShoppingBag size={18}/>Collection</button><button aria-pressed={fulfillment==='delivery'} disabled={!store||store.settings.deliveryEnabled===false||!store.onlinePayments} onClick={()=>{setFulfillment('delivery');setPayOnline(true);}}><Truck size={18}/>Delivery</button></div><p className="fond-order-location"><MapPin size={15}/>{fulfillment==='collection'?'Collect from FOND · Midpoint Hub':store?.settings.deliveryArea||'Delivery to supported Midpoint businesses'}<span>{fulfillment==='collection'?'Choose your time in the basket':'Choose your building in the basket'}</span></p>{store&&(!store.settings.deliveryEnabled||!store.onlinePayments)&&<p className="fond-mode-help">Delivery is currently unavailable. Collection is available when ordering is open.</p>}</section>
       {store?.content.announcement&&<div className="store-announcement">{store.content.announcement}</div>}
@@ -253,16 +306,16 @@ export function OrderingApp() {
     <footer className="fond-public-footer"><a className="brand-link" href="/fond" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><a href="/hub">Midpoint Hub</a><a href="mailto:ray@midpointhub.com">Contact Ray</a><a href="/hub/privacy">Privacy policy</a><a href="/hub/terms">Terms and conditions</a>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
     <button className="mobile-basket" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>
-    <nav className="fond-app-nav" aria-label="FOND app navigation"><a href="#menu" aria-label="Menu"><Utensils size={20}/><span>Menu</span></a><a href="/rewards" aria-label="Coffee rewards"><Coffee size={20}/><span>Rewards</span></a><button aria-label="Track order" onClick={()=>{setPanel('track');setTracked(null);setTrackError('');}}><Search size={20}/><span>Track order</span></button><a href="/account" aria-label="My account"><UserRound size={20}/><span>Account</span></a></nav>
+    <nav className="fond-app-nav" aria-label="FOND app navigation"><a href="#menu" aria-label="Menu"><Utensils size={20}/><span>Menu</span></a><a href="/rewards" aria-label="Coffee rewards"><Coffee size={20}/><span>Rewards</span></a><button aria-label="Track order" onClick={openTracking}><Search size={20}/><span>Track order</span></button><a href="/account" aria-label="My account"><UserRound size={20}/><span>Account</span></a></nav>
     {panel && <div className="overlay" onClick={() => setPanel(null)}><section className="drawer" role="dialog" aria-modal="true" aria-label={panel === 'basket' ? 'Your basket' : 'Track your order'} onClick={(e) => e.stopPropagation()}>
       <header><div><p className="eyebrow">FOND · MIDPOINT</p><h2>{panel === 'basket' ? 'Your basket' : 'Track your order'}</h2></div><button autoFocus className="icon-button" aria-label="Close" onClick={() => setPanel(null)}><X /></button></header>
       <div className="drawer-scroll">
         {panel === 'track' ? <>
-          <label className="field">Order number<input value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-7K3P-9Q8R" /></label>
-          <button className="primary full" onClick={() => lookupOrder(trackInput)}><Search size={18} /> Check status</button>
+          <label className="field">Order number<input readOnly={trackLocked} value={trackInput} onChange={(e) => setTrackInput(e.target.value)} placeholder="FOND-7K3P-9Q8R" /></label>
+          <button className="primary full" disabled={trackBusy||!trackInput.trim()} onClick={() => lookupOrder(trackLocked?(savedOrderList.current.find(order=>order.label===trackInput)?.lookup??trackInput):trackInput)}><Search size={18} /> {trackBusy?'Checking…':'Check status'}</button>{trackLocked&&<button className="quiet" onClick={()=>{trackRequest.current++;setTrackBusy(false);setTrackLocked(false);setTrackInput('');setTracked(null);setTrackError('');}}>Track another order</button>}
           {trackError && <p role="alert">{trackError}</p>}
           {tracked && <div className="notice order-tracking-result" style={{ marginTop: 16 }}><span className="tracking-order-label">YOUR ORDER NUMBER</span><strong>{tracked.displayReference}</strong><p className="tracking-status">{statusLabel(tracked)}</p><p>{timingLabel(tracked)} · {money(tracked.totalCents)}</p><p>{tracked.totalCents===0?'Covered by a coffee reward':(tracked.payment?.paidCents??0)>=tracked.totalCents?(store?.paymentMode==='sandbox'?"Paid in Yoco test mode":"Paid online"):tracked.paymentMethod==='yoco_online'?"Waiting for confirmed Yoco payment":"Payment due at collection"}</p><button className="quiet" onClick={()=>lookupOrder(tracked.reference)}>Refresh status</button>{store?.onlinePayments&&tracked.totalCents>0&&(tracked.payment?.paidCents??0)===0&&tracked.status!=="cancelled"&&<button className="primary" disabled={paying} onClick={()=>pay(tracked.reference)}>{store.paymentMode==='sandbox'?'Open Yoco TEST payment':'Pay securely with Yoco'}</button>}{paymentError&&<p role="alert">{paymentError}</p>}</div>}
-          {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Orders placed this visit</p>{placedReferences.map((order) => <button key={order.lookup} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(order.lookup)}>{order.label}</button>)}</div>}
+          {placedReferences.length > 0 && <div style={{ marginTop: 24 }}><p className="small">Recent orders on this device</p>{placedReferences.map((order) => <button key={order.lookup} className="outline" style={{ marginTop: 8, marginRight: 8 }} onClick={() => lookupOrder(order.lookup)}>{order.label}</button>)}</div>}
         </> : confirmation ? <div className="confirmation"><span className="check"><Check /></span><h3>Order sent to FOND.</h3><p className="small">Quote this order number</p><p className="reference">{confirmation.displayReference}</p><p>{confirmation.fulfillment === 'delivery' ? 'Delivery' : formatCollectionTime(confirmation.collection)}</p><strong>{money(confirmation.total)}</strong><p>Estimated preparation: approximately {confirmation.estimatedPrepMinutes} minutes.</p><p className="notice">{confirmation.total===0?'Your coffee reward covers this order. No payment is due.':confirmation.fulfillment==='delivery'?'Your secure payment and delivery status will appear in Track order.':'Payment is due at FOND when you collect. Staff will confirm the order and record it in the restaurant system.'}</p>{paymentError&&<p role="alert">{paymentError}</p>}<button className="primary" onClick={() => { setPanel(null); setConfirmation(null); }}>Back to the menu <ArrowRight size={18} /></button></div> : cart.length ? <>
           {pricedCart.map((l) => <div className="cart-line" key={lineKey({ id: l.id, quantity: l.quantity, modifierIds: l.selectedModifiers.map((mod) => mod.id) })}><span className="cart-art" aria-hidden="true">{l.symbol}</span><div><h3>{l.name}</h3><p>{money(l.unitPrice)}{l.selectedModifiers.length > 0 && <span className="cart-line-mods"> · {l.selectedModifiers.map((mod) => mod.name).join(', ')}</span>}</p><div className="quantity"><button aria-label={`Remove one ${l.name}`} onClick={() => change(l.id, -1, l.selectedModifiers.map((mod) => mod.id))}><Minus size={14} /></button><span>{l.quantity}</span><button disabled={l.quantity >= 20} aria-label={`Add one ${l.name}`} onClick={() => change(l.id, 1, l.selectedModifiers.map((mod) => mod.id))}><Plus size={14} /></button></div></div><strong>{money(l.subtotal)}</strong></div>)}
           <div className="fulfillment-toggle" role="tablist" aria-label="Collection or delivery">
@@ -275,8 +328,16 @@ export function OrderingApp() {
             <label className="field">Preferred collection time (today)<select value={collection} disabled={!collectionOptions.length} onChange={(e) => setCollection(e.target.value)}>{!collectionOptions.length&&<option value="">Today&rsquo;s collection window has closed</option>}{collectionGroups.map(group=><optgroup label={group.label} key={group.label}>{group.slots.map(slot=><option value={slot.value} key={slot.value}>{slot.label}</option>)}</optgroup>)}</select><span className="small">Today only · {hasFoodTruck?'Food Truck':'Kitchen'} closes at {orderClosingTime}.</span></label>
           ) : <>
             <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel" /></label>
-            <label className="field">Business and building<select value={deliveryLocation} onChange={event=>{const value=event.target.value;setDeliveryLocation(value);if(value&&value!=='other'){const location=deliveryLocationValue(value);setCompany(location.business);setBuilding(location.building);}else{setCompany('');setBuilding('');}}}><option value="">Select your business and building</option>{(store?.settings.deliveryLocations??[]).map(location=><option value={location} key={location}>{deliveryLocationValue(location).business} — {deliveryLocationValue(location).building}</option>)}<option value="other">My business is not listed</option></select></label>
+            <label className="field">Business and building<select value={deliveryLocation} onChange={event=>{const value=event.target.value;setDeliveryLocation(value);clearGps();if(value&&value!=='other'){const location=deliveryLocationValue(value);setCompany(location.business);setBuilding(location.building);}else{setCompany('');setBuilding('');}}}><option value="">Select your business and building</option>{(store?.settings.deliveryLocations??[]).map(location=><option value={location} key={location}>{deliveryLocationValue(location).business} — {deliveryLocationValue(location).building}</option>)}<option value="other">My business is not listed</option></select></label>
             {deliveryLocation==='other'&&<><label className="field">Business name<input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Your business" /></label><label className="field">Building / office<input value={building} onChange={(e) => setBuilding(e.target.value)} placeholder="Building, unit or floor" /></label></>}
+            <section className="delivery-gps" aria-label="Delivery location">
+              <h3>Delivery pin (optional)</h3>
+              <p className="small">Use this while you are at the delivery point. FOND will receive the confirmed pin with this order. Your business and building are still required; add your floor or desk in the note below.</p>
+              <button className="outline" disabled={gpsBusy} onClick={useMyLocation}><MapPin size={16}/>{gpsBusy?'Finding your location…':'Use my location'}</button>
+              {gpsError&&<p role="alert">{gpsError}</p>}
+              {gpsPin&&<><p role="status">Location found · accuracy approximately {Math.ceil(gpsPin.accuracy)} m.{gpsPin.accuracy>100?' This may be imprecise. Check the pin carefully or remove it.':''}</p><a href={deliveryPinPreview(gpsPin)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Check pin in Google Maps ↗</a><p className="small">Opening the map shares this pin with Google.</p><label className="field-check"><input type="checkbox" checked={gpsConfirmed} onChange={event=>setGpsConfirmed(event.target.checked)}/> This is the correct delivery point. Include it with my order.</label></>}
+              {(gpsPin||gpsBusy)&&<button className="quiet" onClick={clearGps}>Remove location</button>}
+            </section>
           </>}
           {fulfillment==='collection'&&<label className="field">Contact number<input required value={contactNumber} onChange={e=>setContactNumber(e.target.value)} placeholder="For FOND to reach you about your order" inputMode="tel" autoComplete="tel"/></label>}
           <label className="field">Email address (optional)<input type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)} placeholder="For coffee rewards, receipts and order updates" autoComplete="email" /></label>
