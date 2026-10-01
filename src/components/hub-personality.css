@@ -172,3 +172,9 @@
 .hub-mood-home .hub-home-destinations>a:hover{opacity:1;filter:brightness(1.1)}
 .hub-mood-home .hub-home-destinations>a:focus-visible{outline:3px solid #178c7c;outline-offset:3px}
 @media(max-width:700px){.hub-mood-home .hub-home-destinations>a{padding:16px 12px;aspect-ratio:1.04}.hub-app.hub-wide .hub-home-destinations h2{font-size:clamp(19px,5.4vw,25px);margin-bottom:5px}.hub-app.hub-wide .hub-destination-caption p{font-size:clamp(11px,3vw,14px);letter-spacing:0}}
+
+/* Shared public typeface and readable destination captions. */
+.hub-shell{font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif}
+.hub-app.hub-wide .hub-feast-hero h1,.hub-app.hub-wide .hub-michelle-note h2,.hub-mood-functions .function-booking-form>div>h2,.hub-michelle-note .hub-chef-intro{font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif!important}
+.hub-app.hub-wide .hub-destination-caption p{font-size:18px;line-height:1.35;font-weight:400;letter-spacing:0}
+@media(max-width:700px){.hub-mood-home .hub-home-destinations>a{aspect-ratio:.88;padding:18px 12px}.hub-app.hub-wide .hub-home-destinations h2{font-size:clamp(21px,6.2vw,27px);line-height:1.15;overflow-wrap:normal}.hub-app.hub-wide .hub-destination-caption p{font-size:16px;font-weight:400;line-height:1.35}.hub-app.hub-wide .hub-home-greeting>p{font-weight:400}}
