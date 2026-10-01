@@ -153,3 +153,11 @@
 @media(max-width:700px){.hub-mood-home .hub-top{padding-top:22px;padding-bottom:18px}.hub-app.hub-wide .hub-home-greeting h1{font-size:34px;max-width:none}.hub-home-greeting{padding:9px 0 8px}.hub-home-greeting p{font-size:18px}.hub-home-photo{height:250px;clip-path:polygon(0 23%,100% 0,100% 100%,0 100%)}.hub-home-photo>p{font-size:14px;line-height:1.45;left:18px;bottom:20px;letter-spacing:.65px}.hub-app.hub-wide .hub-upcoming-row h3{font-size:14px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:11px}.hub-upcoming-row{min-height:58px}.hub-fond-hours{font-size:13px}}
 
 @media(max-width:700px){.hub-mood-home .hub-home-wordmark{font-size:22px}.hub-home-greeting p{font-size:20px}.hub-home-photo>p{font-size:16px}.hub-app.hub-wide .hub-at-point h2{font-size:15px}.hub-upcoming-service,.hub-upcoming-row time,.hub-upcoming-row time small{font-size:12px}.hub-fond-hours{font-size:14px}}
+
+/* Home destinations: generous two-by-two touch targets at every screen width. */
+.hub-home-destinations{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:24px 0}
+.hub-mood-home .hub-home-destinations>a{min-height:190px;padding:20px 12px;gap:14px;border:1px solid #deded7;border-radius:12px;background:transparent}
+.hub-mood-home .hub-home-destinations>a+a{border-left:1px solid #deded7}
+.hub-home-destinations>a>img{width:120px}
+.hub-app.hub-wide .hub-home-destinations h2{font-size:20px;line-height:1.3;font-weight:600}
+@media(max-width:700px){.hub-home-destinations{gap:12px;padding:20px 0}.hub-mood-home .hub-home-destinations>a{min-height:172px;padding:18px 10px;gap:12px}.hub-home-destinations>a>img{width:104px}.hub-app.hub-wide .hub-home-destinations h2{font-size:18px}}
