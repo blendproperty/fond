@@ -2,7 +2,7 @@ import {test,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {DEFAULT_SETTINGS,orderingAvailable,saveDocument,validateSettings} from '../src/lib/management';
-import {tradingWindow,withinTradingWindow} from '../src/lib/trading-hours';
+import {tradingWindow,withinTradingWindow,orderingHoursMessage,weeklyTradingHours} from '../src/lib/trading-hours';
 import {collectionSlots} from '../src/lib/fulfilment';
 import {resetDbForTests} from '../src/lib/db';
 import {createOrder} from '../src/lib/orders';
@@ -14,6 +14,20 @@ const hours={...DEFAULT_SETTINGS,enforceHours:true};
 const saturday=new Date('2026-10-03T10:00:00+02:00');
 const sunday=new Date('2026-10-04T10:00:00+02:00');
 const order=(ids:string[],fulfillment:'collection'|'delivery'='collection',collectionTime='ASAP')=>createOrder({submissionKey:randomUUID(),customerName:'Schedule test',contactNumber:'0821234567',building:'Test office',fulfillment,collectionTime,paymentMethod:fulfillment==='delivery'?'yoco_online':'pay_at_collection',source:'customer',lines:ids.map(id=>({id,quantity:1}))});
+
+test('opening message handles before opening, exact cutoff, weekends and paused ordering in South African time',()=>{
+  assert.equal(orderingHoursMessage(hours,new Date('2026-10-01T04:00:00Z')),'Opens today at 07:00');
+  assert.equal(orderingHoursMessage(hours,new Date('2026-10-01T07:00:00+02:00')),'Open until 18:30');
+  assert.equal(orderingHoursMessage(hours,new Date('2026-10-02T18:30:00+02:00')),'Opens tomorrow at 07:00');
+  assert.equal(orderingHoursMessage(hours,new Date('2026-10-03T12:00:00+02:00')),'Opens Monday at 07:00');
+  assert.equal(orderingHoursMessage(hours,sunday),'Opens tomorrow at 07:00');
+  assert.equal(orderingHoursMessage({...hours,orderingEnabled:false},sunday),'Ordering paused — contact FOND');
+  assert.equal(orderingHoursMessage({...hours,enforceHours:false},sunday),'Taking orders');
+  assert.equal(orderingHoursMessage({...hours,openingTime:'09:00',openDays:[3]},sunday),'Opens Wednesday at 09:00');
+  assert.equal(orderingHoursMessage({...hours,openDays:[]},sunday),'No ordering days scheduled');
+  assert.equal(weeklyTradingHours(hours),'Mon–Fri 07:00–18:30 · Sat 07:00–12:00 · Sun closed');
+  assert.equal(weeklyTradingHours(hours,true),'Mon–Fri 07:00–15:30 · Sat–Sun closed');
+});
 
 test('restaurant trades Saturday until noon; truck is weekdays only; both close Sunday',()=>{
   assert.equal(orderingAvailable(hours,saturday),true);
