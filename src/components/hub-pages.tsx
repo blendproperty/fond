@@ -35,11 +35,11 @@ export function HubHome() {
   <section className="hub-home-photo" aria-label="Life at Midpoint"><img className="hub-home-hero-image" src="/hub-assets/midpoint-hub-exterior.webp" alt="The Midpoint Hub building with FOND, rooftop padel courts and landscaped terraces" width="1280" height="853"/><p>COFFEE. WORKOUT.<br/>A GAME OR A GATHERING.<br/>IT ALL HAPPENS HERE.</p></section>
 
   <nav id="explore-midpoint" className="hub-app-destinations hub-home-destinations" aria-label="Choose a destination">{[
-    {href:'/fond',title:'FOND',badge:'fond-corrected.png'},
-    {href:'/gym',title:'Gym',badge:'gym.png'},
-    {href:'/padel',title:'Padel',badge:'padel.png'},
-    {href:'/functions',title:'Functions',badge:'functions.svg'},
-  ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/original/${item.badge}`} alt="" width="112" height="112"/><h2>{item.title}</h2></Link>)}</nav>
+    {href:'/fond',title:'FOND',photo:'fond-3',action:'ORDER FOOD'},
+    {href:'/gym',title:'GYM',photo:'gym-3',action:'CLASSES & ACCESS'},
+    {href:'/padel',title:'PADEL',photo:'padel-2',action:'BOOK A COURT'},
+    {href:'/functions',title:'FUNCTIONS',photo:'fond-1',action:'PLAN AN EVENT'},
+  ].map(item=><Link href={item.href} key={item.href}><img src={`/hub-assets/tile-${item.photo}.webp`} alt="" width="1400" height="933"/><div className="hub-destination-caption"><h2>{item.title}</h2><p>{item.action}</p></div></Link>)}</nav>
 
   <section className="hub-at-point" aria-labelledby="at-point-title"><div className="hub-at-point-heading"><h2 id="at-point-title">AT THE HUB</h2><Link href="/hub/events">View all <ArrowRight size={14}/></Link></div><HubUpcomingRows events={upcoming.slice(0,3)}/><HubFondHours initialMessage={orderingHoursMessage(settings())}/></section>
 
