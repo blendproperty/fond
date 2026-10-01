@@ -3,7 +3,7 @@ test('Gym reference landing connects real classes, signup and information with p
   await page.goto('/gym');
   await expect(page.getByRole('heading',{name:'Move better. Work happier.',exact:true})).toBeVisible();
   await expect(page.locator('.gym-photo-hero img')).toHaveJSProperty('naturalWidth',1280);
-  const actions=page.getByRole('navigation',{name:'Gym actions',exact:true});await expect(actions.getByRole('link')).toHaveCount(6);
+  const actions=page.getByRole('navigation',{name:'Gym actions',exact:true});await expect(actions.getByRole('link')).toHaveCount(5);
   await page.getByRole('link',{name:'View classes',exact:true}).click();await expect(page).toHaveURL(/\/gym\/classes$/);await expect(page.getByRole('heading',{name:'Find your next class.',exact:true})).toBeVisible();
   for(const [label,path,heading] of [['Membership options','membership','Make movement a habit.'],['Your access','access','Your next step inside.'],['Gym info','info','A little more movement.']]){await page.goto('/gym');await page.getByRole('navigation',{name:'Gym actions',exact:true}).getByRole('link',{name:label,exact:true}).click();await expect(page).toHaveURL(new RegExp(`/gym/${path}$`));await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true})).toHaveAttribute('aria-current','page');}
   await page.goto('/gym/access');await expect(page.getByText('Your current membership or access status is not displayed in this app.',{exact:false})).toBeVisible();
