@@ -19,7 +19,7 @@ export function HubShell({children,service,wide=false,mood}:{children:React.Reac
     <header className="hub-top">
       <Link href="/hub" aria-label="Midpoint Hub home">{mood==='home'?<span className="hub-home-wordmark">MIDPOINT<small>HUB</small></span>:<img src="/hub-assets/hub-logo-stacked.svg" width="180" height="120" alt="Midpoint Hub"/>}</Link>
       <nav aria-label="Hub navigation"><Link href="/fond">FOND</Link><Link href="/gym" aria-current={service==='gym'?'page':undefined}>Gym</Link><Link href="/padel" aria-current={service==='padel'?'page':undefined}>Padel</Link><Link href="/functions">Functions</Link></nav>
-      <span className="hub-page-label">{mood==='functions'?'GATHER · FEAST · CELEBRATE':service==='gym'?'MOVE · RESET · REPEAT':service==='padel'?'MEET · PLAY · REPEAT':'A LITTLE MORE TO YOUR DAY'}</span>{mood==='home'&&<Link className="hub-home-account" href="/account" aria-label="My account"><UserRound size={20} strokeWidth={1.6}/></Link>}
+      <span className="hub-page-label">{mood==='functions'?'GATHER · FEAST · CELEBRATE':service==='gym'?'MOVE · RESET · REPEAT':service==='padel'?'MEET · PLAY · REPEAT':'A LITTLE MORE TO YOUR DAY'}</span>{mood==='home'&&<Link className="hub-home-account" href="/profile" aria-label="My account"><UserRound size={20} strokeWidth={1.6}/></Link>}
     </header>
     <div className="hub-content">{children}</div>
     <HubAppNav/>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import {ArrowLeft,ArrowRight,CalendarDays,CreditCard,Info,UserRoundPlus,UsersRound} from 'lucide-react';
+import {ArrowLeft,ArrowRight,UserRound,CalendarDays,CreditCard,Info,UserRoundPlus,UsersRound} from 'lucide-react';
 
 import {HubAppNav} from './hub-app-nav';
 
@@ -19,7 +19,7 @@ import {GymHours} from './gym-hours';
 
 
 
-export function GymShell({children}:{children:React.ReactNode}){return <main className="gym-experience"><header className="gym-page-header"><Link href="/gym" aria-label="Back to Gym"><ArrowLeft size={21}/></Link><Link href="/gym" className="gym-wordmark" aria-label="Midpoint Gym">MIDPOINT<span>GYM</span></Link><span aria-hidden="true" style={{width:44}}/></header>{children}<footer className="gym-page-footer"><Link href="/hub/privacy">Privacy policy</Link><Link href="/hub/terms">Terms and conditions</Link></footer><HubAppNav/></main>}
+export function GymShell({children}:{children:React.ReactNode}){return <main className="gym-experience"><header className="gym-page-header"><Link href="/gym" aria-label="Back to Gym"><ArrowLeft size={21}/></Link><Link href="/gym" className="gym-wordmark" aria-label="Midpoint Gym">MIDPOINT<span>GYM</span></Link><Link href="/profile" aria-label="Your profile"><UserRound size={20}/></Link></header>{children}<footer className="gym-page-footer"><Link href="/hub/privacy">Privacy policy</Link><Link href="/hub/terms">Terms and conditions</Link></footer><HubAppNav/></main>}
 
 const actions=[{href:'/gym/membership',label:'Membership options',icon:UsersRound},{href:'/gym/signup',label:'Join now',icon:UserRoundPlus},{href:'/gym/access',label:'Your access',icon:CreditCard},{href:'/gym/info',label:'Gym info',icon:Info},{href:'/gym/events',label:'Gym events',icon:CalendarDays}];
 
