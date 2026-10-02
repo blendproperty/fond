@@ -36,7 +36,7 @@ type AdminOrder = {
   createdAt: string;
 };
 
-export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
+export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<void>;workspace?:'all'|'fond'|'operations'}={}) {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
@@ -44,8 +44,9 @@ export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
   const [username,setUsername]=useState('');
   const [twoFactorCode,setTwoFactorCode]=useState('');
   const [loginError, setLoginError] = useState('');
-  const [tab, setTab] = useState<AdminSection>('menu');
+  const [tab, setTab] = useState<AdminSection>(workspace==='operations'?'settings':'menu');
 
+  const navigation=workspace==='operations'?NAV.filter(n=>n.key==='settings').map(n=>({...n,label:'Team & settings'})):NAV;
   const check = useCallback(async () => {
     const res = await fetch('/api/admin/menu', { cache: 'no-store' });
     setLocked(res.status === 401);
@@ -101,7 +102,7 @@ export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
     <div className="admin-shell">
       <nav className="admin-nav" aria-label="Admin sections">
         <div className="admin-nav-brand"><img src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="75" height="65" /></div>
-        {NAV.map((n) => {
+        {navigation.map((n) => {
           const Icon = n.icon;
           return (
             <button key={n.key} aria-label={n.label} title={n.label} className="admin-nav-item" aria-current={tab === n.key} onClick={() => setTab(n.key)}>
@@ -117,14 +118,14 @@ export function AdminPanel({onLogout}:{onLogout?:()=>Promise<void>}={}) {
         <header className="staff-header">
           <div>
             <img className="brand-logo-admin-mobile" src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="65" height="54" />
-            <p className="eyebrow">FOND · ADMIN</p>
-            <h1>{NAV.find((n) => n.key === tab)?.label}</h1>
+            <p className="eyebrow">{workspace==='operations'?'OPERATIONS · WORKSPACE':'FOND · WORKSPACE'}</p>
+            <h1>{navigation.find((n) => n.key === tab)?.label}</h1>
           </div>
         </header>
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
         {tab === 'reports' && <ReportsDashboard />}
-        {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel/>}
+        {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel scope={workspace}/>}
       </div>
     </div>
   );

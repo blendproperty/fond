@@ -1,0 +1,7 @@
+import {ArrowLeft,CalendarDays,ClipboardList,Clock,Settings,ShieldCheck} from 'lucide-react';
+import './hub.css';
+import './workspace.css';
+export function WorkspaceShell({service,children}:{service:'Gym'|'Padel'|'Functions';children:React.ReactNode}){
+ const sections=service==='Functions'?[{href:'#function-calendar',label:'Bookings & calendar',icon:CalendarDays},{href:'#workspace-security',label:'Account security',icon:ShieldCheck}]:[{href:'#workspace-requests',label:'Signup & interest',icon:ClipboardList},...(service==='Gym'?[{href:'#workspace-hours',label:'Opening hours',icon:Clock}]:[{href:'#workspace-booking',label:'Court booking link',icon:Settings}]),{href:'#workspace-calendar',label:service==='Gym'?'Classes & events':'Events',icon:CalendarDays},{href:'#workspace-security',label:'Account security',icon:ShieldCheck}];
+ return <div className="admin-shell hub-shell service-workspace"><nav className="admin-nav" aria-label={`${service} workspace sections`}><div className="admin-nav-brand"><img src="/hub-assets/hub-logo-stacked.svg" alt="Midpoint Hub" width="75" height="65"/></div><a className="admin-nav-item" href="/admin"><ArrowLeft size={17}/><span>All workspaces</span></a>{sections.map(({href,label,icon:Icon})=><a className="admin-nav-item" href={href} key={href}><Icon size={17}/><span>{label}</span></a>)}</nav><main className="admin-main"><header className="staff-header"><div><p className="eyebrow">{service.toUpperCase()} · WORKSPACE</p><h1>{service} workspace</h1></div></header>{children}</main></div>;
+}
