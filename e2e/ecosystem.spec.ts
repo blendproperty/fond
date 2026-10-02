@@ -1,4 +1,15 @@
 import {test,expect} from '@playwright/test';
+test('direct visits retain Hub branding and installation identity',async({page,request})=>{
+ for(const route of ['/functions','/functions/enquire','/functions/spaces','/functions/packages','/functions/michelle','/functions/gallery','/profile','/profile/orders','/profile/rewards','/profile/details','/profile/bookings','/profile/memberships','/profile/notifications','/profile/help','/car-wash','/suites']){
+  await page.goto(route);
+  await expect(page).toHaveTitle(/Midpoint Hub/);
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href','/hub/manifest.webmanifest');
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content','Midpoint Hub');
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href','/hub-assets/app-icon-192.png');
+ }
+ expect(await (await request.get('/hub/manifest.webmanifest')).json()).toMatchObject({id:'/hub',name:'Midpoint Hub',start_url:'/hub'});
+ expect(await (await request.get('/manifest.webmanifest')).json()).toMatchObject({id:'/',name:'FOND Midpoint'});
+});
 test('inner headings have readable contrast against their actual background',async({page})=>{
  for(const route of ['/gym/membership','/gym/info','/gym/signup','/padel/prices','/padel/info','/padel/signup','/functions/enquire','/functions/spaces','/functions/packages','/functions/michelle','/functions/gallery','/profile','/profile/orders','/profile/rewards','/profile/details','/profile/help','/fond/hours']){
   await page.goto(route);
