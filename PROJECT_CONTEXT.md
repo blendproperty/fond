@@ -1582,3 +1582,5 @@ Navigation CI follow-up: 7c6f839 passed 181/182 customer browser checks, failing
 Further browser measurement follow-up: CI d4a9e94 passed 181/182 but mobile integer scroll-width check still differed from local. Replaced that assertion with actual rendered longest-label bounds against their link bounds, allowing one CSS pixel for browser rounding and reporting dimensions on failure; overflow and six-destination checks retained. No app behaviour weakened. Latest release still awaits CI/publication.
 
 CI measured the actual mobile issue: 320px screen produced 44.67px link cells (47px Functions label) because percentage navigation width inherited a narrower container. Fixed small-screen bar to full viewport width with 4px inset and border-box. Prior builds were not promoted. Final revision still requires checks and readback.
+
+Narrow 320px navigation passed online after viewport fix; CI then exposed same percentage-width issue at 390px (58.36px Functions label in 56.33px cell). Applied full viewport bar through 700px phone breakpoint. Responsive containment tests retained. Final publication remains pending.

@@ -480,5 +480,6 @@ footer span:last-child{margin-left:auto}
 .hub-app-nav>a>svg{transition:transform .2s ease}
 @media(hover:hover){.hub-app-nav>a:hover{background:#f8e4d4!important;color:#a64013!important}.hub-app-nav>a:hover>svg{transform:translateY(-2px)}}
 .hub-app-nav>a:focus-visible{outline:2px solid #ee7328;outline-offset:-2px;background:#f8e4d4!important;color:#a64013!important}
-@media(max-width:360px){.hub-app-nav{width:100vw!important;padding-left:4px!important;padding-right:4px!important;box-sizing:border-box}.hub-app-nav>a{font-size:7.5px!important;letter-spacing:0;padding-left:0!important;padding-right:0!important}}
+@media(max-width:700px){.hub-app-nav{width:100vw!important;padding-left:4px!important;padding-right:4px!important;box-sizing:border-box}}
+@media(max-width:360px){.hub-app-nav>a{font-size:7.5px!important;letter-spacing:0;padding-left:0!important;padding-right:0!important}}
 @media(prefers-reduced-motion:reduce){.hub-app-nav>a,.hub-app-nav>a>svg{transition:none}.hub-app-nav>a:hover>svg{transform:none}}
