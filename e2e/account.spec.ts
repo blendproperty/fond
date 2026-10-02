@@ -10,7 +10,8 @@ test('customer can sign up, place an order, then see it in their own account', a
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Verify your email' })).toBeVisible();
-  await page.getByRole('link', { name: 'Back to menu' }).click();
+  await page.getByRole('navigation', { name: 'App navigation' }).getByRole('link', { name: 'FOND', exact: true }).click();
+  await page.getByRole('link', { name: 'Order now', exact: true }).click();
   await page.getByRole('button', { name: 'Add Smashed Avo', exact: true }).click();
   await page.getByRole('dialog', { name: 'Smashed Avo', exact: true }).getByRole('button', { name: /Add to basket/ }).click();
   await page.getByRole('button', { name: /Basket/ }).first().click();
