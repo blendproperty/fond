@@ -1,1 +1,1 @@
-export const hubMetadata = {manifest:'/hub/manifest.webmanifest',applicationName:'Midpoint Hub',appleWebApp:{capable:true,statusBarStyle:'default' as const,title:'Midpoint Hub'},icons:{icon:'/hub-assets/hub-logo-stacked.svg',apple:'/hub-assets/app-icon-192.png'}};
+export const hubMetadata = {manifest:'/hub/manifest.webmanifest',applicationName:'Midpoint Hub',appleWebApp:{capable:true,statusBarStyle:'black' as const,title:'Midpoint Hub'},icons:{icon:'/hub-assets/hub-logo-stacked.svg',apple:'/hub-assets/app-icon-192.png'}};

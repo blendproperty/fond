@@ -42,6 +42,6 @@ export function AccountAccess({onSignedIn}:{onSignedIn:()=>Promise<void>}){
    {!challenge&&mode!=='reset'&&<span>{mode==='login'?'First time at FOND?':'Already part of the FOND family?'}</span>}
    <button className={styles.secondary} disabled={busy} type="button" onClick={()=>changeMode(!challenge&&mode==='login'?'signup':'login')}>{challenge||mode==='reset'?'Back to sign in':mode==='login'?'Create an account':'Already have an account?'}</button>
    {!!resetToken&&<button className={styles.textButton} disabled={busy} onClick={()=>{setResetToken('');setCode('');setError('');setMessage('');}}>Request another reset code</button>}
-  </div><p className={styles.hint}>Use your customer email and password. Your staff/admin login is separate.</p>
+  </div>{mode!=='signup'&&<p className={styles.hint}><a href="/hub/privacy">Privacy policy</a> · <a href="/hub/terms">Terms and conditions</a></p>}<p className={styles.hint}>Optional two-factor sign-in adds an email or SMS code after your password. Manage it in My details & security once signed in.</p>
  </section>;
 }

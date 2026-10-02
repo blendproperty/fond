@@ -483,3 +483,6 @@ footer span:last-child{margin-left:auto}
 @media(max-width:700px){.hub-app-nav{width:100vw!important;padding-left:4px!important;padding-right:4px!important;box-sizing:border-box}}
 @media(max-width:360px){.hub-app-nav>a{font-size:7.5px!important;letter-spacing:0;padding-left:0!important;padding-right:0!important}}
 @media(prefers-reduced-motion:reduce){.hub-app-nav>a,.hub-app-nav>a>svg{transition:none}.hub-app-nav>a:hover>svg{transform:none}}
+
+/* Solid iPhone browser/status-bar surround; body retains each page palette. */
+html{background-color:#17221e}

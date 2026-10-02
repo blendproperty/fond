@@ -4,7 +4,7 @@ test('direct visits retain Hub branding and installation identity',async({page,r
   await page.goto(route);
   await expect(page).toHaveTitle(/Midpoint Hub/);
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href','/hub/manifest.webmanifest');
-  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content','Midpoint Hub');
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content','Midpoint Hub');await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content','black');await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#17221e');
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href','/hub-assets/app-icon-192.png');
  }
  expect(await (await request.get('/hub/manifest.webmanifest')).json()).toMatchObject({id:'/hub',name:'Midpoint Hub',start_url:'/hub'});

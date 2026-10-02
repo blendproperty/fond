@@ -55,7 +55,7 @@ export function CustomerAccount({view='orders'}:{view?:'orders'|'rewards'|'detai
  async function logout(){setBusy(true);setError('');try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error('Could not sign out. Please try again.');setCode('');setVerificationMessage('');await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  return <main className={`${styles.page} profile-account gym-experience`}>
   <EcosystemHeader service="Profile" back="/profile"/>
-  <div className={styles.intro}><p className={styles.eyebrow}>A LITTLE MORE FOND OF EVERY DAY</p><h1>{view==='details'?'My details & security':view==='rewards'?'Coffee rewards':user?'Your orders':'Your daily FOND favourites.'}</h1><p>{user?'Your orders, your coffee rewards and your next little lift. All in one place.':'Good food, great coffee and something to look forward to. Make yourself at home.'}</p></div>
+  <div className={styles.intro}><p className={styles.eyebrow}>{view==='details'?'YOUR MIDPOINT ACCOUNT':'A LITTLE MORE FOND OF EVERY DAY'}</p><h1>{view==='details'?'My details & security':view==='rewards'?'Coffee rewards':user?'Your orders':'Your daily FOND favourites.'}</h1><p>{view==='details'?'View your account email, verify it and manage optional two-factor sign-in.':user?'Your orders, your coffee rewards and your next little lift. All in one place.':'Good food, great coffee and something to look forward to. Make yourself at home.'}</p></div>
   <div className={`${styles.layout} ${user&&view==='rewards'?styles.rewardsLayout:''}`}>
    <div className={styles.content} id="customer-access">
     {loading?<section className={styles.card} aria-busy="true"><p role="status">Getting your account ready…</p></section>:user?<>
