@@ -1,4 +1,7 @@
 import {test,expect} from '@playwright/test';
+import {openTestOrdering,restoreTestOrdering} from './open-test-ordering';
+test.beforeEach(async({request})=>openTestOrdering(request));
+test.afterEach(async({request})=>restoreTestOrdering(request));
 
 test('lost order response can be retried with the same submission key',async({page})=>{
  await page.goto('/');
