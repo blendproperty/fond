@@ -137,3 +137,4 @@
 @media(max-width:560px){.hub-calendar{padding:12px}.hub-week,.hub-days{gap:4px}.hub-days button{min-height:57px;border-radius:9px}.hub-days button small{font-size:9px}.hub-event-with-image .hub-event-content{padding:24px 20px}}
 
 .hub-event-content>time{display:inline-block;font-size:13px;font-weight:800;background:white;border:1px solid var(--hub-line);padding:7px 12px;border-radius:24px;margin-bottom:18px}.hub-event-content{padding-top:28px}
+.hub-event-summary p{white-space:pre-line;font-size:14px;line-height:1.7}.hub-event-with-image{grid-template-columns:1fr}.hub-event-with-image .hub-event-content{padding:24px}.hub-event-with-image>.hub-event-image{justify-self:center;max-width:560px}.gym-information-card>a,.ecosystem-options article>a{display:inline-flex;align-items:center;gap:10px;text-decoration:underline;text-underline-offset:3px;padding:12px 0;min-height:44px}

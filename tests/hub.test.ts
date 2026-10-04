@@ -21,12 +21,15 @@ test('signup encrypts identity and contact details; retries produce only one dur
   assert.throws(()=>submitHubRequest({...input,identity:'CHANGED'},key),/changed/);
   assert.equal((db.prepare('SELECT count(*) AS n FROM hub_requests WHERE request_key=?').get(key) as {n:number}).n,1);
 });
-test('consent, identity, spam and stale event checks happen before saving',()=>{
+test('consent, supplied identity bounds, spam and stale event checks happen before saving',()=>{
   assert.throws(()=>submitHubRequest({...request(),consent:false},randomUUID()),/agree/);
-  assert.throws(()=>submitHubRequest({...request(),identity:''},randomUUID()),/passport/);
+  assert.throws(()=>submitHubRequest({...request(),identity:'x'.repeat(41)},randomUUID()),/passport/);
   assert.throws(()=>submitHubRequest({...request(),website:'spam'},randomUUID()),/Unable/);
   assert.throws(()=>submitHubRequest({...request(),kind:'interest',eventId:randomUUID()},randomUUID()),/no longer available/);
   assert.throws(()=>submitHubRequest({...request(),service:'other'},randomUUID()),/Choose/);
+});
+test('initial Gym and Padel requests can omit identity without activating membership or access',()=>{
+ for(const service of ['gym','padel']){const input={...request(service),identity:undefined};const id=submitHubRequest(input,randomUUID());const saved=listRequests(service as 'gym'|'padel','test-owner').find(r=>r.id===id);assert.equal(saved?.details.identity,'');assert.equal(saved?.status,'new');}
 });
 test('Gym and Padel records, edits and published calendars remain separate',()=>{
   const gymId=submitHubRequest(request(),randomUUID()),padelId=submitHubRequest(request('padel'),randomUUID());

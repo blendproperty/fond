@@ -19,7 +19,7 @@ export default async function Page({params}:Props) {
   if(section.length===1&&section[0]==='signup')content=<HubSignup service={service}/>;
   else if(service==='gym'&&section.length===1&&section[0]==='classes')content=<GymClasses/>;
   else if(section.length===1&&section[0]==='events')content=<HubCalendarView service={service} kind={section[0] as 'classes'|'events'} events={listEvents(service)}/>;
-  else if(section.length===2&&section[0]==='interest'){const event=listEvents(service).find(e=>e.id===section[1]&&Date.parse(e.endsAt)>Date.now());if(!event)notFound();content=<HubSignup service={service} eventId={event.id} eventTitle={event.title} eventImage={event.imageUrl} eventImageAlt={event.imageAlt}/>;}
+  else if(section.length===2&&section[0]==='interest'){const event=listEvents(service).find(e=>e.id===section[1]&&Date.parse(e.endsAt)>Date.now());if(!event)notFound();content=<HubSignup service={service} eventId={event.id} eventTitle={event.title} eventImage={event.imageUrl} eventImageAlt={event.imageAlt} eventSummary={<><p>{new Date(event.startsAt).toLocaleString('en-ZA',{dateStyle:'long',timeStyle:'short',timeZone:'Africa/Johannesburg'})} – {new Date(event.endsAt).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'})} · South African time</p><p>{event.location}</p><p>{event.description}</p><p>Sending interest does not reserve a place.</p></>}/>;}
   else notFound();
   if(service==='gym')return <GymShell><div className="gym-inner-content">{content}</div></GymShell>;
   return <PadelShell><div className="gym-inner-content">{content}</div></PadelShell>;

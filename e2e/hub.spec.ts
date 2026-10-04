@@ -12,17 +12,17 @@ test('Hub destinations, real empty calendars and forms work on desktop and phone
   await expect(page.getByRole('link',{name:'View all'})).toHaveAttribute('href','/hub/events');
   await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/Gym/i}).click();
   await expect(page).toHaveURL(/\/gym$/);await page.getByRole('link',{name:'Join now',exact:true}).click();
-  await expect(page.getByLabel('ID or passport number')).toBeVisible();
+  await expect(page.getByLabel('ID or passport number')).toHaveCount(0);await expect(page.getByText(/No ID or passport number is needed/)).toBeVisible();
   await page.getByLabel('First name',{exact:true}).fill('Example');await page.getByLabel('Surname',{exact:true}).fill('Applicant');
   await page.getByLabel('Email address',{exact:true}).fill('isolated@example.com');await page.getByLabel('Mobile number',{exact:true}).fill('0820000000');
-  await page.getByLabel('ID or passport number').fill('SYNTHETIC-ONLY');await page.getByRole('checkbox').check();
+  await page.getByRole('checkbox').check();
   await page.route('**/api/hub/requests',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Temporary failure'})}));
   await page.getByRole('button',{name:'Send signup request'}).click();await expect(page.locator('main').getByRole('alert')).toHaveText('Temporary failure');await expect(page.getByLabel('First name',{exact:true})).toHaveValue('Example');
   await page.unroute('**/api/hub/requests');
-  await page.route('**/api/hub/requests',route=>{const body=route.request().postDataJSON();expect(body.identity).toBe('SYNTHETIC-ONLY');expect(body.service).toBe('gym');expect(route.request().headers()['idempotency-key']).toBeTruthy();return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({id:'fixture-request'})});});
+  await page.route('**/api/hub/requests',route=>{const body=route.request().postDataJSON();expect(body.identity).toBeUndefined();expect(body.service).toBe('gym');expect(route.request().headers()['idempotency-key']).toBeTruthy();return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({id:'fixture-request'})});});
   await page.getByRole('button',{name:'Send signup request'}).click();await expect(page.getByText('REQUEST RECEIVED',{exact:true})).toBeVisible();await expect(page.getByLabel('ID or passport number')).toHaveCount(0);
   await page.goto('/gym/classes');await expect(page.locator('iframe[title="Midpoint Gym class bookings"]')).toBeVisible();await page.goto('/gym/events');await expect(page.getByText('The next dates are on their way.')).toBeVisible();await page.getByRole('button',{name:'Next month'}).click();
-  await page.goto('/padel');await expect(page.getByRole('link',{name:'Midpoint Padel Book a court',exact:true})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');await expect(page.locator('.gym-photo-hero>img')).toBeVisible();await expect(page.locator('a[href="https://playtomic.com/clubs/midpoint-padel"]')).toHaveCount(1);await expect(page.getByRole('navigation',{name:'Padel actions'}).getByRole('link')).toHaveCount(4);await page.getByRole('link',{name:'Court prices',exact:true}).click();await expect(page.getByRole('heading',{name:'Make time for a game.'})).toBeVisible();await expect(page.getByText('R280',{exact:true})).toBeVisible();await expect(page.getByText('R550',{exact:true})).toBeVisible();
+  await page.goto('/padel');await expect(page.getByRole('link',{name:'Midpoint Padel Public bookings on Playtomic',exact:true})).toHaveAttribute('href','https://playtomic.com/clubs/midpoint-padel');await expect(page.locator('.gym-photo-hero>img')).toBeVisible();await expect(page.locator('a[href="https://playtomic.com/clubs/midpoint-padel"]')).toHaveCount(1);await expect(page.getByRole('navigation',{name:'Padel actions'}).getByRole('link')).toHaveCount(4);await page.getByRole('link',{name:'Court prices',exact:true}).click();await expect(page.getByRole('heading',{name:'Make time for a game.'})).toBeVisible();await expect(page.getByText('R280',{exact:true})).toBeVisible();await expect(page.getByText('R550',{exact:true})).toBeVisible();
   for(const path of ['/hub','/gym','/gym/signup','/gym/classes','/gym/events','/padel','/padel/signup','/padel/events','/padel/prices','/padel/info','/functions','/hub/manage']){
     await page.goto(path);await expect(page.locator('.hub-shell, .gym-experience, .team-portal, .admin-login')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   }
@@ -39,7 +39,7 @@ test('Hub app navigation returns from FOND and retains separate app launch route
  await expect(page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true})).toHaveAttribute('aria-current','page');
  await page.getByRole('navigation',{name:'Choose a destination'}).getByRole('link',{name:/FOND/}).click();
  await expect(page).toHaveURL(/\/fond$/);
- await expect(page.getByRole('link',{name:'Order now',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:/^(Order now|Browse menu)$/,exact:true})).toBeVisible();
  await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Home',exact:true}).click();
  await expect(page).toHaveURL(/\/hub$/);
  await page.getByRole('navigation',{name:'App navigation'}).getByRole('link',{name:'Gym',exact:true}).click();

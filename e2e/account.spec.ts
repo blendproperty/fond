@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import {openTestOrdering} from './open-test-ordering';
 
-test('customer can sign up, place an order, then see it in their own account', async ({ page }) => {
+test('customer can sign up, place an order, then see it in their own account', async ({ page, request }) => {
+  await openTestOrdering(request);
   const email = `${randomUUID()}@example.test`;
   await page.goto('/account');
   await page.getByRole('button', { name: 'Create an account' }).click();
@@ -11,7 +13,7 @@ test('customer can sign up, place an order, then see it in their own account', a
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Verify your email' })).toBeVisible();
   await page.getByRole('navigation', { name: 'App navigation' }).getByRole('link', { name: 'FOND', exact: true }).click();
-  await page.getByRole('link', { name: 'Order now', exact: true }).click();
+  await page.getByRole('link', { name: /^(Order now|Browse menu)$/, exact: true }).click();
   await page.getByRole('button', { name: 'Add Smashed Avo', exact: true }).click();
   await page.getByRole('dialog', { name: 'Smashed Avo', exact: true }).getByRole('button', { name: /Add to basket/ }).click();
   await page.getByRole('button', { name: /Basket/ }).first().click();

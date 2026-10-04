@@ -81,7 +81,7 @@ export function submitHubRequest(input: Record<string, unknown>, key: string) {
   const email = text(input.email, 'email address', 254).toLowerCase(), phone = text(input.phone, 'mobile number', 30);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\+?[\d ()-]{7,30}$/.test(phone)) throw new HubError('Enter a valid email address and mobile number.');
   if (input.consent !== true) throw new HubError('Please agree to the use of your details for this request.');
-  const details = {firstName, surname, email, phone, company: text(input.company ?? '', 'company', 160, service === 'padel'), building: text(input.building ?? '', 'building or unit', 100, service === 'padel'), identity: kind === 'signup' ? text(input.identity, 'ID or passport number', 40) : '', playtomicAccount: input.playtomicAccount === true, consent: true};
+  const details = {firstName, surname, email, phone, company: text(input.company ?? '', 'company', 160, service === 'padel'), building: text(input.building ?? '', 'building or unit', 100, service === 'padel'), identity: kind === 'signup' ? text(input.identity ?? '', 'ID or passport number', 40, false) : '', playtomicAccount: input.playtomicAccount === true, consent: true};
   const db = hubDb(), eventId = kind === 'interest' ? text(input.eventId, 'event', 80) : null;
   if (eventId && !db.prepare('SELECT id FROM hub_events WHERE id=? AND service=? AND published=1 AND ends_at>?').get(eventId, service, new Date().toISOString())) throw new HubError('This event is no longer available. Please refresh the calendar.');
   // Hash the encrypted-request fingerprint with the private vault key to avoid exposing ID guesses.
