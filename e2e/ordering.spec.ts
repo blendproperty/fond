@@ -1,5 +1,8 @@
 import {test,expect} from '@playwright/test';
-test('browse, adjust basket, place order and track it',async({page})=>{
+import {openTestOrdering,restoreTestOrdering} from './open-test-ordering';
+test.beforeEach(async({request})=>openTestOrdering(request));
+test.afterEach(async({request})=>restoreTestOrdering(request));
+test('browse, adjust basket, place order and track it',async({page,request})=>{
  await page.goto('/');await expect(page.getByRole('heading',{name:/First, something/,level:1})).toBeVisible();
  await expect(page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Smashed Avo'})}).getByText(/Approx\. \d+ min/)).toBeVisible();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
@@ -13,7 +16,7 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
  const fourItemEstimate=Number(((await collectionTimes.locator('option').first().textContent())??'').match(/approx\. (\d+) min/)?.[1]);
  expect(fourItemEstimate).toBeGreaterThan(oneItemEstimate);
- await expect(page.getByText('Today only · Kitchen closes at 18:30.')).toBeVisible();
+ await expect(page.getByText('Today only · Kitchen closes at 23:59.')).toBeVisible();
  await collectionTimes.selectOption({index:1});
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');

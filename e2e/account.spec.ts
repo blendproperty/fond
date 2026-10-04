@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import {openTestOrdering} from './open-test-ordering';
+import {openTestOrdering,restoreTestOrdering} from './open-test-ordering';
+test.afterEach(async({request})=>restoreTestOrdering(request));
 
 test('customer can sign up, place an order, then see it in their own account', async ({ page, request }) => {
   await openTestOrdering(request);
