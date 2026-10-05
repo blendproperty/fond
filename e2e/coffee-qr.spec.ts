@@ -24,7 +24,8 @@ test('customer QR decodes to their exact reward and staff camera validates it au
  await page.addInitScript(({dataUrl})=>{
   (window as any).BarcodeDetector=undefined;
   let stops=0;Object.defineProperty(window,'rewardCameraStops',{get:()=>stops});
-  Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>{
+  Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async(constraints:MediaStreamConstraints)=>{
+   (window as any).rewardCameraConstraints=constraints;
    const img=new Image();img.src=dataUrl;await img.decode();const canvas=document.createElement('canvas');canvas.width=400;canvas.height=400;canvas.getContext('2d')!.drawImage(img,0,0,400,400);
    const stream=canvas.captureStream(10);for(const track of stream.getTracks()){const original=track.stop.bind(track);track.stop=()=>{stops++;original();};}return stream;
   }});
@@ -34,6 +35,7 @@ test('customer QR decodes to their exact reward and staff camera validates it au
  let submitted='';
  await page.route('**/api/staff/rewards',r=>{submitted=r.request().postDataJSON().code;return r.fulfill({json:{discountCents:3200,totalCents:0,environment:'test'}});});
  await drawer.getByRole('button',{name:'Scan coffee reward',exact:true}).click();
+ await expect.poll(()=>page.evaluate(()=>(window as any).rewardCameraConstraints)).toEqual({video:{facingMode:{ideal:'user'}},audio:false});
  await expect(drawer.getByLabel('Coffee reward code')).toHaveValue(code);expect(submitted).toBe('');await drawer.getByRole('button',{name:'Add Espresso (Single)',exact:true}).click();await expect(drawer.getByText('TEST code verified.',{exact:false})).toBeVisible();expect(submitted).toBe(code);
  await expect.poll(()=>page.evaluate(()=>(window as any).rewardCameraStops)).toBe(1);
  await expect(drawer.getByLabel('Coffee reward camera')).toHaveCount(0);

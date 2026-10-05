@@ -11,7 +11,7 @@ export function CoffeeRewardScanner({onScanned}:{onScanned:(code:string)=>void})
    if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera unavailable. Use an external QR scanner or enter the code below.');
    const {default:decode}=await import('jsqr');
    if(stopped)return;
-   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'user'}},audio:false});
    if(stopped){stream.getTracks().forEach(track=>track.stop());return;}
    const player=video.current!;player.srcObject=stream;await player.play();
    const canvas=document.createElement('canvas'),context=canvas.getContext('2d',{willReadFrequently:true});
@@ -33,5 +33,5 @@ export function CoffeeRewardScanner({onScanned}:{onScanned:(code:string)=>void})
   }catch(e){if(!stopped){setCamera(false);setMessage(e instanceof DOMException&&e.name==='NotAllowedError'?'Camera access was blocked. Allow camera access for this site, then try again.':e instanceof Error?e.message:'Could not start the camera. Please try again.');}}})();
   return()=>{stopped=true;if(timer)clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());};
  },[camera]);
- return <div className="coffee-reward-scanner"><button type="button" className="primary" onClick={()=>{setMessage('');setCamera(!camera);}}>{camera?'Stop reward camera':'Scan coffee reward'}</button>{camera&&<><video ref={video} muted playsInline aria-label="Coffee reward camera"/><p>Point the camera at the customer’s free-coffee QR.</p></>}{message&&<p role="status">{message}</p>}</div>;
+ return <div className="coffee-reward-scanner"><button type="button" className="primary" onClick={()=>{setMessage('');setCamera(!camera);}}>{camera?'Stop reward camera':'Scan coffee reward'}</button>{camera&&<><video ref={video} muted playsInline aria-label="Coffee reward camera"/><p>Hold the customer’s free-coffee QR in front of the screen-facing camera.</p></>}{message&&<p role="status">{message}</p>}</div>;
 }
