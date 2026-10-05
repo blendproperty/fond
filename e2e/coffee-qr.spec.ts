@@ -4,6 +4,15 @@ import jsQR from 'jsqr';
 import QRCode from 'qrcode';
 const require=createRequire(process.cwd()+'/package.json'),{PNG}=require('pngjs');
 const code='COFFEE-11223344556677889900';
+test('staff page permits same-origin camera access while blocking microphone access',async({page})=>{
+ const response=await page.goto('/staff');
+ expect(response?.headers()['permissions-policy']).toBe('camera=(self), microphone=(), geolocation=(self)');
+ const permissions=await page.evaluate(()=>{
+  const policy=(document as Document & {featurePolicy:{allowsFeature:(feature:string)=>boolean}}).featurePolicy;
+  return {camera:policy.allowsFeature('camera'),microphone:policy.allowsFeature('microphone')};
+ });
+ expect(permissions).toEqual({camera:true,microphone:false});
+});
 test('customer QR decodes to their exact reward and staff camera validates it automatically',async({page},info)=>{
  await page.route('**/api/auth/session',r=>r.fulfill({json:{user:{id:'example',email:'qr@example.test',emailVerified:true}}}));
  await page.route('**/api/account/rewards',r=>r.fulfill({json:{verified:true,environment:'test',stamps:0,stampsToNext:10,rewards:[{id:'reward',code,kind:'earned',status:'available'}],preferences:{}}}));
