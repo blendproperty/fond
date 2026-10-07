@@ -75,7 +75,7 @@ export async function createCheckout(reference:string,options:{allowSandbox?:boo
   db.prepare("UPDATE yoco_checkouts SET checkout_id=?,redirect_url=?,status=CASE WHEN status='paid' THEN status ELSE 'pending' END,updated_at=? WHERE order_id=?").run(result.id,url.toString(),new Date().toISOString(),order.id);
   return url.toString();
 }
-export async function createCustomerCheckout(reference:string){return createCheckout(reference,{allowSandbox:customerCheckoutMode()==='sandbox'});}
+export async function createCustomerCheckout(_reference:string):Promise<string>{throw new Error('Online Yoco payment is temporarily unavailable. Pay on collection or by card on delivery.');}
 export function verifyYocoSignature(raw:string,headers:Headers,now=Date.now()){
   const secret=webhookKey(),id=headers.get('webhook-id'),timestamp=headers.get('webhook-timestamp'),signature=headers.get('webhook-signature');
   if(!secret?.startsWith('whsec_')||!id||!timestamp||!/^\d+$/.test(timestamp)||!signature||Math.abs(now/1000-Number(timestamp))>180)return false;

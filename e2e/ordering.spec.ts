@@ -6,8 +6,8 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  await page.getByRole('button',{name:/^Basket/}).click();
  const collectionTimes=page.getByLabel('Preferred collection time (today)');
  const oneItemEstimate=Number(((await collectionTimes.locator('option').first().textContent())??'').match(/approx\. (\d+) min/)?.[1]);
- await expect(page.getByRole('tab',{name:'Delivery'})).toBeDisabled();
- await expect(page.getByText(/Online payment is currently unavailable/)).toBeVisible();
+ await expect(page.getByRole('tab',{name:'Delivery'})).toBeEnabled();
+ await expect(page.getByRole('radio',{name:'Pay online with Yoco — temporarily unavailable'})).toBeDisabled();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:'Add one Smashed Avo',exact:true}).click();
@@ -54,12 +54,15 @@ test('available email and SMS notifications are preselected while WhatsApp stays
  await expect(email).toBeChecked();
 });
 test('delivery checkout uses the configured business and building directory',async({page})=>{
- await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.onlinePayments=true;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.deliveryLocations=['Redington South Africa | OnPoint · L2-1-08','Blend Property Management | K8 · Kingfisher Avenue'];await route.fulfill({response,json:body});});
+ await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.onlinePayments=false;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.deliveryLocations=['Redington South Africa | OnPoint · L2-1-08','Blend Property Management | K8 · Kingfisher Avenue'];await route.fulfill({response,json:body});});
  await page.goto('/');
  await page.getByRole('button',{name:'Delivery',exact:true}).click();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
  await expect(page.getByRole('tab',{name:'Delivery'})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByRole('radio',{name:'Pay online with Yoco — temporarily unavailable'})).toBeDisabled();
+ await expect(page.getByRole('radio',{name:'Pay by card on delivery'})).toBeChecked();
+ await expect(page.getByText('Our delivery team will bring the Yoco card machine. Pay when your order arrives.')).toBeVisible();
  await page.getByLabel('Business and building').selectOption('Redington South Africa | OnPoint · L2-1-08');
  await expect(page.getByLabel('Business and building')).toHaveValue('Redington South Africa | OnPoint · L2-1-08');
  await expect(page.getByLabel('Email address (optional)')).not.toHaveAttribute('required');
@@ -230,4 +233,10 @@ test('menu add-ons update the basket and collection needs a contact number',asyn
  await expect(page.getByText('Enter a contact number so FOND can reach you about your order.')).toBeVisible();
  const rejected=await request.post('/api/orders',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{customerName:'Missing phone',collectionTime:'ASAP',lines:[{id:'tropical-gold',quantity:1}]}});
  expect(rejected.status()).toBe(400);
+});
+
+test('online checkout is paused at the public API',async({request})=>{
+ const store=await request.get('/api/store');expect((await store.json()).onlinePayments).toBe(false);
+ const response=await request.post('/api/orders',{headers:{'Idempotency-Key':crypto.randomUUID()},data:{customerName:'Paused checkout fixture',contactNumber:'0821234567',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',paymentMethod:'yoco_online'}});
+ expect(response.status()).toBe(400);expect((await response.json()).message).toContain('temporarily unavailable');
 });

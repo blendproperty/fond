@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const submissionKey = request.headers.get('Idempotency-Key');
     if (!submissionKey) return NextResponse.json({message:'A submission key is required. Refresh and try again.'}, {status:400});
-    if(body.fulfillment==='delivery'&&customerCheckoutMode()==='none')throw new Error('Delivery ordering requires secure online payment, which is not available right now.');
+    if(body.paymentMethod==='yoco_online')throw new Error('Online Yoco payment is temporarily unavailable. Pay on collection or by card on delivery.');
     const order = createOrder({
       submissionKey,
       rewardCode:typeof body.rewardCode==='string'?body.rewardCode:undefined,

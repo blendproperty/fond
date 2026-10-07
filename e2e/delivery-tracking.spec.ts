@@ -5,7 +5,7 @@ const result={reference,displayReference,status:'received',fulfillment:'delivery
 
 async function deliveryBasket(page:Page){
   await page.clock.setFixedTime(new Date('2026-10-01T09:00:00+02:00'));
-  await page.route('**/api/store',async route=>{const response=await route.fetch(),body=await response.json();body.open=true;body.onlinePayments=true;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.enforceHours=false;await route.fulfill({response,json:body});});
+  await page.route('**/api/store',async route=>{const response=await route.fetch(),body=await response.json();body.open=true;body.onlinePayments=false;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.enforceHours=false;await route.fulfill({response,json:body});});
   await page.goto('/');
   await page.getByRole('button',{name:'Delivery',exact:true}).click();
   await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
@@ -26,12 +26,12 @@ test('GPS is optional, requires confirmation, reaches the order and clears for t
   await expect(page.getByText(/Location found/)).toBeVisible();
   const preview=page.getByRole('link',{name:'Check pin in Google Maps'});
   expect(new URL((await preview.getAttribute('href'))!).searchParams.get('query')).toBe('-26.0010063,28.1237302');
-  await page.getByRole('button',{name:'Continue to Yoco TEST checkout'}).click();
+  await page.getByRole('button',{name:'Send order to FOND'}).click();
   await expect(page.getByText('Confirm the delivery pin, or remove it to use your building details only.')).toBeVisible();expect(posted).toBeUndefined();
   await page.getByLabel('This is the correct delivery point. Include it with my order.').check();
   await page.getByRole('dialog').screenshot({path:info.outputPath('delivery-confirmed-pin.png')});
-  await page.getByRole('button',{name:'Continue to Yoco TEST checkout'}).click();
-  await expect(page.getByText('Order sent to FOND.')).toBeVisible();expect(posted.deliveryLocation).toEqual(pin);expect(posted.building).toBe('OnPoint Building · 2 Loerie');
+  await page.getByRole('button',{name:'Send order to FOND'}).click();
+  await expect(page.getByText('Order sent to FOND.')).toBeVisible();expect(posted.paymentMethod).toBe('pay_at_collection');expect(posted.deliveryLocation).toEqual(pin);expect(posted.building).toBe('OnPoint Building · 2 Loerie');
   await page.getByRole('button',{name:'Back to the menu'}).click();
   await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();await page.getByRole('button',{name:/^Basket/}).click();
   await expect(page.getByText(/Location found/)).toHaveCount(0);
@@ -44,7 +44,7 @@ test('declined permission keeps manual delivery available without a pin',async({
   let posted:any;await page.route('**/api/orders',route=>{posted=route.request().postDataJSON();return route.fulfill({status:201,json:result});});
   await deliveryBasket(page);await page.getByRole('button',{name:'Use my location'}).click();
   await expect(page.getByText('Location permission was declined. You can still order using your business and building.')).toBeVisible();
-  await page.getByRole('button',{name:'Continue to Yoco TEST checkout'}).click();await expect(page.getByText('Order sent to FOND.')).toBeVisible();expect(posted.deliveryLocation).toBeNull();
+  await page.getByRole('button',{name:'Send order to FOND'}).click();await expect(page.getByText('Order sent to FOND.')).toBeVisible();expect(posted.deliveryLocation).toBeNull();
 });
 
 test('timeout and removed pending capture never attach a late pin',async({page})=>{

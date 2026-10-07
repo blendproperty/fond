@@ -176,3 +176,15 @@ test('orders can be searched by status, fulfillment and free text', () => {
   assert.equal(searchOrders({query:'OnPoint'}).length,1);
   assert.equal(searchOrders({}).length, 2);
 });
+
+test('delivery can be accepted and dispatched with payment due on arrival',()=>{
+  const order=createOrder({customerName:'Pay on delivery',lines,collectionTime:'ASAP',source:'customer',fulfillment:'delivery',contactNumber:'0821234567',building:'OnPoint'});
+  assert.equal(order.paymentMethod,'pay_at_collection');
+  assert.equal(order.paymentRequired,false);
+  assert.equal(updateOrderStatus(order.id,'accepted').status,'accepted');
+  recordPosEntry(order.id,'DELIVERY-IN-PERSON','fixture');
+  updateOrderStatus(order.id,'preparing');
+  updateOrderStatus(order.id,'ready');
+  assert.equal(updateOrderStatus(order.id,'out_for_delivery').status,'out_for_delivery');
+  assert.equal((getDb().prepare('SELECT count(*) AS n FROM payment_records WHERE order_id=?').get(order.id) as {n:number}).n,0);
+});
