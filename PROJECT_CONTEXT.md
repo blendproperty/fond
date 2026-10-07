@@ -1643,3 +1643,5 @@ Commit/push: artifact/context-only main commit prepared from verified origin/mai
 
 
 Email package promotion evidence (2026-10-07): artifact and canonical context committed/pushed to origin/main as 6826172. No merge or deployment required. Draft recipient/subject and four attachment names read back successfully; no send occurred. Local MIME and QR validation passed. Remote main context presence verified during final handoff; this evidence-only follow-up records promotion without changing runtime. All mail-client rendering, send approval and earlier operational gates remain open.
+
+2026-10-07 CI follow-up: first Verify FOND 37593309691 passed 184 of 186 browser checks; only two navigation assertions retained the previous delivery-disabled expectation. Updated that assertion to delivery-enabled; all eight local desktop/mobile navigation checks passed. Runtime implementation unchanged. Preserved concurrent tenant emailer documentation commits 6826172 and 11078f2 on main. Revised exact-head CI/staging/production and live readback remain pending.

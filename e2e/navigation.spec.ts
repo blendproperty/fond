@@ -58,7 +58,7 @@ test('mobile menu search finds food across categories and clears cleanly',async(
  await expect(page.getByText('No matches just yet.')).toBeVisible();
  await page.getByRole('button',{name:'Clear menu search'}).click();
  await expect(page.getByRole('heading',{name:'Smashed Avo'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Delivery',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Delivery',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
  await page.getByRole('button',{name:'Basket',exact:true}).click();
  await expect(page.getByRole('tab',{name:'Collection',exact:true})).toHaveAttribute('aria-selected','true');
