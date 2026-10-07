@@ -1,0 +1,21 @@
+MIDPOINT HUB TENANT EMAIL — 7 OCTOBER 2026
+
+Subject: Your whole Midpoint. One app.
+
+GMAIL
+1. Start a new Gmail message with the subject above.
+2. Click Insert photo in the compose toolbar, choose Upload, select midpoint-app-artwork.jpg and choose Inline (not As attachment). Use Best fit if the image is too large.
+3. Below the artwork, paste the tenant message from tenant-email.txt, excluding its Subject line. Keep https://midpointhub.com/hub as a clickable link.
+4. Send a test to yourself and check the image, link and installation instructions on your phone before sending to tenants. Use your approved tenant mailing list; when sending directly from Gmail, put tenant addresses in Bcc.
+
+The JPG is the same artwork embedded in the .eml. The QR opens https://midpointhub.com/hub; people reading on their phone can use the clickable link instead.
+
+OUTLOOK / EMAIL SOFTWARE SUPPORTING .EML
+Open midpoint-tenant-email.eml and use the client's edit/resend/forward option. The artwork is included as an inline MIME image; it does not need to download from a website. Verify inline rendering and links in a test message before tenant distribution. Gmail does not directly import .eml into its compose window, so use the Gmail instructions above.
+
+PREVIEW / EDITING
+tenant-email-preview.html is a self-contained browser preview. tenant-email.html is the reusable table-based HTML with its adjacent JPG. artwork-source.html is the editable native artwork source; build-email.cjs rebuilds the package using existing Midpoint photography. The phone illustration is a promotional composition using actual Hub photos, not a pixel-perfect screenshot.
+
+Installation instructions match the current Hub interface: Safari Share > Add to Home Screen on iPhone; Chrome browser menu > Install app or Add to Home screen on Android. Installation options vary by device/browser. The app can also be used directly in the browser.
+
+No email has been sent to Alistair or tenants. Approval to send and a real Gmail/Outlook delivery/rendering test remain outstanding. Canva was unavailable because its connection requires reauthentication.
