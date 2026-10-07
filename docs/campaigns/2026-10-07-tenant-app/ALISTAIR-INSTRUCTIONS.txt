@@ -1,6 +1,6 @@
 MIDPOINT HUB TENANT EMAIL — 7 OCTOBER 2026
 
-Subject: Your whole Midpoint. One app.
+Subject: Your whole Midpoint Hub. One app.
 
 GMAIL
 1. Start a new Gmail message with the subject above.
@@ -18,4 +18,4 @@ tenant-email-preview.html is a self-contained browser preview. tenant-email.html
 
 Installation instructions match the current Hub interface: Safari Share > Add to Home Screen on iPhone; Chrome browser menu > Install app or Add to Home screen on Android. Installation options vary by device/browser. The app can also be used directly in the browser.
 
-No email has been sent to Alistair or tenants. Approval to send and a real Gmail/Outlook delivery/rendering test remain outstanding. Canva was unavailable because its connection requires reauthentication.
+Brett approved sending this revised package to Alistair on 7 October 2026. Tenant distribution and a real Gmail/Outlook delivery/rendering test remain outstanding. Canva was unavailable because its connection requires reauthentication.
