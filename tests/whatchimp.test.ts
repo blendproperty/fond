@@ -55,3 +55,10 @@ test('Delivery lookup reads the documented status and filters provider data', as
   assert.deepEqual(await whatChimpDeliveryStatus('wamid.test'), { ok: true, status: 'delivered' });
   await assert.rejects(() => whatChimpDeliveryStatus('bad-id'), /valid WhatsApp message ID/);
 });
+test('Controlled template testing works without switching the existing order provider', async () => {
+  saveDocument('whatchimp-config', { ...config, enabled: false }, 'test');
+  globalThis.fetch = (async () => Response.json({ status: '1', wa_message_id: 'wamid.test' })) as typeof fetch;
+  const notification = { toE164: '+27821234567', templateName: 'order_ready' as const, customerName: 'Tester', reference: 'TEST' };
+  assert.deepEqual(await sendWhatChimpOrder(notification), { sent: false, reason: 'NOT_CONFIGURED' });
+  assert.deepEqual(await sendWhatChimpOrder(notification, true), { sent: true, providerId: 'wamid.test' });
+});

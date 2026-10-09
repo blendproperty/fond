@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
     if (typeof body?.to !== 'string' || !['session', 'order_accepted', 'order_ready'].includes(body.template)) return Response.json({ message: 'Enter your test number and choose a message.' }, { status: 400, headers });
     const to = normalizePhone(body.to);
-    const result = body.template === 'session' ? await sendWhatChimpSessionTest(to) : await sendWhatChimpOrder({ toE164: to, templateName: body.template, customerName: 'Brett', reference: 'FOND-WHATSAPP-TEST' });
+    const result = body.template === 'session' ? await sendWhatChimpSessionTest(to) : await sendWhatChimpOrder({ toE164: to, templateName: body.template, customerName: 'Brett', reference: 'FOND-WHATSAPP-TEST' }, true);
     audit('super-admin', 'whatchimp-test', `${body.template}:${result.sent ? 'accepted' : result.reason}`);
     if (!result.sent) return Response.json({ message: `WhatChimp did not confirm acceptance (${result.reason}). For a session test, message the business number first. For order tests, check template approval and configuration. Check the provider log before retrying an uncertain send.` }, { status: 502, headers });
     return Response.json({ ok: true, providerId: result.providerId, message: 'WhatChimp accepted the test. Check delivery below and confirm it on your phone.' }, { headers });

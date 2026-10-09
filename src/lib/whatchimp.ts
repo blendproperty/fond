@@ -24,6 +24,9 @@ export function whatChimpConfigured() {
   try { return !!validateWhatChimpConfig(whatChimpConfig()).phoneNumberId && !!providerSecret('whatchimp-api-token'); } catch { return false; }
 }
 export function whatChimpOrdersConfigured() { return whatChimpConfigured() && whatChimpConfig().enabled; }
+export function whatChimpTemplatesConfigured() {
+  try { validateWhatChimpConfig({ ...whatChimpConfig(), enabled: true }); return whatChimpConfigured(); } catch { return false; }
+}
 export type WhatChimpResult = { sent: boolean; reason?: string; providerId?: string };
 async function requestWhatChimp(path: string, fields: Record<string, string>) {
   if (!whatChimpConfigured()) return { ok: false as const, reason: 'NOT_CONFIGURED' };
@@ -51,8 +54,8 @@ function sendResult(result: Awaited<ReturnType<typeof requestWhatChimp>>): WhatC
 export async function sendWhatChimpSessionTest(to: string): Promise<WhatChimpResult> {
   return sendResult(await requestWhatChimp('send', { phone_number_id: whatChimpConfig().phoneNumberId, phone_number: recipient(to), message: 'Midpoint Hub WhatsApp trial: your connection test was accepted by the app. Please reply TEST RECEIVED so you can check the conversation in the WhatChimp inbox.' }));
 }
-export async function sendWhatChimpOrder(notification: { toE164: string; templateName: 'order_accepted' | 'order_ready'; customerName: string; reference: string }): Promise<WhatChimpResult> {
-  if (!whatChimpOrdersConfigured()) return { sent: false, reason: 'NOT_CONFIGURED' };
+export async function sendWhatChimpOrder(notification: { toE164: string; templateName: 'order_accepted' | 'order_ready'; customerName: string; reference: string }, controlledTest = false): Promise<WhatChimpResult> {
+  if (!(controlledTest ? whatChimpTemplatesConfigured() : whatChimpOrdersConfigured())) return { sent: false, reason: 'NOT_CONFIGURED' };
   const config = whatChimpConfig();
   return sendResult(await requestWhatChimp('send/template', {
     phone_number_id: config.phoneNumberId, phone_number: recipient(notification.toE164),
