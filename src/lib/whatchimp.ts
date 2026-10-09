@@ -17,7 +17,7 @@ export function validateWhatChimpConfig(input: unknown): WhatChimpConfig {
   for (const id of [value.acceptedTemplateId, value.readyTemplateId]) if (id && !/^\d{1,30}$/.test(id)) throw new Error('Enter valid WhatChimp template IDs.');
   for (const name of [value.nameParameter, value.referenceParameter]) if (name && !/^templateVariable-[A-Za-z0-9_-]{1,80}-\d{1,2}$/.test(name)) throw new Error('Use the exact variable parameter from WhatChimp API Developer.');
   if (value.nameParameter && value.nameParameter === value.referenceParameter) throw new Error('Name and order reference must use different parameters.');
-  if (value.enabled && (!value.acceptedTemplateId || !value.readyTemplateId || !value.nameParameter || !value.referenceParameter)) throw new Error('Configure both approved templates and their exact variable parameters before enabling order notifications.');
+  if (value.enabled && (!value.acceptedTemplateId || !value.readyTemplateId || !value.referenceParameter)) throw new Error('Configure both approved templates and their exact reference parameter before enabling order notifications.');
   return value;
 }
 export function whatChimpConfigured() {
@@ -57,7 +57,9 @@ export async function sendWhatChimpOrder(notification: { toE164: string; templat
   return sendResult(await requestWhatChimp('send/template', {
     phone_number_id: config.phoneNumberId, phone_number: recipient(notification.toE164),
     template_id: notification.templateName === 'order_accepted' ? config.acceptedTemplateId : config.readyTemplateId,
-    [config.nameParameter]: notification.customerName, [config.referenceParameter]: notification.reference,
+    // WhatChimp's built-in Name tag uses its subscriber record; only custom
+    // variables appear in the generated API request. Do not invent a name key.
+    ...(config.nameParameter ? { [config.nameParameter]: notification.customerName } : {}), [config.referenceParameter]: notification.reference,
   }));
 }
 export async function whatChimpDeliveryStatus(providerId: string) {

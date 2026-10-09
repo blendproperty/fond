@@ -8,7 +8,7 @@ import { sendWhatsAppNotification } from '../src/lib/whatsapp';
 
 process.env.FOND_DB_PATH = ':memory:';
 const originalFetch = globalThis.fetch;
-const config = { enabled: true, phoneNumberId: '123456789012345', acceptedTemplateId: '456012', readyTemplateId: '456014', nameParameter: 'templateVariable-Name-1', referenceParameter: 'templateVariable-order_reference-2' };
+const config = { enabled: true, phoneNumberId: '123456789012345', acceptedTemplateId: '456012', readyTemplateId: '456014', nameParameter: '', referenceParameter: 'templateVariable-order_reference-2' };
 beforeEach(() => {
   resetDbForTests(); process.env.FOND_CREDENTIALS_KEY = 'f'.repeat(64); process.env.FOND_PUBLIC_URL = 'https://fond-test.mid-point.co.za';
   saveDocument('whatchimp-config', validateWhatChimpConfig(config), 'test'); saveProviderSecret('whatchimp-api-token', '12345|' + 'x'.repeat(40), 'test');
@@ -30,7 +30,7 @@ test('WhatChimp sends form-encoded template parameters and never places secrets 
     const body = options?.body as URLSearchParams;
     assert.equal(body.get('apiToken'), providerSecret('whatchimp-api-token'));
     assert.equal(body.get('phone_number'), '27821234567'); assert.equal(body.get('template_id'), '456014');
-    assert.equal(body.get(config.nameParameter), 'Tester'); assert.equal(body.get(config.referenceParameter), 'FOND-TEST');
+    assert.equal(body.has(''), false); assert.equal(body.has('templateVariable-Name-1'), false); assert.equal(body.get(config.referenceParameter), 'FOND-TEST');
     return Response.json({ status: '1', wa_message_id: 'wamid.test' });
   }) as typeof fetch;
   assert.deepEqual(await sendWhatsAppNotification({ toE164: '+27821234567', templateName: 'order_ready', customerName: 'Tester', reference: 'FOND-TEST' }), { sent: true, providerId: 'wamid.test' });
