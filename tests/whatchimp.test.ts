@@ -1,7 +1,11 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { resetDbForTests } from '../src/lib/db';
-import { saveDocument } from '../src/lib/management';
+import { DEFAULT_SETTINGS, saveDocument } from '../src/lib/management';
+import { getDb } from '../src/lib/db';
+import { randomUUID } from 'node:crypto';
+import { createOrder, recordPosEntry, updateOrderStatus } from '../src/lib/orders';
+import { processNotifications } from '../src/lib/notifications';
 import { providerSecret, saveProviderSecret } from '../src/lib/provider-secrets';
 import { sendWhatChimpOrder, sendWhatChimpSessionTest, validateWhatChimpConfig, whatChimpConfigured, whatChimpDeliveryStatus } from '../src/lib/whatchimp';
 import { sendWhatsAppNotification } from '../src/lib/whatsapp';
@@ -14,11 +18,15 @@ beforeEach(() => {
   saveDocument('whatchimp-config', validateWhatChimpConfig(config), 'test'); saveProviderSecret('whatchimp-api-token', '12345|' + 'x'.repeat(40), 'test');
 });
 afterEach(() => { globalThis.fetch = originalFetch; delete process.env.FOND_CREDENTIALS_KEY; delete process.env.FOND_PUBLIC_URL; });
-test('WhatChimp trial remains blocked on production and requires complete template mappings', async () => {
+test('WhatChimp supports approved production domains and rejects other hosts or incomplete mappings', async () => {
   assert.equal(whatChimpConfigured(), true);
   assert.throws(() => validateWhatChimpConfig({ ...config, referenceParameter: '' }), /both approved templates/);
   assert.throws(() => validateWhatChimpConfig({ ...config, nameParameter: 'apiToken' }), /exact variable/);
   process.env.FOND_PUBLIC_URL = 'https://midpointhub.com';
+  assert.equal(whatChimpConfigured(), true);
+  process.env.FOND_PUBLIC_URL = 'https://fond.mid-point.co.za';
+  assert.equal(whatChimpConfigured(), true);
+  process.env.FOND_PUBLIC_URL = 'https://unapproved.example';
   globalThis.fetch = (async () => { throw new Error('must not send'); }) as typeof fetch;
   assert.equal(whatChimpConfigured(), false);
   assert.deepEqual(await sendWhatChimpOrder({ toE164: '+27821234567', templateName: 'order_ready', customerName: 'Tester', reference: 'TEST' }), { sent: false, reason: 'NOT_CONFIGURED' });
@@ -61,4 +69,26 @@ test('Controlled template testing works without switching the existing order pro
   const notification = { toE164: '+27821234567', templateName: 'order_ready' as const, customerName: 'Tester', reference: 'TEST' };
   assert.deepEqual(await sendWhatChimpOrder(notification), { sent: false, reason: 'NOT_CONFIGURED' });
   assert.deepEqual(await sendWhatChimpOrder(notification, true), { sent: true, providerId: 'wamid.test' });
+});
+test('Production order events send accepted and ready templates only for WhatsApp opt-in', async () => {
+  process.env.FOND_PUBLIC_URL = 'https://midpointhub.com';
+  saveDocument('trading', { ...DEFAULT_SETTINGS, enforceHours:false, whatsappEnabled:true }, 'fixture');
+  const base = {customerName:'Customer', lines:[{id:'espresso-single',quantity:1}], collectionTime:'ASAP', source:'customer' as const, contactNumber:'0821234567'};
+  const optedIn = createOrder({...base,submissionKey:randomUUID(),whatsappOptIn:true});
+  const optedOut = createOrder({...base,submissionKey:randomUUID(),whatsappOptIn:false});
+  const sent: string[] = [];
+  globalThis.fetch = (async (url, options) => {
+    assert.equal(String(url), 'https://app.whatchimp.com/api/v1/whatsapp/send/template');
+    const body = options?.body as URLSearchParams;
+    assert.equal(body.get(config.referenceParameter), optedIn.displayReference);
+    sent.push(body.get('template_id')!);
+    return Response.json({status:'1',wa_message_id:`wamid.test${sent.length}`});
+  }) as typeof fetch;
+  updateOrderStatus(optedIn.id, 'accepted', 'received'); updateOrderStatus(optedOut.id, 'accepted', 'received');
+  await processNotifications();
+  recordPosEntry(optedIn.id, 'FIXTURE-YOCO', 'fixture');
+  updateOrderStatus(optedIn.id, 'ready', 'accepted'); await processNotifications();
+  assert.deepEqual(sent, [config.acceptedTemplateId,config.readyTemplateId]);
+  assert.equal((getDb().prepare('SELECT count(*) AS n FROM notification_jobs').get() as {n:number}).n, 2);
+  assert.equal((getDb().prepare("SELECT count(*) AS n FROM notification_jobs WHERE status='provider-accepted'").get() as {n:number}).n, 2);
 });

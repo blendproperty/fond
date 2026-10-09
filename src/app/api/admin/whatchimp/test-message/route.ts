@@ -7,7 +7,7 @@ import { sendWhatChimpSessionTest, sendWhatChimpOrder, whatChimpAllowed, whatChi
 const headers = { 'Cache-Control': 'no-store' };
 export async function POST(request: Request) {
   if (adminRole((await cookies()).get(ADMIN_COOKIE)?.value) !== 'super-admin') return Response.json({ message: 'Super admin access required.' }, { status: 403, headers });
-  if (!validRequestOrigin(request) || !whatChimpAllowed()) return Response.json({ message: 'WhatChimp tests are restricted to staging.' }, { status: 403, headers });
+  if (!validRequestOrigin(request) || !whatChimpAllowed()) return Response.json({ message: 'WhatChimp tests require an approved Midpoint Hub environment.' }, { status: 403, headers });
   const body = await request.json().catch(() => null);
   try {
     if (body?.action === 'status' && typeof body.providerId === 'string') {

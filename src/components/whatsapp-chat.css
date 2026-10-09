@@ -1,0 +1,12 @@
+.whatsapp-chat{position:fixed;right:max(18px,calc((100vw - 960px)/2 + 18px));bottom:calc(100px + env(safe-area-inset-bottom));z-index:17;font-family:inherit;color:#153d31}
+.whatsapp-chat-trigger{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:0 18px;border:1px solid #ffffff80;border-radius:28px;background:#165842;color:#fff;box-shadow:0 6px 22px #082f2933;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.whatsapp-chat-trigger:hover{background:#0e4834}.whatsapp-chat-trigger:focus-visible,.whatsapp-chat-panel a:focus-visible,.whatsapp-chat-panel button:focus-visible{outline:3px solid #f0a76d;outline-offset:4px}
+.whatsapp-chat-panel{position:absolute;right:0;bottom:64px;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 195px - env(safe-area-inset-bottom));overflow:auto;border:1px solid #dce5de;border-radius:22px;background:#fff;box-shadow:0 14px 48px #082f292b}
+.whatsapp-chat-panel header{display:flex;align-items:center;gap:12px;padding:21px 18px;background:#eff4ea;border-bottom:1px solid #dce5de}
+.whatsapp-chat-mark{display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#dce9d5;flex-shrink:0}.whatsapp-chat-panel header>div{flex:1}.whatsapp-chat-panel header>div>span{font-size:9px;font-weight:700;letter-spacing:1.4px}.whatsapp-chat-panel h2{margin:5px 0 0;font-size:23px;line-height:1.2;letter-spacing:-.7px;font-weight:650}
+.whatsapp-chat-panel header>button{display:grid;place-items:center;flex-shrink:0;width:38px;height:38px;border:0;border-radius:50%;background:#fff;color:#153d31;cursor:pointer}
+.whatsapp-chat-body{padding:22px 20px}.whatsapp-chat-body p{margin:0 0 20px;font-size:14px;line-height:1.6;color:#536b60}.whatsapp-chat-body a{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px;border-radius:12px;background:#165842;color:#fff;text-decoration:none;font-size:13px;font-weight:650}.whatsapp-chat-body small{display:block;margin-top:13px;color:#6d7f75;font-size:11px;line-height:1.5}
+@media(max-width:700px){.whatsapp-chat{right:16px}.whatsapp-chat-trigger{width:50px;padding:0}.whatsapp-chat-trigger>span{display:none}}
+/* Leave basket/checkout controls and modal dialogs above the chat launcher. */
+body:has(.mobile-basket) .whatsapp-chat{bottom:calc(160px + env(safe-area-inset-bottom))}
+@media print{.whatsapp-chat{display:none}}

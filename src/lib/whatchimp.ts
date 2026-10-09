@@ -8,11 +8,12 @@ export type WhatChimpConfig = {
 };
 export const EMPTY_WHATCHIMP: WhatChimpConfig = { enabled: false, phoneNumberId: '', acceptedTemplateId: '', readyTemplateId: '', nameParameter: '', referenceParameter: '' };
 export const whatChimpConfig = (): WhatChimpConfig => ({ ...EMPTY_WHATCHIMP, ...document('whatchimp-config', EMPTY_WHATCHIMP) });
-export function whatChimpAllowed() { return publicBaseUrl() === 'https://fond-test.mid-point.co.za'; }
+export function whatChimpAllowed() { return ['https://fond-test.mid-point.co.za', 'https://midpointhub.com', 'https://fond.mid-point.co.za'].includes(publicBaseUrl()); }
+export function whatChimpEnvironment() { return publicBaseUrl() === 'https://fond-test.mid-point.co.za' ? 'staging' : 'production'; }
 export function validateWhatChimpConfig(input: unknown): WhatChimpConfig {
   const raw = input as Partial<WhatChimpConfig> | null;
   const value: WhatChimpConfig = { enabled: raw?.enabled === true, phoneNumberId: raw?.phoneNumberId?.trim() ?? '', acceptedTemplateId: raw?.acceptedTemplateId?.trim() ?? '', readyTemplateId: raw?.readyTemplateId?.trim() ?? '', nameParameter: raw?.nameParameter?.trim() ?? '', referenceParameter: raw?.referenceParameter?.trim() ?? '' };
-  if (!whatChimpAllowed()) throw new Error('WhatChimp trial is restricted to FOND staging.');
+  if (!whatChimpAllowed()) throw new Error('WhatChimp is restricted to the approved Midpoint Hub environments.');
   if (!/^\d{6,30}$/.test(value.phoneNumberId)) throw new Error('Enter the connected WhatChimp phone number ID.');
   for (const id of [value.acceptedTemplateId, value.readyTemplateId]) if (id && !/^\d{1,30}$/.test(id)) throw new Error('Enter valid WhatChimp template IDs.');
   for (const name of [value.nameParameter, value.referenceParameter]) if (name && !/^templateVariable-[A-Za-z0-9_-]{1,80}-\d{1,2}$/.test(name)) throw new Error('Use the exact variable parameter from WhatChimp API Developer.');
@@ -52,7 +53,7 @@ function sendResult(result: Awaited<ReturnType<typeof requestWhatChimp>>): WhatC
   return { sent: true, providerId: result.data.wa_message_id };
 }
 export async function sendWhatChimpSessionTest(to: string): Promise<WhatChimpResult> {
-  return sendResult(await requestWhatChimp('send', { phone_number_id: whatChimpConfig().phoneNumberId, phone_number: recipient(to), message: 'Midpoint Hub WhatsApp trial: your connection test was accepted by the app. Please reply TEST RECEIVED so you can check the conversation in the WhatChimp inbox.' }));
+  return sendResult(await requestWhatChimp('send', { phone_number_id: whatChimpConfig().phoneNumberId, phone_number: recipient(to), message: 'Midpoint Hub WhatsApp: your connection test was accepted by the app. Please reply TEST RECEIVED so you can check the conversation in the WhatChimp inbox.' }));
 }
 export async function sendWhatChimpOrder(notification: { toE164: string; templateName: 'order_accepted' | 'order_ready'; customerName: string; reference: string }, controlledTest = false): Promise<WhatChimpResult> {
   if (!(controlledTest ? whatChimpTemplatesConfigured() : whatChimpOrdersConfigured())) return { sent: false, reason: 'NOT_CONFIGURED' };
