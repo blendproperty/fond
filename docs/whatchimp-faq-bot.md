@@ -173,7 +173,7 @@ Matching: String match
 
 Reply:
 
-Ten coffees. One on us. 
+Ten coffees. One on us.
 Earn a punch for each paid Coffee item ordered through your verified FOND account, once collected or delivered. Collect 10 punches and enjoy your next Coffee item free. Extras are charged separately.
 
 
@@ -272,7 +272,7 @@ Matching: Exact keyword match
 
 Reply:
 
-Hi! Welcome to Midpoint Hub 
+Hi! Welcome to Midpoint Hub
 I’m the automated Hub helper. Reply with a topic:
 
 
@@ -297,7 +297,7 @@ Send HELP to see these options again.
 
 Provider editor: https://app.whatchimp.com/flowbuilder/whatsapp/edit/2158942/474865
 
-Welcome to Midpoint Hub 
+Welcome to Midpoint Hub
 I’m the automated Hub helper. Ask about FOND food, opening hours, delivery, payment, order tracking, coffee rewards, gym, padel or functions.
 
 
