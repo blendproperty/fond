@@ -1,6 +1,7 @@
 import { document } from './management';
 import { providerSecret } from './provider-secrets';
 import { publicBaseUrl } from './public-url';
+import {sendWhatChimpOrder,whatChimpOrdersConfigured} from './whatchimp';
 
 // Transactional WhatsApp notifications use Twilio ContentSid templates when
 // the merchant has registered a WhatsApp sender and approved the templates.
@@ -68,10 +69,11 @@ export function twilioConfigured() {
 }
 
 export function whatsappConfigured(): boolean {
-  return metaConfigured() || twilioConfigured() || !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
+  return whatChimpOrdersConfigured() || metaConfigured() || twilioConfigured() || !!process.env.FOND_WHATSAPP_TOKEN && !!process.env.FOND_WHATSAPP_PHONE_NUMBER_ID;
 }
 
 export async function sendWhatsAppNotification(notification: WhatsAppNotification): Promise<{ sent: boolean; reason?: string }> {
+  if (whatChimpOrdersConfigured()) return sendWhatChimpOrder(notification);
   if (!whatsappConfigured()) {
     return { sent: false, reason: 'NOT_CONFIGURED' };
   }

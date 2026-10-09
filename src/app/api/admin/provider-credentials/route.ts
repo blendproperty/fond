@@ -9,10 +9,11 @@ import {validRequestOrigin} from '@/lib/request-origin';
 import {yocoCredentialMode} from '@/lib/payments';
 import {publicBaseUrl} from '@/lib/public-url';
 import {smsConfig,validateSmsConfig} from '@/lib/sms';
-const names:ProviderName[]=['yoco-secret','yoco-webhook','yoco-pos-key','email-api','staff-shared-code','twilio-auth-token','meta-access-token','meta-app-secret','meta-webhook-verify'];
+import {whatChimpAllowed,whatChimpConfig,whatChimpConfigured,validateWhatChimpConfig} from '@/lib/whatchimp';
+const names:ProviderName[]=['yoco-secret','yoco-webhook','yoco-pos-key','email-api','staff-shared-code','twilio-auth-token','meta-access-token','meta-app-secret','meta-webhook-verify','whatchimp-api-token'];
 const noStore={'Cache-Control':'no-store'};
 async function actor(){const token=(await cookies()).get(ADMIN_COOKIE)?.value;if(adminRole(token)!=='super-admin')return null;const member=teamSession(token);return member?'super:'+member.id:'shared-admin';}
-export async function GET(){if(!await actor())return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});const base=publicBaseUrl();return Response.json({configured:Object.fromEntries(names.map(n=>[n,providerSecretStatus(n)])),yocoMode:yocoCredentialMode(),webhookUrl:base?`${base}/api/payments/webhook`:'Public URL not configured',whatsappWebhookUrl:base?`${base}/api/webhooks/whatsapp`:'Public URL not configured',smsWebhookUrl:base?`${base}/api/webhooks/twilio/sms`:'Public URL not configured',vaultReady:/^[a-f0-9]{64}$/i.test(process.env.FOND_CREDENTIALS_KEY??''),emailFrom:emailSender(),twilio:twilioConfig(),sms:smsConfig(),meta:metaConfig()},{headers:noStore});}
+export async function GET(){if(!await actor())return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});const base=publicBaseUrl();return Response.json({configured:Object.fromEntries(names.map(n=>[n,providerSecretStatus(n)])),yocoMode:yocoCredentialMode(),webhookUrl:base?`${base}/api/payments/webhook`:'Public URL not configured',whatsappWebhookUrl:base?`${base}/api/webhooks/whatsapp`:'Public URL not configured',smsWebhookUrl:base?`${base}/api/webhooks/twilio/sms`:'Public URL not configured',vaultReady:/^[a-f0-9]{64}$/i.test(process.env.FOND_CREDENTIALS_KEY??''),emailFrom:emailSender(),twilio:twilioConfig(),sms:smsConfig(),meta:metaConfig(),whatchimp:whatChimpConfig(),whatchimpAllowed:whatChimpAllowed(),whatchimpConfigured:whatChimpConfigured()},{headers:noStore});}
 export async function POST(request:Request){const who=await actor();if(!who)return Response.json({message:'Super admin access required.'},{status:403,headers:noStore});
  if(!validRequestOrigin(request))return Response.json({message:'Invalid origin.'},{status:403,headers:noStore});
  const b=await request.json().catch(()=>null);if(!b)return Response.json({message:'Invalid setting.'},{status:400,headers:noStore});
@@ -20,6 +21,8 @@ export async function POST(request:Request){const who=await actor();if(!who)retu
   if(b.name==='twilio-config')saveDocument('twilio-config',validateTwilioConfig(b.value),who);
   else if(b.name==='twilio-sms-config')saveDocument('twilio-sms-config',validateSmsConfig(b.value),who);
   else if(b.name==='meta-whatsapp-config')saveDocument('meta-whatsapp-config',validateMetaConfig(b.value),who);
+  else if(b.name==='whatchimp-config')saveDocument('whatchimp-config',validateWhatChimpConfig(b.value),who);
+  else if(b.name==='whatchimp-api-token'&&!whatChimpAllowed())throw new Error('WhatChimp trial credentials are restricted to staging.');
   else if(typeof b.value!=='string')throw new Error('Invalid setting.');
   else if(b.name==='email-from'){
    if(!validEmailSender(b.value))throw new Error('Use a sender address on the verified fond.mid-point.co.za domain.');
