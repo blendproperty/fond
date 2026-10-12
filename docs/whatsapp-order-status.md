@@ -4,6 +4,8 @@
 
 Customer journey: send TRACK or ORDER STATUS, enter the full FOND-XXXX-XXXX confirmation number, receive the current status if the WhatsApp sender matches the contact number stored on that order. Querying is read-only and does not require opting into automatic accepted/ready notifications. A customer who used another phone should use website tracking or ask the team.
 
+Human order help: call Ray on **+27 66 220 5519** (owner-supplied 2026-10-12). Both live status and fallback bot replies include this direct call instruction. TEAM or RAY also returns his number and ray@midpointhub.com. This is a telephone contact, not an automatic conversation transfer or confirmed WhatsApp account. Actual telephone reachability is unverified. The bot sender remains +27 69 042 0108.
+
 ## API contract
 
 POST https://midpointhub.com/api/whatsapp/order-status

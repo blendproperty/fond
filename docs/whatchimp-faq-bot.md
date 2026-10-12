@@ -1,5 +1,7 @@
 # Midpoint Hub WhatChimp FAQ bot
 
+2026-10-12 Ray contact update: Team contact flow 2159819 now lists FOND orders — call Ray: +27 66 220 5519, alongside ray@midpointhub.com. Added ray,call ray,phone ray,order help keywords. Both reply branches of live order-status flow 2163381 also supply his number. Saved content and trigger readback passed; actual new-message delivery/telephone reachability remain unverified.
+
 2026-10-12 update: tracking now uses the separately deployed live order-status flow 2163381 and HTTP API 10087, documented in [whatsapp-order-status.md](whatsapp-order-status.md). Flow 2159813 was renamed to Notification opt-in, with keywords notification,whatsapp notification,whatsapp opt in,whatsapp checkbox,greyed out; its reply now explains opt-in and directs TRACK to the live lookup. The original 9 October content/readback below remains historical evidence. Provider configuration/API checks passed; handset conversation UAT remains pending.
 
 Configured and provider-readback verified on 2026-10-09 for Midpoint Cafe, bot 474865. This is a keyword FAQ bot with a useful unmatched-question fallback, not a generative AI agent or live order lookup.
