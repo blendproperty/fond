@@ -1,5 +1,7 @@
 # Midpoint Hub WhatChimp FAQ bot
 
+2026-10-12 update: tracking now uses the separately deployed live order-status flow 2163381 and HTTP API 10087, documented in [whatsapp-order-status.md](whatsapp-order-status.md). Flow 2159813 was renamed to Notification opt-in, with keywords notification,whatsapp notification,whatsapp opt in,whatsapp checkbox,greyed out; its reply now explains opt-in and directs TRACK to the live lookup. The original 9 October content/readback below remains historical evidence. Provider configuration/API checks passed; handset conversation UAT remains pending.
+
 Configured and provider-readback verified on 2026-10-09 for Midpoint Cafe, bot 474865. This is a keyword FAQ bot with a useful unmatched-question fallback, not a generative AI agent or live order lookup.
 
 Sources reviewed live: https://midpointhub.com/, /fond, /fond/menu, /fond/hours, /fond/fulfilment, /fond/track, /profile, /profile/rewards, /profile/help, /gym, /padel, /functions, /car-wash and /suites. Public /api/store confirms online payments disabled, delivery/collection and WhatsApp enabled. The fulfilment information page still mentions online payment; replies use current basket/payment behaviour instead.
