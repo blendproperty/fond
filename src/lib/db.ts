@@ -180,6 +180,9 @@ export function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS email_verifications (user_id TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, sent_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS email_jobs (id TEXT PRIMARY KEY, order_id TEXT, event TEXT NOT NULL, recipient TEXT NOT NULL, status TEXT NOT NULL, provider_id TEXT, error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_members (id TEXT PRIMARY KEY, name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS team_recovery_emails (member_id TEXT PRIMARY KEY, email TEXT NOT NULL, verified_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS team_recovery_challenges (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, purpose TEXT NOT NULL, email TEXT NOT NULL, code_hash TEXT NOT NULL, state_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, expires_at INTEGER NOT NULL, ready INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS team_recovery_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS team_two_factor (member_id TEXT PRIMARY KEY, iv BLOB NOT NULL, tag BLOB NOT NULL, ciphertext BLOB NOT NULL, active INTEGER NOT NULL DEFAULT 0, recovery_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS team_sessions (token_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL, expires_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);

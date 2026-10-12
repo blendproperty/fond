@@ -20,13 +20,18 @@ export function recordLoginFailure(key:string){
   db.prepare('INSERT INTO login_attempts VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1').run(digest(key),now+15*60000);
 }
 export function clearLoginFailures(key:string){getDb().prepare('DELETE FROM login_attempts WHERE key=?').run(digest(key));}
-export function loginMember(username:string,password:string,twoFactorCode?:string) {
+export function authenticateMember(username:string,password:string,twoFactorCode?:string) {
   const member=getDb().prepare('SELECT * FROM team_members WHERE username=? AND active=1').get(username.trim().toLowerCase()) as Member|undefined;
   if(!member)return null;
   const [salt,hash]=member.password_hash.split(':');
   const actual=scryptSync(password,salt,64),expected=Buffer.from(hash,'hex');
   if(expected.length!==actual.length||!timingSafeEqual(actual,expected))return null;
   if(member.role!=='staff'&&!verifyMemberTwoFactor(member.id,twoFactorCode))return null;
+  return member;
+}
+export function loginMember(username:string,password:string,twoFactorCode?:string) {
+  const member=authenticateMember(username,password,twoFactorCode);
+  if(!member)return null;
   const token='team_'+randomBytes(32).toString('hex');
   getDb().prepare('INSERT INTO team_sessions VALUES (?,?,?)').run(digest(token),member.id,new Date(Date.now()+12*3600000).toISOString());
   return {token,role:member.role};
@@ -47,5 +52,6 @@ export function saveMember(input:{id?:string;name:string;username:string;role:st
   const id=input.id??randomUUID();
   db.prepare('INSERT INTO team_members VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password_hash=excluded.password_hash,role=excluded.role,active=excluded.active').run(id,input.name.trim(),input.username.toLowerCase(),hash,input.role,input.active?1:0,new Date().toISOString());
   db.prepare('DELETE FROM team_sessions WHERE member_id=?').run(id);
+  db.prepare('DELETE FROM team_recovery_challenges WHERE member_id=?').run(id);
   audit(actor,'team-update',id);return id;
 }
