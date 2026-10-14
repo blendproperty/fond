@@ -1,0 +1,956 @@
+- region:
+  - complementary:
+    - generic: Flow blocks
+    - generic: Drag a block onto the canvas
+    - search:
+      - generic: Search flow blocks
+      - generic: 
+      - searchbox
+      - text: 
+    - heading [level=3]: Messages
+    - generic: 
+    - generic: Text
+    - generic: 
+    - generic: Image
+    - generic: 
+    - generic: Audio
+    - generic: 
+    - generic: Video
+    - generic: 
+    - generic: File
+    - generic: 
+    - generic: Location
+    - generic: 
+    - generic: AI Reply
+    - heading [level=3]: Data Collection
+    - generic: 
+    - generic: User Input Flow
+    - generic: 
+    - generic: Whatsapp Flows
+    - generic: 
+    - generic: Appointment
+    - heading [level=3]: Interactive
+    - generic: 
+    - generic: Interactive Message
+    - generic: 
+    - generic: Template Message
+    - generic: 
+    - generic: CTA URL Button
+    - heading [level=3]: Flow control
+    - generic: 
+    - generic: Condition
+    - generic: 
+    - generic: New Sequence Campaign
+    - generic: 
+    - generic: Label Assign
+    - generic: "#"
+    - generic: Random Number Generator
+    - heading [level=3]: Integrations
+    - generic: 
+    - generic: HTTP API
+    - generic: 
+    - generic: Google Sheet Data Fetch
+- paragraph:
+  - generic: 
+  - text: Start Bot Flow
+- paragraph: Midpoint Hub - Choose an option
+- text: Bot trigger keywords
+- paragraph: hi,hello,hey,start,help,menu,test,midpoint
+- text: Keyword matching type
+- paragraph: Exact keyword match
+- generic: Compose Next Message
+- paragraph:
+  - generic: 
+  - text: Interactive Message
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- heading [level=5]: Midpoint Hub
+- paragraph: Welcome to Midpoint Hub. Good food, movement and a little more to your day. Tap Choose an option below.
+- heading [level=5]: Type MENU anytime to return.
+- generic: Next
+- generic: Buttons
+- generic: List Messages
+- generic: E-commerce
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Quick Reply
+- textbox:
+  - /placeholder: List Messages
+  - text: Choose an option
+- generic: Sections
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Section
+- paragraph: How can we help?
+- generic: Rows
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: FOND food & coffee
+- generic: View the menu and place an order
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Track my order
+- generic: Check your FOND order status
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Coffee rewards
+- generic: Your coffee card and rewards
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Gym
+- generic: Membership, classes and opening hours
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Padel
+- generic: Courts, bookings and tenant setup
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Functions & events
+- generic: Plan a gathering with Michelle
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Hours & delivery
+- generic: FOND hours, collection and payment
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Talk to a human
+- generic: Get assistance from Ali (Alistair)
+- text: Assign conversation to a user
+- paragraph: Alistair
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: My Hub account
+- generic: Profile, bookings and memberships
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "Fresh food and quality coffee at FOND. View the current menu, prices and availability, and order here: https://midpointhub.com/fond/me..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: To check your order here, type TRACK. When prompted, send your FOND order reference. Use the WhatsApp number used for the order. You c...
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "Your coffee card and rewards are in your Hub account: https://midpointhub.com/profile/rewards Sign in to view your card and available ..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "Move more at Midpoint Gym. Membership: https://midpointhub.com/gym/membership Classes: https://midpointhub.com/gym/classes Hours: https..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "A little play in your day. Explore Midpoint Padel: https://midpointhub.com/padel Book a court: https://playtomic.com/clubs/midpoint-pad..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Interactive Message
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- heading [level=5]: Functions & events
+- paragraph: Bring your people together at Midpoint Hub. Choose an option below. Plan an event here in WhatsApp and send the details to Michelle.
+- heading [level=5]: Enquiry only. Type MENU to ret...
+- generic: Next
+- generic: Buttons
+- generic: List Messages
+- generic: E-commerce
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "Current FOND hours: https://midpointhub.com/fond/hours Choose delivery or collection in the basket. The checkout shows current options..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "Your Hub profile: https://midpointhub.com/profile Coffee rewards: https://midpointhub.com/profile/rewards Gym and padel memberships an..."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Interactive Message
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- heading [level=5]: Talk to Ali
+- paragraph: Your request is assigned to Ali (Alistair). Leave your question here; he will reply when available. Tap Talk to a human below to pause...
+- generic: Next
+- generic: Buttons
+- generic: List Messages
+- generic: E-commerce
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Button
+  - generic: System Default Action Button
+- list:
+  - generic: 
+  - text: Click
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- textbox:
+  - /placeholder: Button
+  - text: Talk to a human
+- text: Action Type
+- paragraph: Chat with human
+- generic: Next
+- generic: Subscribe to Sequence
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Quick Reply
+- textbox:
+  - /placeholder: List Messages
+  - text: Functions menu
+- generic: Sections
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Section
+- paragraph: Functions & events
+- generic: Rows
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: User Input Flow
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Campaign name
+- paragraph: Midpoint Functions and Events WhatsApp Enquiry
+- generic: Send data to Webhook URL
+- paragraph:
+  - link:
+    - /url: [private enquiry endpoint]
+    - text: https://n8n.sensibledesigns.online/webho......
+- generic: Reply
+- generic: First Question
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Plan an event
+- generic: Answer a few questions for Michelle
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Let us plan your occasion. I will ask a few questions, one at a time. At the end you can choose to send your details to Michelle. Type ...
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Event spaces
+- generic: Explore spaces for your gathering
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Tell Michelle your occasion, guest count and preferred date. The team will confirm the right space, capacity and availability. https://...
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Food & packages
+- generic: Buffet, dinner, canapes, picnic or braai
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Choose from Buffet, Seated dinner, Canapés, Family style, Picnic and Braai. Menus and prices are quoted for your occasion. https://midp...
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Meet Michelle
+- generic: Meet your functions coordinator
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Michelle Strydom can help plan your occasion. michelle@midpointhub.com https://midpointhub.com/functions/michelle Type MENU to return.
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: Row
+- paragraph: Gallery
+- generic: See gatherings and spaces at Midpoint
+- generic: Next
+- generic: Reply
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "A glimpse of Midpoint: https://midpointhub.com/functions/gallery Type MENU to return."
+- generic: Compose Next Message
+- generic: Message
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Multiple choice
+- generic: 
+- text: "Catering style: What is your gathering style?"
+- radio
+- generic: Buffet
+- radio
+- generic: Seated dinner
+- radio
+- generic: Canapés
+- radio
+- generic: Family style
+- radio
+- generic: Picnic
+- radio
+- generic: Braai
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Preferred date: What date would you like? Please use DD/MM/YYYY. Michelle will confirm availability."
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Guest count: How many guests are you planning for?"
+- text: Reply type
+- paragraph: Number
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Contact person: What is your full name?"
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Email: What email address should Michelle use to reply?"
+- text: Reply type
+- paragraph: Email
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Contact number: What phone number should Michelle use? Include the country code."
+- text: Reply type
+- paragraph: Phone
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Company: What is your company name? Reply Private for a private function."
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Budget (R): What is your estimated budget in rand? Reply Not sure if you do not have one yet."
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Multiple choice
+- generic: 
+- text: "Budget basis: Is that a total event budget or per person?"
+- radio
+- generic: Total budget
+- radio
+- generic: Per person
+- radio
+- generic: Not sure
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Free keyboard input
+- generic: 
+- text: "Theme or occasion: What are you celebrating or planning? Reply Not sure if you have not decided yet."
+- text: Reply type
+- paragraph: Text
+- generic: Next Question
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: New Question
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- paragraph: Multiple choice
+- generic: 
+- text: "Send enquiry: May we use these details for your function enquiry and email them to Michelle? Choose Send to Michelle to submit, or type MENU to cancel. Privacy: https://midpointhub.com/hub/privacy. This does not confirm a booking."
+- radio
+- generic: Send to Michelle
+- text: Reply type
+- paragraph: Text
+- generic: Thankyou Message
+- generic: Question
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: Thank you. Your function enquiry has been recorded for Michelle. She will review your details and confirm availability, catering and pr...
+- generic: Compose Next Message
+- generic: Message
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- img: 
+- toolbar:
+  - button:
+    - generic: 
+    - generic: Back
+  - button:
+    - generic: 
+    - generic: Rearrange
+  - link:
+    - /url: https://wa.me/27690420108
+    - generic: 
+    - generic: WhatsApp
+    - generic: +27 69 042 0108
+  - text: 
+  - button:
+    - generic: 
+    - generic: Save
+- toolbar:
+  - button:
+    - generic: 
+  - button:
+    - generic: 
+- dialog:
+  - generic: 
+  - heading "Configure Interactive Message" [level=2]
+  - paragraph: Configure your interactive message header, body and footer.
+  - generic: 
+  - heading "Message Header Optional" [level=3]:
+    - text: Message Header
+    - generic: Optional
+  - paragraph: Optional text or media displayed at the top of the message.
+  - generic: Header Type
+  - radio "Text Text-only header" [checked]
+  - generic: Text
+  - generic: Text-only header
+  - radio "Media Image, video or file"
+  - generic: Media
+  - generic: Image, video or file
+  - generic: Text
+  - textbox "Text":
+    - /placeholder: Provide text for header
+    - text: Functions & events
+  - generic: 18/60
+  - text: 
+  - generic: 
+  - heading "Message Body *" [level=3]:
+    - text: Message Body
+    - generic: "*"
+  - paragraph: Main message content shown to the user.
+  - button " Custom":
+    - generic: 
+    - text: Custom
+  - generic: 
+  - text: Name
+  - application:
+    - generic: Bring your people together at Midpoint Hub. Choose an option below. Plan an event here in WhatsApp and send the details to Michelle.
+    - generic "Use the TAB key to insert emoji faster"
+  - generic: 0/1024
+  - generic: 
+  - heading "Message Footer Optional" [level=3]:
+    - text: Message Footer
+    - generic: Optional
+  - paragraph: Optional text displayed at the bottom of the message.
+  - generic: Message Footer (Optional)
+  - textbox "Message Footer (Optional)":
+    - /placeholder: Provide text for footer
+    - text: Enquiry only. Type MENU to return.
+  - generic: 34/60
+  - button " Delivery Options Optional Typing indicator and reply delay settings. ":
+    - generic: 
+    - heading "Delivery Options Optional" [level=3]:
+      - text: Delivery Options
+      - generic: Optional
+    - paragraph: Typing indicator and reply delay settings.
+    - generic: 
+  - text:    
+  - text: "!"
+  - button " Save Changes" [disabled]:
+    - generic: 
+    - text: Save Changes
+  - button " Close" [disabled]:
+    - generic: 
+    - text: Close
