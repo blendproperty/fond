@@ -1,0 +1,95 @@
+- heading "Tickets" [level=1]
+- button "Mute notifications":
+- button "New":
+  - generic: New
+- paragraph: "Midpoint: keyword human handoff, automatic per-customer bot pause, agent-only resume"
+- generic: 14/10/26
+- paragraph: "Hi Brett, Thanks for reaching out! I'm WhatChimp's AI assistant, and I wanted to get back to you right away. You're on the right track with your keyword flow. Here's how to configure automatic human handoff with bot pausing: **Triggering Chat with Human from a keyword flow:** Yes, you can automatically invoke the Chat with Human session from your keyword flow without requiring a customer button tap. In your keyword flow (2159819), after the **Assign conversation to a user** action: 1. Add a **Send a Text** component with your acknowledgement message 2. Add a **Redirect to another bot** component 3. Select your \"Chat with Human\" flow (2158936) 4. This will automatically pause the bot for that customer only The redirect triggers the handoff system action. Other customers continue receiving normal bot responses. **Session expiry and resume control:** **Chat with Human Session Expiry Time = 0** means the session never auto-expires - the bot stays paused until manually resumed. This is what you want. To remove the customer \"Return to bot\" button, edit your Chat with Human flow and remove or hide the return-to-menu button component. Ali can manually resume automation from the Omnichannel Inbox by clicking the **Resume Bot** button in the conversation header (available on desktop and mobile browser with Live Chat permission). **Role permissions:** Alistair's current setup (Team Role: Midpoint Hub 18039, Live Chat access, User ID 333467) should have the Resume Bot control. Confirm he's marked **available** in his profile settings - round robin and manual assignment only work when agents set availability. **Important:** The /api/v1/whatsapp/trigger-bot API is for starting bot flows, not system handoff actions. The Redirect component is the correct UI method for triggering Chat with Human. We also have detailed video tutorials on our YouTube channel that walk through handoff setup: https://whatchimp.com/youtube I've flagged your request for production confirmation, and a member of our team will review your specific bot configuration and follow up with you personally. In the meantime, if this has already helped or you have follow-up questions, feel free to reply to this ticket!"
+- paragraph: Trial extension and additional test message credits - STOR24
+- generic: 13/10/26
+- paragraph: "Hello Brett, Thank you for the detailed update and for explaining what you are testing with your STOR24 storage enquiry bot. Our free trial includes 200 messaging credits and runs for 7 days, so your usage of 200/200 matches the trial allowance. Unfortunately, we are not able to increase the trial message allowance or extend the trial period beyond what is included. To continue testing the final review and submission, staff handoff, and date-selection steps, you would need to move to a paid plan. Our Basic plan starts at $12 a month when billed annually, or $20 a month when billed monthly, and you can view all current plans here: https://whatchimp.com/pricing-plans/ Your existing bot configurations will remain in your account. As a reminder, you only pay us a subscription fee for the platform and tools, while WhatsApp messaging fees are billed directly by Meta."
+- link "Browse Help Articles":
+  - /url: /docs
+  - generic: Browse Help Articles
+- button "brettd@blendproperty.co.za Free Account":
+  - paragraph: brettd@blendproperty.co.za
+  - paragraph: Free Account
+- 'heading "Midpoint: keyword human handoff, automatic per-customer bot pause, agent-only resume" [level=2]'
+- generic: Open
+- generic: brettd@blendproperty.co.za
+- button:
+- paragraph: "Hello WhatChimp Support, Please advise how to configure an automatic human handoff for our Midpoint Hub / Midpoint Cafe WhatsApp number +27 69 042 0108. Required behaviour: 1. When a customer types human, assistance, need help, speak to someone, speak to team, or similar configured phrases, automatically assign that conversation to Ali (Alistair, ali@midpointhub.com). 2. Send one acknowledgement, then pause automated bot and AI replies for that customer only, so their follow-up messages reach Ali without menu/no-match replies interrupting. The bot must continue working for all other customers. 3. Keep that customer's automation paused until Ali manually resumes it from the Omnichannel Inbox after helping them. Please confirm the exact resume control and required role permissions, including on a mobile browser. We do not want a timer, customer MENU/HELP message, or customer-facing return button to resume automation before Ali is finished. Current configuration: - Midpoint bot ID: 474865. - Team role: Midpoint Hub (18039), with Live Chat access. Alistair user ID: 333467; access limited to Midpoint Cafe. - Keyword flow 2159819, Midpoint Hub - Team contact, uses String match and Assign conversation to a user = Alistair. It sends an acknowledgement, but we have not established automatic pausing from this keyword assignment. - Built-in Chat with Human flow 2158936 is assigned to Alistair. The existing menu flow 2164388 has a Speak to team button using YES_START_CHAT_WITH_HUMAN. That customer button is currently the configured human-handoff path. Can the keyword flow automatically invoke Chat with Human / YES_START_CHAT_WITH_HUMAN without requiring the customer to tap another button? Please give the exact UI steps, supported flow component or documented API method, including the correct action order so the acknowledgement is sent before pausing. If it requires an API or HTTP component, please confirm whether /api/v1/whatsapp/trigger-bot supports this system handoff action and the required parameters. Please also clarify what Chat with Human Session Expiry Time = 0 means, how to disable automatic resumption, and how to remove the customer Return to bot option while preserving Ali's ability to resume the bot. Please provide guidance first and do not change our production bot, number connection, account access or customer conversations without our approval. Thank you, Brett Dovey Blend Property Management / Midpoint Hub"
+- paragraph: 14/10/26 01:16 PM
+- generic: ✦
+- generic: WhatChimp AI Assistant
+- text: AI
+- paragraph: Hi Brett,
+- paragraph: Thanks for reaching out! I'm WhatChimp's AI assistant, and I wanted to get back to you right away.
+- paragraph: "You're on the right track with your keyword flow. Here's how to configure automatic human handoff with bot pausing:"
+- paragraph:
+  - strong: "Triggering Chat with Human from a keyword flow:"
+- paragraph:
+  - text: Yes, you can automatically invoke the Chat with Human session from your keyword flow without requiring a customer button tap. In your keyword flow (2159819), after the
+  - strong: Assign conversation to a user
+  - text: "action:"
+- list:
+  - text: Add a
+  - strong: Send a Text
+  - text: component with your acknowledgement message
+  - text: Add a
+  - strong: Redirect to another bot
+  - text: component
+  - listitem: Select your "Chat with Human" flow (2158936)
+  - listitem: This will automatically pause the bot for that customer only
+  - paragraph
+- paragraph
+- paragraph: The redirect triggers the handoff system action. Other customers continue receiving normal bot responses.
+- paragraph:
+  - strong: "Session expiry and resume control:"
+- paragraph:
+  - strong: Chat with Human Session Expiry Time = 0
+  - text: means the session never auto-expires - the bot stays paused until manually resumed. This is what you want.
+- paragraph:
+  - text: To remove the customer "Return to bot" button, edit your Chat with Human flow and remove or hide the return-to-menu button component. Ali can manually resume automation from the Omnichannel Inbox by clicking the
+  - strong: Resume Bot
+  - text: button in the conversation header (available on desktop and mobile browser with Live Chat permission).
+- paragraph:
+  - strong: "Role permissions:"
+- paragraph:
+  - text: "Alistair's current setup (Team Role: Midpoint Hub 18039, Live Chat access, User ID 333467) should have the Resume Bot control. Confirm he's marked"
+  - strong: available
+  - text: in his profile settings - round robin and manual assignment only work when agents set availability.
+- paragraph:
+  - strong: "Important:"
+  - text: The /api/v1/whatsapp/trigger-bot API is for starting bot flows, not system handoff actions. The Redirect component is the correct UI method for triggering Chat with Human.
+- paragraph:
+  - text: "We also have detailed video tutorials on our YouTube channel that walk through handoff setup:"
+  - link "https://whatchimp.com/youtube" [active]:
+    - /url: https://whatchimp.com/youtube
+- paragraph: I've flagged your request for production confirmation, and a member of our team will review your specific bot configuration and follow up with you personally. In the meantime, if this has already helped or you have follow-up questions, feel free to reply to this ticket!
+- paragraph: This is an automated response. A team member will also review and follow up personally.
+- paragraph: 14/10/26 01:16 PM
+- paragraph: Thank you. Please have a human support specialist confirm these steps against the current WhatsApp Flow Builder. We could not find a “Redirect to another bot” component in the palette or the Send a Text next-message socket menu; those offered message blocks, HTTP API, conditions and related components. Please show exactly where the Redirect control is located in our current UI, or identify the supported alternative that invokes YES_START_CHAT_WITH_HUMAN automatically from keyword flow 2159819. Please also confirm that assigning directly to Alistair works while he is offline (so the enquiry is queued for him), and that expiry = 0 and agent-only manual resume behave as described. We are keeping the existing working configuration until the human team confirms the method.
+- paragraph: 14/10/26 01:17 PM
+- button "Attach file":
+- textbox "Type something..."
+- button [disabled]:
+- generic: "Ticket #10610"
+- 'heading "Midpoint: keyword human handoff, automatic per-customer bot pause, agent-only resume" [level=3]'
+- generic: Status
+- generic: Open
+- generic: Created
+- generic: 14/10/26
+- generic: Last update
+- generic: 14/10/26
+- generic: Messages
+- generic: "3"
+- text: Response Time
+- paragraph: We typically respond within 24 hours
+- paragraph: Quick Actions
+- button "Mark as Resolved":
+  - text: Mark as Resolved
+- paragraph: Issue fixed - can reopen if needed
+- button "Close & Archive":
+  - text: Close & Archive
+- paragraph: No longer need help - archives ticket
