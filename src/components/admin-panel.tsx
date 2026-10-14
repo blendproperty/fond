@@ -89,7 +89,7 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
           <label className="admin-login-mode"><input type="checkbox" checked={named} onChange={e=>{setNamed(e.target.checked);setCode('');setLoginError('');}}/> <span>Sign in with a named account</span></label>
           {named && <label className="admin-login-field">Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" placeholder="Your username"/></label>}
           <label className="admin-login-field">{named?'Password':'Admin access code'}<input type="password" autoFocus value={code} onChange={(e) => setCode(e.target.value)} autoComplete={named?'current-password':'off'} placeholder={named?'Enter your password':'Enter your admin code'} aria-label={named?'Password':'Admin access code'} /></label>
-          {named && <label className="admin-login-field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="After 2FA enrollment"/></label>}
+          {named && <label className="admin-login-field">Authenticator or recovery code<input value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="Leave blank unless you enabled 2FA"/></label>}
           {loginError && <p role="alert" className="staff-error">{loginError}</p>}
           <button className="primary full admin-login-submit" type="submit">Unlock</button>
           <p className="admin-login-foot">Private access for the Midpoint Hub team.</p>

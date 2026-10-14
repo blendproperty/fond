@@ -81,3 +81,12 @@ export function verifyMemberTwoFactor(memberId: string, code: string | undefined
     db.exec('COMMIT'); audit(`team:${memberId}`, '2fa-recovery-used', memberId); return true;
   } catch (error) { db.exec('ROLLBACK'); throw error; }
 }
+
+export function disableTwoFactor(memberId: string, code: string) {
+  if (!twoFactorActive(memberId) || !verifyMemberTwoFactor(memberId, code)) throw new Error('Enter a valid authenticator or recovery code to turn off 2FA.');
+  const db = getDb();
+  db.prepare('DELETE FROM team_two_factor WHERE member_id=?').run(memberId);
+  db.prepare('DELETE FROM team_sessions WHERE member_id=?').run(memberId);
+  db.prepare('DELETE FROM team_recovery_challenges WHERE member_id=?').run(memberId);
+  audit(`team:${memberId}`, '2fa-disabled', memberId);
+}

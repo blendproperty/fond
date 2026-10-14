@@ -2,8 +2,8 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { resetDbForTests } from '../src/lib/db';
-import { saveMember, loginMember, loginAllowed, recordLoginFailure, clearLoginFailures } from '../src/lib/team';
-import { activateTwoFactor, beginTwoFactor, validOtp } from '../src/lib/two-factor';
+import { saveMember, loginMember, teamSession, loginAllowed, recordLoginFailure, clearLoginFailures } from '../src/lib/team';
+import { activateTwoFactor, beginTwoFactor, disableTwoFactor, twoFactorActive, validOtp } from '../src/lib/two-factor';
 import { checkAdminCode } from '../src/lib/admin-auth';
 
 process.env.FOND_DB_PATH = ':memory:';
@@ -45,4 +45,33 @@ test('successful sign-ins do not consume the failed-login rate limit', () => {
   assert.equal(loginAllowed('admin-shared'), false);
   clearLoginFailures('admin-shared');
   assert.equal(loginAllowed('admin-shared'), true);
+});
+
+test('admins can skip setup, enable and disable with proof without changing another account', () => {
+  process.env.FOND_CREDENTIALS_KEY = 'c'.repeat(64);
+  try {
+    const password='long-password-1234';
+    const first=saveMember({name:'First',username:'first.admin',role:'owner',active:true,password},'shared-admin');
+    const other=saveMember({name:'Other',username:'other.admin',role:'manager',active:true,password},'shared-admin');
+    const pending=beginTwoFactor(first,'first.admin');
+    assert.ok(loginMember('first.admin',password));
+    const recovery=activateTwoFactor(first,independentCode(pending.secret));
+    const otherSetup=beginTwoFactor(other,'other.admin');
+    activateTwoFactor(other,independentCode(otherSetup.secret));
+    const session=loginMember('first.admin',password,recovery[0])!;
+    assert.throws(()=>disableTwoFactor(first,''),/valid authenticator/);
+    assert.throws(()=>disableTwoFactor(first,recovery[0]),/valid authenticator/);
+    assert.equal(twoFactorActive(first),true);
+    assert.ok(teamSession(session.token));
+    disableTwoFactor(first,recovery[1]);
+    assert.equal(twoFactorActive(first),false);
+    assert.equal(teamSession(session.token),null);
+    assert.ok(loginMember('first.admin',password));
+    assert.equal(twoFactorActive(other),true);
+    assert.equal(loginMember('other.admin',password),null);
+    const again=beginTwoFactor(first,'first.admin');
+    activateTwoFactor(first,independentCode(again.secret));
+    disableTwoFactor(first,independentCode(again.secret));
+    assert.ok(loginMember('first.admin',password));
+  } finally {delete process.env.FOND_CREDENTIALS_KEY;}
 });
