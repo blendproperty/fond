@@ -44,11 +44,11 @@ test('account settings verify SMS enrollment, show recovery codes and require co
  });
  await page.goto('/account');await page.locator('#account-security summary').click();const security=page.locator('#account-security');
  await security.getByRole('radio',{name:'SMS',exact:true}).check();await security.getByLabel('Mobile number').fill('0821234567');await security.getByLabel('Current password').fill('customer-password');await security.getByRole('button',{name:'Send setup code'}).click();
- expect(enabled).toBe(false);await expect(security.getByLabel('Setup code')).toBeVisible();await security.getByLabel('Setup code').fill('123456');await security.getByRole('button',{name:'Verify and enable'}).click();expect(enabled).toBe(true);
+ expect(enabled).toBe(false);await expect(security.getByLabel('Setup code')).toBeVisible();await security.getByLabel('Setup code').fill('123456');await security.getByRole('button',{name:'Verify and enable'}).click();await expect.poll(()=>enabled).toBe(true);
  await expect(security.getByRole('heading',{name:'Save your recovery codes'})).toBeVisible();await security.getByRole('button',{name:'I’ve saved my recovery codes'}).click();
  await page.screenshot({path:info.outputPath('account-security-sms.png'),fullPage:true});
  await security.getByLabel('Current password').fill('customer-password');await security.getByRole('button',{name:'Turn off two-factor sign-in',exact:true}).click();expect(enabled).toBe(true);
- await security.getByLabel('Security or recovery code').fill('123456');await security.getByRole('button',{name:'Confirm turn off'}).click();expect(enabled).toBe(false);await expect(security.getByRole('status')).toContainText('is off');
+ await security.getByLabel('Security or recovery code').fill('123456');await security.getByRole('button',{name:'Confirm turn off'}).click();await expect.poll(()=>enabled).toBe(false);await expect(security.getByRole('status')).toContainText('is off');
  await page.setViewportSize({width:320,height:740});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
