@@ -1,0 +1,201 @@
+- region:
+  - complementary:
+    - generic: Flow blocks
+    - generic: Drag a block onto the canvas
+    - search:
+      - generic: Search flow blocks
+      - generic: 
+      - searchbox
+      - text: 
+    - heading [level=3]: Messages
+    - generic: 
+    - generic: Text
+    - generic: 
+    - generic: Image
+    - generic: 
+    - generic: Audio
+    - generic: 
+    - generic: Video
+    - generic: 
+    - generic: File
+    - generic: 
+    - generic: Location
+    - generic: 
+    - generic: AI Reply
+    - heading [level=3]: Data Collection
+    - generic: 
+    - generic: User Input Flow
+    - generic: 
+    - generic: Whatsapp Flows
+    - generic: 
+    - generic: Appointment
+    - heading [level=3]: Interactive
+    - generic: 
+    - generic: Interactive Message
+    - generic: 
+    - generic: Template Message
+    - generic: 
+    - generic: CTA URL Button
+    - heading [level=3]: Flow control
+    - generic: 
+    - generic: Condition
+    - generic: 
+    - generic: New Sequence Campaign
+    - generic: 
+    - generic: Label Assign
+    - generic: "#"
+    - generic: Random Number Generator
+    - heading [level=3]: Integrations
+    - generic: 
+    - generic: HTTP API
+    - generic: 
+    - generic: Google Sheet Data Fetch
+- paragraph:
+  - generic: 
+  - text: Start Bot Flow
+- paragraph: Midpoint Hub - Team contact
+- text: Bot trigger keywords
+- paragraph: team,human,person,agent,contact,speak to someone,speak to somebody,speak to a member,speak to ali,speak to alistair,speak to staff,talk to someone,talk to somebody,talk to ali,talk to alistair,talk to staff,chat with someone,chat with ali,real person,need assistance,need help,help me,can you help,please help,assist me,assistance,support,complaint,cancel my order,change my order,ray,call ray,phone ray,order help
+- text: Keyword matching type
+- paragraph: String match
+- text: Assign conversation to a user
+- paragraph: Alistair
+- generic: Compose Next Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "1"
+  - generic: 
+  - text: Delivered
+  - paragraph: 100.0%
+  - generic: 
+  - text: Subscribers
+  - paragraph: "1"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: "I`ve passed your message to Ali (Alistair) for assistance. Please leave your question here; he`ll reply in this chat as soon as he`s av..."
+- generic: Compose Next Message
+- generic: Message
+- img: 
+- toolbar:
+  - button:
+    - generic: 
+    - generic: Back
+  - button:
+    - generic: 
+    - generic: Rearrange
+  - link:
+    - /url: https://wa.me/27690420108
+    - generic: 
+    - generic: WhatsApp
+    - generic: +27 69 042 0108
+  - text: 
+  - button:
+    - generic: 
+    - generic: Save
+- dialog:
+  - generic: 
+  - heading "Configure Reference" [level=2]
+  - paragraph: Define how the bot should identify and respond to user inputs.
+  - generic: 
+  - heading "Basic Setup" [level=3]
+  - paragraph: Essential settings to trigger this reference.
+  - text: Trigger Keywords
+  - generic "Write down the keywords for which the bot will be triggered": 
+  - textbox "Trigger Keywords " [active]:
+    - /placeholder: Hello, Hi, Start
+    - text: team,human,person,agent,contact,speak to someone,speak to somebody,speak to a member,speak to ali,speak to alistair,speak to staff,talk to someone,talk to somebody,talk to ali,talk to alistair,talk to staff,chat with someone,chat with ali,real person,need assistance,need help,help me,can you help,please help,assist me,assistance,support,complaint,cancel my order,change my order,ray,call ray,phone ray,order help
+  - text: Keyword matching type
+  - generic "Send reply based on your matching type": 
+  - radio "Exact keyword match Match exact keywords"
+  - generic: Exact keyword match
+  - generic: Match exact keywords
+  - radio "String match Match similar keywords" [checked]
+  - generic: String match
+  - generic: Match similar keywords
+  - text: Title
+  - generic: "*"
+  - generic "Please provide a title.": 
+  - textbox "Title * ":
+    - /placeholder: Enter reference title
+    - text: Midpoint Hub - Team contact
+  - generic: 27/200
+  - button " Automation Actions Optional Manage labels, sequences and team assignment. " [expanded]:
+    - generic: 
+    - heading "Automation Actions Optional" [level=3]:
+      - text: Automation Actions
+      - generic: Optional
+    - paragraph: Manage labels, sequences and team assignment.
+    - generic: 
+  - generic: Add Label(s)
+  - listbox
+  - combobox:
+    - list
+    - searchbox "Search"
+  - generic: Remove Label(s)
+  - listbox
+  - combobox:
+    - list
+    - searchbox "Search"
+  - generic: Add to List(s)
+  - listbox
+  - combobox:
+    - list
+    - searchbox "Search"
+  - generic: Remove from List(s)
+  - listbox
+  - combobox:
+    - list
+    - searchbox "Search"
+  - generic: Subscribe to Sequence
+  - combobox
+  - combobox "Select a Sequence":
+    - textbox "Select a Sequence"
+  - generic: Unsubscribe from Sequence
+  - combobox
+  - combobox "Select a Sequence":
+    - textbox "Select a Sequence"
+  - generic: Assign Conversation to a group
+  - combobox
+  - combobox "Select Team Role":
+    - textbox "Select Team Role"
+  - generic: Assign conversation to a user
+  - combobox
+  - combobox "Alistair":
+    - textbox "Alistair"
+  - button " Data & Integrations Optional Store data in custom fields or send to external tools. " [expanded]:
+    - generic: 
+    - heading "Data & Integrations Optional" [level=3]:
+      - text: Data & Integrations
+      - generic: Optional
+    - paragraph: Store data in custom fields or send to external tools.
+    - generic: 
+  - generic: Save to Custom Field
+  - button "+ Add new field":
+    - generic: +
+    - text: Add new field
+  - combobox
+  - combobox "Select":
+    - textbox "Select"
+  - text: 
+  - generic: Forward Data to Webhook
+  - generic: 
+  - textbox "Forward Data to Webhook":
+    - /placeholder: https://your-webhook-url.com
+  - generic: Sync Data to Google Sheets
+  - generic: 
+  - listbox
+  - combobox:
+    - list
+    - searchbox "Search"
+  - text: "!"
+  - button " Save Changes":
+    - generic: 
+    - text: Save Changes
+  - button " Close":
+    - generic: 
+    - text: Close
