@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-15",
+  "menuId": "2169642",
+  "directId": "2169644",
+  "formId": "42767",
+  "resultFlowId": "2169623",
+  "direct": {
+    "connections": 27,
+    "inputCampaigns": 0,
+    "nodes": 28,
+    "root": " Start Bot Flow\n\nMidpoint Gym - Native Signup Form\n\nBot trigger keywords\n\ngym,fitness,workout,training,trainer,membership,classes,join gym,gym signup\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message"
+  },
+  "retiredMenu": " Start Bot Flow\n\nMidpoint Hub - Previous Continuous Gym Menu\n\nBot trigger keywords\n\nmidpointgympreviouscontinuousmenu\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message",
+  "retiredDirect": " Start Bot Flow\n\nMidpoint Gym - Previous Continuous Signup\n\nBot trigger keywords\n\nmidpointgympreviouscontinuousdirect\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message",
+  "formPublished": "1\tMidpoint Gym Signup\t[\"SIGN_UP\"]\t Published\t\n\t15th Oct 26 06:15 +00:00",
+  "previewChecks": {
+    "firstNameDidNotFillSurname": true,
+    "companyRequired": true,
+    "consentNoDefault": true,
+    "submitEnabledOnlyAfterRequiredFields": true
+  },
+  "liveHandsetSubmission": "pending",
+  "christineInboxReceipt": "pending"
+}

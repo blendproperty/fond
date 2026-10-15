@@ -1,5 +1,16 @@
 # Midpoint Hub WhatChimp FAQ bot
 
+## Current Gym journey — native form replacement, 2026-10-15 08:23 SAST
+
+The 08:07–08:08 handset test **failed**: the continuous chat campaign reused replies across adjacent questions. The sections below describing its readiness are historical; the provider event cause remains unconfirmed.
+
+Active **MENU 2169642** and **GYM 2169644** now keep the seven-option Gym submenu and route **Join now → Choose number → Open signup form**. Published native form **42767 / Midpoint Gym Signup** contains required first name, surname, email, company/tenant and explicit Send to Christine / Cancel request. No choice is preselected. Alternative number is optional in the form; it must be supplied if Use another number was selected. Use this number takes the conversation sender. Enter Not applicable for no company. Fields are editable before submitting; there are **no Gym chat question campaigns**. ID/passport completion and membership/access remain separate.
+
+The form selects existing **HTTP API 10171**, followed by result reply **2169623 / 3532047**. Christine's branded contact/signup tables and existing n8n validation/consent/SMTP-confirmation logic are unchanged. Old live flows **2169549 / 2169551** are retained under internal previous-continuous triggers. Current source mirrors: [menu](midpoint-interactive-menu.txt), [direct](evidence/2026-10-15-gym-whatsapp/native-direct-source.txt); these are generated imports, not fresh exports.
+
+Meta preview verified independent entry (first name does not fill surname), company required before submit, explicit consent and enabled submission only after required fields. Provider readback verified main **63/62**, direct **28/27**, native form selection, Published status and retired triggers. Graph/mapping regression and receiver/email checks pass. [Preview and safe readback](evidence/2026-10-15-gym-whatsapp/). These checks do **not** prove live native form custom-field persistence, API ordering, delivery, handset completion or Christine inbox receipt. Those, both phone branches, cancellation/restart/isolation and latency remain open UAT gates. Use a **new GYM or MENU** message; historical delivered buttons may invoke historical routes.
+
+
 ## Current Gym signup journey — 2026-10-15
 
 **Continuous-question repair — current configuration:** MENU is now **2169549** and direct GYM is **2169551**. Gym retains its seven website choices. Join now opens a native **Choose number** list first: Use this number / Use another number, storing **MidpointGymPhoneChoice** before signup begins. Each branch then runs exactly **one** User Input Flow: first name, surname, email, optional alternative number (alternative branch only), company/tenant, and a final review/consent question. The company question cannot be bypassed by a graph route; Not applicable is an explicit answer. Review includes the entered company and contact details before Send to Christine / Cancel request. No chained question campaign starts between number, company and consent. Old MENU 2169454 and direct 2169524 are retained under `midpointpreviousgymmulticampaignmenu` / `midpointpreviousgymmulticampaigndirect` and no longer own normal entry commands.

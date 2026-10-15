@@ -1,0 +1,53 @@
+{
+  "formId": "42767",
+  "name": "Midpoint Gym Signup",
+  "screen": "MidpointGymDetails",
+  "status": "Published",
+  "afterSubmitReply": "3532047",
+  "httpApi": "10171",
+  "fields": [
+    {
+      "name": "first_name",
+      "label": "First name",
+      "required": true,
+      "custom": "custom_77938"
+    },
+    {
+      "name": "surname",
+      "label": "Surname",
+      "required": true,
+      "custom": "custom_77939"
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "required": true,
+      "custom": "custom_77940"
+    },
+    {
+      "name": "company",
+      "label": "Company / tenant",
+      "required": true,
+      "custom": "custom_77943"
+    },
+    {
+      "name": "alternative_phone",
+      "label": "Alternative number",
+      "required": false,
+      "custom": "custom_77942"
+    },
+    {
+      "name": "consent",
+      "label": "Email details to Christine?",
+      "required": true,
+      "custom": "custom_77944",
+      "options": [
+        "Send to Christine",
+        "Cancel request"
+      ],
+      "selected": null
+    }
+  ],
+  "phone": "Use this number/Use another number chosen before opening form; sender taken from chat; alternative required by receiver only when selected",
+  "validation": "Existing receiver validates all values before email; Meta preview verifies required fields and isolated entry; physical handset submission pending"
+}
