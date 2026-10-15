@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-15",
+  "mainMenu": 2169454,
+  "directGymMenu": {
+    "id": 2169524,
+    "nodes": 48,
+    "connections": 47,
+    "matching": "exact",
+    "keywords": "gym,fitness,workout,training,trainer,membership,classes,join gym,gym signup",
+    "source": "direct-menu-source.txt is generated import source synchronized to saved trigger, not provider export"
+  },
+  "retiredGymKeywordFlow": {
+    "id": 2159815,
+    "keyword": "midpointpreviousgymfaq"
+  },
+  "legacyMenu": {
+    "id": 2168591,
+    "gymReply": "Midpoint Gym now has an interactive menu. Reply GYM to open it directly, or send MENU as a new message and choose Gym. The saved reply lists available choices and signup handoff instead of the old URL dump."
+  },
+  "liveEvidence": {
+    "oldMenuMessage": "2026-10-14 15:56 SAST",
+    "oldGymSelection": "2026-10-15 07:35 SAST",
+    "oldReplyDelivered": "07:36 SAST",
+    "freshMenu": "07:42 SAST",
+    "gymSubmenu": "07:42 SAST",
+    "joinNow": "07:43 SAST",
+    "progress": "First name, surname, email and phone-choice prompt observed at 07:43-07:44. No customer values copied into evidence.",
+    "humanConfirmation": "The Gym menu button appears",
+    "completedSubmission": false
+  },
+  "unchanged": [
+    "Current MENU 2169454",
+    "Functions calendar/continuation/email",
+    "Gym HTTP API 10171 and email receiver",
+    "Human assignment and pause behavior"
+  ],
+  "remaining": [
+    "Full current/alternative number, consent/cancel/restart/session-isolation handset UAT",
+    "Christine inbox receipt/rendering",
+    "Direct GYM entry and older-button bridge handset UAT",
+    "WhatsApp latency cause/remedy"
+  ]
+}

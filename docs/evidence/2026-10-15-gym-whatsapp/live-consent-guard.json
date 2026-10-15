@@ -1,0 +1,20 @@
+{
+  "execution": {
+    "id": "13606",
+    "workflowId": "B2MlZgtSc9C0waTk",
+    "mode": "webhook",
+    "status": "success",
+    "startedAt": "2026-10-15T05:45:53.205Z",
+    "stoppedAt": "2026-10-15T05:45:53.266Z",
+    "retryOf": null,
+    "retrySuccessId": null,
+    "waitTill": null
+  },
+  "nodes": [
+    "Gym incomplete or cancelled response"
+  ],
+  "response": {
+    "status": "incomplete",
+    "message": "Your Gym request has not been sent. Consent or request reference is missing. Type MENU and choose Gym > Join now to try again."
+  }
+}
