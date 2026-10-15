@@ -24,4 +24,14 @@ assert.equal(run({...sample,phoneChoice:'Use another number',alternativePhone:'2
 assert.equal(run({...sample,phoneChoice:'Use another number'}).status,'incomplete');
 assert.equal(run({...sample,consent:''}).status,'incomplete');assert.equal(run({...sample,consent:'Cancel enquiry'}).status,'cancelled');
 assert.equal(run({...sample,date:'2020-01-01'}).status,'incomplete');assert.equal(run({...sample,budget:'10000',budgetBasis:'Total budget'}).status,'ready');assert.equal(run({...sample,guests:'not a number'}).status,'incomplete');
-console.log('Native field/API contracts, consent/date/phone/budget validation, graph links and preserved Gym/unrelated routes passed.');
+const fallback=read('compatibility-launch-source.txt'),compat=read('compatibility-readback.json');
+assert.equal(Object.keys(fallback.nodes).length,3);
+assert.equal(fallback.nodes[1].outputs.referenceOutput.connections[0].node,65);
+assert.equal(fallback.nodes[65].data.customFieldId,'custom_77886');
+assert.equal(fallback.nodes[65].outputs.randomNumberGeneratorOutput.connections[0].node,66);
+assert.equal(fallback.nodes[66].data.dropdownFlowId,'42768');
+assert(!Object.values(fallback.nodes).some(n=>/HTTP API|User Input Flow/.test(n.name)));
+assert.equal(compat.oldDateCallback.reply,'3532289');assert.equal(compat.oldDateCallback.httpApi,'');
+assert.deepEqual(compat.retainedMenus.map(m=>m.id),['2169642','2169549','2169454','2168591']);
+for(const m of compat.retainedMenus){assert(m.forms.includes('Midpoint Functions Enquiry'));assert(!m.forms.includes('Midpoint Functions Date'));}
+console.log('Native field/API contracts, validation, preserved routes and fresh-session legacy-card fallback passed.');

@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-15",
+  "currentMenu": "2169689",
+  "fullForm": "42768",
+  "retainedMenus": [
+    {
+      "id": "2169642",
+      "forms": [
+        "Midpoint Functions Enquiry",
+        "Midpoint Gym Signup",
+        "Midpoint Gym Signup"
+      ],
+      "nodeCount": 63
+    },
+    {
+      "id": "2169549",
+      "forms": [
+        "Midpoint Functions Enquiry"
+      ],
+      "nodeCount": 82
+    },
+    {
+      "id": "2169454",
+      "forms": [
+        "Midpoint Functions Enquiry"
+      ],
+      "nodeCount": 83
+    },
+    {
+      "id": "2168591",
+      "forms": [
+        "Midpoint Functions Enquiry"
+      ],
+      "nodeCount": 37
+    }
+  ],
+  "oldDateCallback": {
+    "dateForm": "42766",
+    "httpApi": "",
+    "reply": "3532289",
+    "replyLabel": "Midpoint Functions - Full form from earlier date cards"
+  },
+  "callbackLauncher": "2169721",
+  "launcherReadback": {
+    "edges": 2,
+    "nodeCount": 3,
+    "text": "Flow blocks\nDrag a block onto the canvas\nSearch flow blocks\nMESSAGES\nText\nImage\nAudio\nVideo\nFile\nLocation\nAI Reply\nDATA COLLECTION\nUser Input Flow\nWhatsapp Flows\nAppointment\nINTERACTIVE\nInteractive Message\nTemplate Message\nCTA URL Button\nFLOW CONTROL\nCondition\nNew Sequence Campaign\nLabel Assign\nRandom Number Generator\nINTEGRATIONS\nHTTP API\nGoogle Sheet Data Fetch\n\n Start Bot Flow\n\nMidpoint Functions - Full Form From Earlier Date Cards\n\nBot trigger keywords\n\nmidpointfunctionsfullform\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message\n\n Random Number Generator\n\n MidpointFunctionSession\n\nLength of random value: 16\n\nUse numbers\n\nCompose Next Message\nMessage\n\n Whatsapp Flows\n\n Sent\n\n0\n\n Delivered\n\n0\n\n Subscribers\n\n0\n\n Errors\n\n0\n\nSelected Whatsapp Flow\n\nMidpoint Functions Enquiry\n\nMessage Header\n\nPlan your event\n\nMessage Body\n\nChoose your event date and catering, then enter guests and contact details. Select Use this number to use your WhatsApp number and leave Alternative number blank. Otherwise enter your alternative with country code. For company, enter Private if needed. Budget and occasion are optional; if entering a budget, select Total budget or Per person. Review all fields, select Send to Michelle and submit to email your enquiry. Availability and pricing are confirmed separately. Privacy: https://midpointhub.com/hub/privacy\n\nMessage Footer\n\nEnquiry only. Type MENU to return.\n\nFooter Button Text\n\nPlan your event\n\nCompose Next Message\nMessage\nBack\nRearrange\nWHATSAPP\n+27 69 042 0108\nSave"
+  },
+  "limitations": [
+    "Screenshot does not identify which historical menu button started the user run",
+    "Already active old question campaigns/messages are not retroactively converted",
+    "Historical date card first opens its immutable date form, then redirects to full form",
+    "Fresh complete handset submission and Michelle receipt remain unverified"
+  ]
+}

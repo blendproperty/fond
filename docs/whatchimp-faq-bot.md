@@ -1,5 +1,14 @@
 # Midpoint Hub WhatChimp FAQ bot
 
+## Functions historical buttons — compatibility correction, 2026-10-15 09:02 SAST
+
+User's08:52–08:53 screenshot proves an old date-only/card-to-chat journey was still reachable; it does not identify the exact originating menu. Current MENU**2169689** correctly uses complete form**42768**. Earlier menus**2169642,2169549,2169454,2168591** now also select42768 for their Functions launchers, with **Plan your event** header/button. Other menu routes and keywords are preserved; previous source evidence for those menu versions is historical.
+
+Previously delivered **Choose date** cards keep their immutable date-only appearance, but published form**42766** now sends its completion to **3532289 / launcher2169721**, generating a new session and opening the full form instead of continuation2168579's chat questions. Date-only form itself has no HTTP API. Full form's API10157/consent/result and Michelle email renderer remain unchanged. Already active question sequences/messages do not change retroactively; a fresh MENU starts the new full form directly. Old pre-calendar/internal-preview routes were not exhaustively migrated.
+
+Saved readback and extended verify-form.cjs passed: four native selections, preserved node/Gym counts, new callback and fresh-session3node fallback. [Compatibility evidence](evidence/2026-10-15-functions-form/compatibility-readback.json). **Physical-device verification of both fresh and historical-card paths, full submit, cancellation/restart/isolation, both number branches and Michelle receipt remain pending.** This supersedes earlier text that the historical date-only card still launches the old chat continuation; that continuation is retained as historical configuration.
+
+
 ## Current MENU — complete Gym and Functions forms, 2026-10-15 08:49 SAST
 
 Active **MENU 2169689** preserves both submenus. **Functions & events → Functions menu → Plan an event → Plan your event** opens published native form **42768 / Midpoint Functions Enquiry**. The native date picker, catering, guests, contact/email, company, phone choice/alternative, budget/basis, occasion and Send to Michelle / Cancel enquiry are all in one editable form. Choose Use this number to reuse the conversation sender and leave alternative blank. Company accepts Private; budget and occasion are optional. Review and consent precede submission. Form HTTP API **10157** then result reply **2169675 / 3532137** use the unchanged branded Michelle email workflow. Its stored API Last Response is historical sample text; current live n8n version remains **00a4c7ca-5d76-48ef-90a5-3c81d4016a64**.
