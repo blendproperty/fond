@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-15",
+  "kind": "manual receiver test, not native WhatsApp submission",
+  "executionId": "13627",
+  "status": "success",
+  "startedAt": "2026-10-15T08:28:54.119Z",
+  "emailDurationMs": 969,
+  "accepted": [
+    "michelle@midpointhub.com"
+  ],
+  "rejected": [],
+  "envelopeTime": 254,
+  "messageTime": 372,
+  "messageSize": 9890,
+  "response": "250 2.0.0 Ok: queued as 4j51SQ569Xz2y9Q",
+  "envelope": {
+    "from": "no-reply@onpointoffices.co.za",
+    "to": [
+      "michelle@midpointhub.com"
+    ]
+  },
+  "messageId": "<7386360a-7bad-002e-4dbe-d9c2da9e3190@onpointoffices.co.za>",
+  "actualInbox": {
+    "mailbox": "michelle@midpointhub.com",
+    "subject": "TEST - Midpoint function enquiry - 2026101510300001",
+    "receivedLocal": "2026-10-15 10:28 SAST",
+    "opened": true,
+    "contactTableRows": 4,
+    "eventTableRows": 6,
+    "visuallyInspected": true
+  },
+  "negativeTests": [
+    {
+      "execution": "13629",
+      "status": "incomplete",
+      "emailSent": false
+    },
+    {
+      "execution": "13630",
+      "status": "cancelled",
+      "emailSent": false
+    }
+  ]
+}
