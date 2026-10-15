@@ -1,0 +1,17 @@
+Hi Mariam,
+
+Following your 15 October 11:06 SAST request on ticket 10648, this follow-up is limited to the remaining Midpoint MENU/submenu delay incident.
+
+The owner confirms the tested Functions enquiry emails have now arrived. Native webhook executions reached our email receiver at 11:03:26 and 11:04:08 SAST, succeeded and returned submitted. This supersedes the earlier 10:54 observation that no native submission had reached the receiver. Please do not investigate those tested emails as still missing. Two executions used the same submission session; we cannot distinguish a repeated customer action from a provider replay and are not assigning a cause.
+
+The proposed screenshot menu-burst-1021-selection-1022.png shows several menu cards carrying 10:21 timestamps, followed by a Functions & events selection at 10:22 with two ticks. It contains menu content only, with no customer form answers, contact number, email address, credentials or tokens. It documents the visible sequence, but does not show how long the later reply took or identify the service responsible.
+
+Our previously reported provider observation was that this 10:22 selection was absent from the refreshed inbox at inspection. Separately, a direct-menu record marked sent at 09:24 had a provider delivery acknowledgement at 10:05. These are minute-precision observations and may reflect processing timestamps. They are not an exact end-to-end trace or proof of a Meta, WhatChimp or SMTP fault.
+
+Please reopen/continue this same ticket for the remaining latency issue. Correlate inbound receive/acknowledgement, processing/retry queues and outgoing send/status timestamps for Midpoint bot 474865, business number +27 69 042 0108, WABA 1743148910251337 and phone-number ID 1429672250221978. Please explain the observed delays and whether the queue is now processing normally before asking the owner to repeat a test.
+
+We do not have an existing continuous recording showing a newly sent MENU, the selection, and the complete wait for a reply. We have not manufactured a reproduction or run another Functions submission.
+
+Please preserve existing flows, forms, credentials and the separate Stor24 account. This request gives no permission to change production settings. No customer answers or credentials are supplied.
+
+Thank you.

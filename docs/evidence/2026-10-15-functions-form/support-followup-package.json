@@ -1,0 +1,43 @@
+{
+  "preparedLocal": "2026-10-15 12:07 SAST",
+  "status": "UNSENT - local review package only",
+  "ticket": "10648",
+  "destination": "Existing WhatChimp support ticket https://help.whatchimp.com/ticket/10648",
+  "proposedBody": "support-followup-unsent.txt",
+  "proposedAttachments": [
+    {
+      "file": "menu-burst-1021-selection-1022.png",
+      "sha256": "D18A364DAEEA8ADBDAF9350C66B450E05DE4745EF936E88C3EB77FEDD8BA974C",
+      "source": "Owner-supplied screenshot already in this conversation",
+      "visualReview": "Opened and inspected 2026-10-15. Menu cards at10:21 and Functions selection at10:22. No customer form answers, contact details or credentials visible.",
+      "redaction": "No masking needed for this menu-only image; copied unchanged.",
+      "limitation": "Single screenshot does not establish elapsed wait after selection or current recovery."
+    }
+  ],
+  "supportingLocalEvidence": [
+    "delivery-incident.json",
+    "native-email-delivery-confirmed.json"
+  ],
+  "notForAttachment": [
+    "Customer form screenshots/answers",
+    "Raw workflow execution payloads",
+    "Credentials/tokens",
+    "Other support tickets or Stor24 data"
+  ],
+  "missingEvidence": "No existing continuous screen recording from sending a fresh MENU through submenu selection and reply wait. Exact receive/ack/retry/queue/outgoing correlation requires provider logs.",
+  "approvalBoundary": "Original report approval preserved. New follow-up and image upload remain unsent; explicit owner approval of this text/image package is pending.",
+  "actionsPerformed": {
+    "supportMessageSent": false,
+    "attachmentUploaded": false,
+    "ticketReopened": false,
+    "newTicketCreated": false,
+    "functionsRetested": false,
+    "emailResent": false,
+    "productionChanged": false
+  },
+  "remainingUncertainty": [
+    "MENU/submenu latency and root cause remain unverified.",
+    "Two native email executions share a session; repeated tap versus provider replay unknown.",
+    "Owner-confirmed tested Functions email receipt does not prove customer acknowledgement or all journey branches."
+  ]
+}
