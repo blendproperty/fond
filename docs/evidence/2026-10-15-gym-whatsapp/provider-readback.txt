@@ -85,7 +85,7 @@ Reply
 
 FOND Food & Coffee
 
- View the menu and place an order 
+ View the menu and place an order
 Next
 Reply
 
@@ -93,7 +93,7 @@ Reply
 
 Track My Order
 
- Check your FOND order status 
+ Check your FOND order status
 Next
 Reply
 
@@ -101,7 +101,7 @@ Reply
 
 Coffee Rewards
 
- Your coffee card and rewards 
+ Your coffee card and rewards
 Next
 Reply
 
@@ -109,7 +109,7 @@ Reply
 
 Gym
 
- Membership, classes and opening hours 
+ Membership, classes and opening hours
 Next
 Reply
 
@@ -117,7 +117,7 @@ Reply
 
 Padel
 
- Courts, bookings and tenant setup 
+ Courts, bookings and tenant setup
 Next
 Reply
 
@@ -125,7 +125,7 @@ Reply
 
 Functions & Events
 
- Plan a gathering with Michelle 
+ Plan a gathering with Michelle
 Next
 Reply
 
@@ -133,7 +133,7 @@ Reply
 
 Hours & Delivery
 
- FOND hours, collection and payment 
+ FOND hours, collection and payment
 Next
 Reply
 
@@ -141,7 +141,7 @@ Reply
 
 Talk To A Human
 
- Get assistance from Ali (Alistair) 
+ Get assistance from Ali (Alistair)
 Assign conversation to a user
 
 Alistair
@@ -153,7 +153,7 @@ Reply
 
 My Hub Account
 
- Profile, bookings and memberships 
+ Profile, bookings and memberships
 Next
 Reply
 
@@ -430,7 +430,7 @@ Reply
 
 Plan An Event
 
- Answer a few questions for Michelle 
+ Answer a few questions for Michelle
 Next
 Reply
 
@@ -460,7 +460,7 @@ Message
 
 Event Spaces
 
- Explore spaces for your gathering 
+ Explore spaces for your gathering
 Next
 Reply
 
@@ -491,7 +491,7 @@ Message
 
 Food & Packages
 
- Buffet, dinner, canapes, picnic or braai 
+ Buffet, dinner, canapes, picnic or braai
 Next
 Reply
 
@@ -522,7 +522,7 @@ Message
 
 Meet Michelle
 
- Meet your functions coordinator 
+ Meet your functions coordinator
 Next
 Reply
 
@@ -556,7 +556,7 @@ Message
 
 Gallery
 
- See gatherings and spaces at Midpoint 
+ See gatherings and spaces at Midpoint
 Next
 Reply
 
@@ -653,7 +653,7 @@ Reply
 
 Join Now
 
- Send your signup details to Christine 
+ Send your signup details to Christine
 Next
 Reply
 
@@ -683,7 +683,7 @@ Message
 
 Membership Options
 
- Explore membership with the Gym team 
+ Explore membership with the Gym team
 Next
 Reply
 
@@ -714,7 +714,7 @@ Message
 
 Classes
 
- View published classes 
+ View published classes
 Next
 Reply
 
@@ -747,7 +747,7 @@ Message
 
 Your Access
 
- Registration and access help 
+ Registration and access help
 Next
 Reply
 
@@ -780,7 +780,7 @@ Message
 
 Gym Info
 
- Opening hours and where to find us 
+ Opening hours and where to find us
 Next
 Reply
 
@@ -813,7 +813,7 @@ Message
 
 Gym Events
 
- Explore published Gym events 
+ Explore published Gym events
 Next
 Reply
 
@@ -846,7 +846,7 @@ Message
 
 Contact Christine
 
- Speak to the Gym team 
+ Speak to the Gym team
 Next
 Reply
 
@@ -953,7 +953,7 @@ First Question
 
 Free Keyboard Input
 
- What is your first name? 
+ What is your first name?
 Reply type
 
 Text
@@ -985,7 +985,7 @@ Question
 
 Free Keyboard Input
 
- What is your surname? 
+ What is your surname?
 Reply type
 
 Text
@@ -1017,7 +1017,7 @@ Question
 
 Free Keyboard Input
 
- What email address should Christine use? 
+ What email address should Christine use?
 Reply type
 
 Text
@@ -1049,7 +1049,7 @@ Question
 
 Multiple Choice
 
- We can use the number you are messaging from. Which number should Christine contact? 
+ We can use the number you are messaging from. Which number should Christine contact?
 Use this number
 Use another number
 Reply type
@@ -1153,7 +1153,7 @@ First Question
 
 Free Keyboard Input
 
- What alternative number should Christine use? Include the country code. 
+ What alternative number should Christine use? Include the country code.
 Reply type
 
 Text
@@ -1232,7 +1232,7 @@ First Question
 
 Free Keyboard Input
 
- What is your company or tenant name? Reply Not applicable if this does not apply. 
+ What is your company or tenant name? Reply Not applicable if this does not apply.
 Reply type
 
 Text
@@ -1315,7 +1315,7 @@ First Question
 
 Multiple Choice
 
- May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately. 
+ May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately.
 Send to Christine
 Cancel request
 Reply type
@@ -1450,7 +1450,7 @@ First Question
 
 Free Keyboard Input
 
- What is your company or tenant name? Reply Not applicable if this does not apply. 
+ What is your company or tenant name? Reply Not applicable if this does not apply.
 Reply type
 
 Text
@@ -1533,7 +1533,7 @@ First Question
 
 Multiple Choice
 
- May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately. 
+ May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately.
 Send to Christine
 Cancel request
 Reply type
