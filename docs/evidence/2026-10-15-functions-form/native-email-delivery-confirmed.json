@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-15",
+  "timezone": "Africa/Johannesburg",
+  "userConfirmation": "the emails delivered so that is sorted",
+  "emailDeliveryStatus": "Confirmed by owner for tested Functions emails",
+  "receipts": [
+    {
+      "execution": {
+        "id": "13634",
+        "workflowId": "A88qBBIfTC5QG4Kb",
+        "mode": "webhook",
+        "status": "success",
+        "startedAt": "2026-10-15T09:03:26.742Z",
+        "stoppedAt": "2026-10-15T09:03:27.648Z",
+        "retryOf": null,
+        "retrySuccessId": null,
+        "waitTill": null
+      },
+      "emailDurationMs": 839,
+      "accepted": [
+        "michelle@midpointhub.com"
+      ],
+      "rejected": [],
+      "smtpResponse": "250 2.0.0 Ok: queued as 4j52DH1Yndz1xvd",
+      "messageId": "<257736db-8807-551b-437a-236f7991aa46@onpointoffices.co.za>",
+      "resultStatus": "submitted"
+    },
+    {
+      "execution": {
+        "id": "13635",
+        "workflowId": "A88qBBIfTC5QG4Kb",
+        "mode": "webhook",
+        "status": "success",
+        "startedAt": "2026-10-15T09:04:08.517Z",
+        "stoppedAt": "2026-10-15T09:04:09.700Z",
+        "retryOf": null,
+        "retrySuccessId": null,
+        "waitTill": null
+      },
+      "emailDurationMs": 1018,
+      "accepted": [
+        "michelle@midpointhub.com"
+      ],
+      "rejected": [],
+      "smtpResponse": "250 2.0.0 Ok: queued as 4j52F50M7bz2xpT",
+      "messageId": "<1dceb476-0b34-372d-c33c-95a7a5d19b01@onpointoffices.co.za>",
+      "resultStatus": "submitted"
+    }
+  ],
+  "limits": [
+    "These are webhook executions, distinct from manual TEST13627.",
+    "Both observed webhook executions used the same submission session; repeat tap versus provider replay is not established. No resend performed.",
+    "MENU/submenu latency, root cause, customer acknowledgement and alternate/cancel/restart/isolation acceptance remain unverified.",
+    "No runtime/configuration changes made in this follow-up."
+  ]
+}

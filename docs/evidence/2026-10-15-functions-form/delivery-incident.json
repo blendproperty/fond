@@ -17,12 +17,22 @@
   "supportTicket": {
     "id": "10648",
     "url": "https://help.whatchimp.com/ticket/10648",
-    "status": "Open",
+    "status": "Resolved in provider portal; MENU incident remains unverified",
     "submittedLocal": "2026-10-15 10:56 SAST",
     "authorisation": "Explicit user approval in chat",
     "attachmentsSent": 0,
     "automatedReplyLocal": "2026-10-15 10:57 SAST",
     "humanDiagnosisReceived": false,
+    "humanReplyLocal": "2026-10-15 11:06 SAST",
+    "humanReplyAuthor": "Mariam Onasanya",
+    "humanReplySummary": "Requests screenshot or screen recording; no diagnosis or repair supplied. Portal shows Resolved and 3 messages at 12:03 SAST readback. No follow-up or attachment sent in this audit.",
     "productionChangesAuthorised": false
+  },
+  "followUp": {
+    "observedLocal": "2026-10-15 12:03 SAST",
+    "ownerConfirmedEmailDelivery": true,
+    "nativeWebhookExecutions": ["13634", "13635"],
+    "emailDeliveryEvidence": "native-email-delivery-confirmed.json",
+    "remainingIncident": "MENU/submenu latency and provider root cause remain unresolved; email delivery for owner-tested Functions enquiries is confirmed."
   }
 }
