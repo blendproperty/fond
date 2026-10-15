@@ -1,0 +1,154 @@
+{
+  "id": "B2MlZgtSc9C0waTk",
+  "name": "Midpoint Hub - Gym signup email tables",
+  "active": true,
+  "activeVersionId": "20314bf5-5844-4512-8dbe-847d62ebb3df",
+  "nodes": [
+    {
+      "name": "Completed Gym signup",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "RESTORE_PRIVATE_WEBHOOK_PATH_FROM_PROVIDER",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      }
+    },
+    {
+      "name": "Validate Gym signup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body=$input.first().json.body??$input.first().json;\nconst fail=message=>[{json:{status:'incomplete',message:'Your Gym request has not been sent. '+message+' Type MENU and choose Gym > Join now to try again.'}}];\nif(!body||typeof body!=='object'||Array.isArray(body)||JSON.stringify(body).length>10000)return fail('Invalid signup details.');\nconst text=(key,max=160)=>typeof body[key]==='string'&&body[key].trim().length<=max?body[key].trim():'';\nconst consent=text('consent',30),session=text('session',40);\nif(consent==='Cancel request')return [{json:{status:'cancelled',message:'Your Gym request has been cancelled and has not been emailed. Type MENU to return.'}}];\nif(consent!=='Send to Christine'||!/^\\d{16}$/.test(session))return fail('Consent or request reference is missing.');\nconst firstName=text('firstName',80),surname=text('surname',80),email=text('email',254),phoneChoice=text('phoneChoice',30),company=text('company',160);\nif(!firstName||!surname||/[\\r\\n]/.test(firstName+surname)||!/[\\p{L}]/u.test(firstName)||!/[\\p{L}]/u.test(surname))return fail('Enter your first name and surname.');\nif(!/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(email))return fail('Enter a valid email address.');\nconst phone=value=>{let v=String(value??'').replace(/[\\s()+-]/g,'');if(/^0\\d{9}$/.test(v))v='27'+v.slice(1);return /^[1-9]\\d{7,14}$/.test(v)?'+'+v:'';};\nconst senderPhone=phone(body.senderPhone),replyPhone=phoneChoice==='Use this number'?senderPhone:phoneChoice==='Use another number'?phone(body.alternativePhone):'';\nif(!senderPhone||!replyPhone)return fail('Choose this WhatsApp number or a valid alternative.');\nif(!company)return fail('Enter your company or choose Not applicable.');\nconst clean=value=>String(value).replace(/[\\r\\n\\t]+/g,' ').trim();\nconst payload={reference:session,firstName:clean(firstName),surname:clean(surname),email,replyPhone,company:/^(none|not applicable|n\\/a)$/i.test(company)?'Not applicable':clean(company),request:'Gym signup enquiry',identity:'To be completed securely with the Gym team'};\nreturn [{json:{status:'ready',session,replyPhone,payload}}];"
+      }
+    },
+    {
+      "name": "Ready to email Christine",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Email Christine signup table",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "parameters": {
+        "resource": "email",
+        "operation": "send",
+        "fromEmail": "Midpoint Hub Enquiries <no-reply@onpointoffices.co.za>",
+        "toEmail": "christine@midpointhub.com",
+        "subject": "={{ (/^TEST\\b/i.test($json.payload.firstName) ? 'TEST - ' : '') + 'Midpoint Gym signup enquiry - ' + $json.session }}",
+        "emailFormat": "both",
+        "html": "={{ (function renderGymEmail(p) {\n const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));\n const row=(label,value)=>'<tr><th scope=\"row\" style=\"width:34%;padding:13px 16px;text-align:left;vertical-align:top;font-weight:400;color:#66736e;background:#f6f8f6;border-bottom:1px solid #e2e8e3;\">'+esc(label)+'</th><td style=\"padding:13px 16px;text-align:left;vertical-align:top;color:#1d3029;overflow-wrap:anywhere;word-break:break-word;border-bottom:1px solid #e2e8e3;\">'+esc(value)+'</td></tr>';\n const section=(title,rows)=>'<h2 style=\"margin:27px 0 11px;font-size:16px;line-height:22px;color:#173e35;\">'+title+'</h2><table aria-label=\"'+title+'\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;border:1px solid #e2e8e3;border-collapse:separate;border-spacing:0;border-radius:8px;font-size:14px;line-height:21px;\">'+rows+'</table>';\n const test=/^TEST\\b/i.test(p.firstName||''),digits=String(p.replyPhone||'').replace(/\\D/g,'');\n return '<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Midpoint Gym | Signup enquiry</title></head><body style=\"margin:0;padding:0;background:#f2f4f0;font-family:Arial,Helvetica,sans-serif;color:#243b31;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f2f4f0;\"><tr><td align=\"center\" style=\"padding:24px 12px;\"><table role=\"presentation\" width=\"640\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;max-width:640px;background:white;border:1px solid #dfe6df;border-radius:12px;overflow:hidden;\"><tr><td style=\"padding:26px 28px;background:#173e35;color:white;border-radius:11px 11px 0 0;\"><p style=\"margin:0 0 18px;font-size:12px;line-height:16px;letter-spacing:2px;color:#c8dcc8;font-weight:bold;\">MIDPOINT HUB / GYM</p><h1 style=\"margin:0;font-size:27px;line-height:34px;color:white;\">A new Gym signup enquiry</h1><p style=\"margin:9px 0 0;font-size:14px;line-height:21px;color:#dce8dc;\">A little stronger. Together. · Submitted via WhatsApp</p></td></tr><tr><td style=\"padding:24px 28px 28px;\">'+\n (test?'<p style=\"margin:0 0 20px;padding:10px 13px;background:#fff8e4;border:1px solid #e6d8a9;border-radius:6px;color:#72551b;font-size:12px;line-height:18px;\"><strong>TEST ENQUIRY</strong> · Service check only. No membership requested.</p>':'')+\n '<p style=\"margin:0 0 7px;font-size:15px;line-height:23px;\">Hi Christine,</p><p style=\"margin:0 0 20px;font-size:14px;line-height:22px;color:#56675d;\">A customer would like to join Midpoint Gym. Their contact details are below.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#e7edcf;border:1px solid #dbe3c5;border-radius:8px;\"><tr><td style=\"padding:17px 18px;\"><p style=\"margin:0 0 6px;font-size:11px;line-height:16px;letter-spacing:1px;color:#58704c;font-weight:bold;\">NEW MEMBERSHIP ENQUIRY</p><p style=\"margin:0;font-size:21px;line-height:28px;font-weight:bold;\">'+esc(p.firstName+' '+p.surname)+'</p><p style=\"margin:8px 0 0;font-size:14px;line-height:21px;\">'+esc(p.company)+'</p></td></tr></table>'+\n section('Contact details',row('First name',p.firstName)+row('Surname',p.surname)+row('Email address',p.email)+row('Contact number',p.replyPhone)+row('Company / tenant',p.company))+\n section('Signup details',row('Request',p.request)+row('Identity verification',p.identity))+\n '<h2 style=\"margin:27px 0 8px;font-size:16px;line-height:22px;\">Help them get started</h2><p style=\"margin:0 0 16px;font-size:14px;line-height:22px;color:#56675d;\">Please contact the customer about membership options and completing Itensity registration, payment and access setup. Identity details can be completed through the secure signup page or with the Gym team.</p><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"border-radius:6px;background:#173e35;\"><a href=\"mailto:'+esc(encodeURIComponent(p.email||''))+'\" style=\"display:inline-block;padding:12px 17px;color:white;text-decoration:none;font-size:14px;line-height:20px;font-weight:bold;\">Reply by email</a></td></tr></table>'+\n (/^[1-9]\\d{7,14}$/.test(digits)?'<p style=\"margin:13px 0 0;font-size:13px;line-height:20px;\"><a style=\"color:#285d43;\" href=\"https://wa.me/'+digits+'\">Contact the customer on WhatsApp</a></p>':'')+\n '<p style=\"margin:25px 0 0;padding-top:17px;border-top:1px solid #e2e8e3;font-size:12px;line-height:19px;color:#6d786f;\"><strong>Signup request only — membership and access are not activated.</strong><br>Reference: '+esc(p.reference)+'</p></td></tr></table><p style=\"font-size:11px;color:#7b867d;\">MIDPOINT HUB · GYM</p></td></tr></table></body></html>';\n}\n)($json.payload) }}",
+        "text": "={{ 'Hi Christine,\\n\\nA customer would like to join Midpoint Gym.\\n\\nCONTACT DETAILS\\nFirst name: ' + $json.payload.firstName + '\\nSurname: ' + $json.payload.surname + '\\nEmail address: ' + $json.payload.email + '\\nContact number: ' + $json.payload.replyPhone + '\\nCompany / tenant: ' + $json.payload.company + '\\n\\nSIGNUP DETAILS\\nRequest: Gym signup enquiry\\nIdentity verification: To be completed securely with the Gym team\\nReference: ' + $json.session + '\\n\\nSignup request only. Membership, payment and access setup are completed separately with the Gym team.' }}",
+        "options": {
+          "appendAttribution": false,
+          "replyTo": "={{ $json.payload.email }}"
+        }
+      }
+    },
+    {
+      "name": "Gym submission response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json; const e=$('Validate Gym signup').first().json; const ok=Array.isArray(r.accepted)&&r.accepted.some(a=>String(a).toLowerCase()==='christine@midpointhub.com')&&!r.error; return [{json:{status:ok?'submitted':'failed',message:ok?'Your signup details have been emailed to Christine. She will help you complete Itensity registration, payment and access setup. This does not activate membership or gym access.':'Your request could not be emailed. Type MENU to try again, or contact christine@midpointhub.com.',session:e.session}}];"
+      }
+    },
+    {
+      "name": "Gym incomplete or cancelled response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      }
+    }
+  ],
+  "connections": {
+    "Completed Gym signup": {
+      "main": [
+        [
+          {
+            "node": "Validate Gym signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Gym signup": {
+      "main": [
+        [
+          {
+            "node": "Ready to email Christine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready to email Christine": {
+      "main": [
+        [
+          {
+            "node": "Email Christine signup table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gym incomplete or cancelled response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Christine signup table": {
+      "main": [
+        [
+          {
+            "node": "Gym submission response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timezone": "Africa/Johannesburg",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

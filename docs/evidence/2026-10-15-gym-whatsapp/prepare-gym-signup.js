@@ -1,0 +1,17 @@
+const body=$input.first().json.body??$input.first().json;
+const fail=message=>[{json:{status:'incomplete',message:'Your Gym request has not been sent. '+message+' Type MENU and choose Gym > Join now to try again.'}}];
+if(!body||typeof body!=='object'||Array.isArray(body)||JSON.stringify(body).length>10000)return fail('Invalid signup details.');
+const text=(key,max=160)=>typeof body[key]==='string'&&body[key].trim().length<=max?body[key].trim():'';
+const consent=text('consent',30),session=text('session',40);
+if(consent==='Cancel request')return [{json:{status:'cancelled',message:'Your Gym request has been cancelled and has not been emailed. Type MENU to return.'}}];
+if(consent!=='Send to Christine'||!/^\d{16}$/.test(session))return fail('Consent or request reference is missing.');
+const firstName=text('firstName',80),surname=text('surname',80),email=text('email',254),phoneChoice=text('phoneChoice',30),company=text('company',160);
+if(!firstName||!surname||/[\r\n]/.test(firstName+surname)||!/[\p{L}]/u.test(firstName)||!/[\p{L}]/u.test(surname))return fail('Enter your first name and surname.');
+if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))return fail('Enter a valid email address.');
+const phone=value=>{let v=String(value??'').replace(/[\s()+-]/g,'');if(/^0\d{9}$/.test(v))v='27'+v.slice(1);return /^[1-9]\d{7,14}$/.test(v)?'+'+v:'';};
+const senderPhone=phone(body.senderPhone),replyPhone=phoneChoice==='Use this number'?senderPhone:phoneChoice==='Use another number'?phone(body.alternativePhone):'';
+if(!senderPhone||!replyPhone)return fail('Choose this WhatsApp number or a valid alternative.');
+if(!company)return fail('Enter your company or choose Not applicable.');
+const clean=value=>String(value).replace(/[\r\n\t]+/g,' ').trim();
+const payload={reference:session,firstName:clean(firstName),surname:clean(surname),email,replyPhone,company:/^(none|not applicable|n\/a)$/i.test(company)?'Not applicable':clean(company),request:'Gym signup enquiry',identity:'To be completed securely with the Gym team'};
+return [{json:{status:'ready',session,replyPhone,payload}}];

@@ -1,0 +1,1607 @@
+Flow blocks
+Drag a block onto the canvas
+Search flow blocks
+MESSAGES
+Text
+Image
+Audio
+Video
+File
+Location
+AI Reply
+DATA COLLECTION
+User Input Flow
+Whatsapp Flows
+Appointment
+INTERACTIVE
+Interactive Message
+Template Message
+CTA URL Button
+FLOW CONTROL
+Condition
+New Sequence Campaign
+Label Assign
+Random Number Generator
+INTEGRATIONS
+HTTP API
+Google Sheet Data Fetch
+
+ Start Bot Flow
+
+Midpoint Hub - Gym And Functions Menu
+
+Bot trigger keywords
+
+hi,hello,hey,start,help,menu,test,midpoint
+
+Keyword matching type
+
+Exact keyword match
+
+Compose Next Message
+
+ Interactive Message
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Midpoint Hub
+
+Welcome to Midpoint Hub. Good food, movement and a little more to your day. Tap Choose an option below.
+
+Type MENU Anytime To Return.
+Next
+Buttons
+List Messages
+E-commerce
+Reply
+
+ Quick Reply
+
+Sections
+Message
+
+ Section
+
+How Can We Help?
+
+Rows
+Reply
+
+ Row
+
+FOND Food & Coffee
+
+ View the menu and place an order 
+Next
+Reply
+
+ Row
+
+Track My Order
+
+ Check your FOND order status 
+Next
+Reply
+
+ Row
+
+Coffee Rewards
+
+ Your coffee card and rewards 
+Next
+Reply
+
+ Row
+
+Gym
+
+ Membership, classes and opening hours 
+Next
+Reply
+
+ Row
+
+Padel
+
+ Courts, bookings and tenant setup 
+Next
+Reply
+
+ Row
+
+Functions & Events
+
+ Plan a gathering with Michelle 
+Next
+Reply
+
+ Row
+
+Hours & Delivery
+
+ FOND hours, collection and payment 
+Next
+Reply
+
+ Row
+
+Talk To A Human
+
+ Get assistance from Ali (Alistair) 
+Assign conversation to a user
+
+Alistair
+
+Next
+Reply
+
+ Row
+
+My Hub Account
+
+ Profile, bookings and memberships 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Fresh food and quality coffee at FOND.
+
+View the current menu, prices and availability, and order here:
+https://midpointhub.com/fond/me...
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+To check your order here, type TRACK.
+When prompted, send your FOND order reference. Use the WhatsApp number used for the order.
+
+You c...
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Your coffee card and rewards are in your Hub account:
+https://midpointhub.com/profile/rewards
+
+Sign in to view your card and available ...
+Compose Next Message
+Message
+
+ Interactive Message
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Midpoint Gym
+
+Make movement part of your day. Choose Join now to leave your details here in WhatsApp and email Christine.
+
+Request Only. Type MENU To Ret...
+Next
+Buttons
+List Messages
+E-commerce
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+A little play in your day.
+Explore Midpoint Padel: https://midpointhub.com/padel
+Book a court: https://playtomic.com/clubs/midpoint-pad...
+Compose Next Message
+Message
+
+ Interactive Message
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Functions & Events
+
+Bring your people together at Midpoint Hub. Choose an option below. Plan an event here in WhatsApp and send the details to Michelle.
+
+Enquiry Only. Type MENU To Ret...
+Next
+Buttons
+List Messages
+E-commerce
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Current FOND hours: https://midpointhub.com/fond/hours
+
+Choose delivery or collection in the basket. The checkout shows current options...
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Your Hub profile: https://midpointhub.com/profile
+Coffee rewards: https://midpointhub.com/profile/rewards
+
+Gym and padel memberships an...
+Compose Next Message
+Message
+
+ Interactive Message
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Talk To Ali
+
+Your request is assigned to Ali (Alistair). Leave your question here; he will reply when available. Tap Talk to a human below to pause...
+
+Next
+Buttons
+List Messages
+E-commerce
+Reply
+
+ Button
+System Default Action Button
+
+ Click
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Action Type
+
+Chat with human
+
+Next
+Subscribe to Sequence
+Reply
+
+ Quick Reply
+
+Sections
+Message
+
+ Section
+
+Functions & Events
+
+Rows
+Reply
+
+ Row
+
+Plan An Event
+
+ Answer a few questions for Michelle 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Let us plan your occasion. First choose your preferred date using the calendar. Then I will ask a few questions, one at a time. Type ME...
+Compose Next Message
+Message
+
+ Row
+
+Event Spaces
+
+ Explore spaces for your gathering 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Tell Michelle your occasion, guest count and preferred date. The team will confirm the right space, capacity and availability.
+https://...
+Compose Next Message
+Message
+
+ Row
+
+Food & Packages
+
+ Buffet, dinner, canapes, picnic or braai 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Choose from Buffet, Seated dinner, Canapés, Family style, Picnic and Braai. Menus and prices are quoted for your occasion.
+https://midp...
+Compose Next Message
+Message
+
+ Row
+
+Meet Michelle
+
+ Meet your functions coordinator 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Michelle Strydom can help plan your occasion.
+michelle@midpointhub.com
+https://midpointhub.com/functions/michelle
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Row
+
+Gallery
+
+ See gatherings and spaces at Midpoint 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+A glimpse of Midpoint:
+https://midpointhub.com/functions/gallery
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Random Number Generator
+
+ MidpointFunctionSession
+
+Length of random value: 16
+
+Use numbers
+
+Compose Next Message
+Message
+
+ Whatsapp Flows
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Selected Whatsapp Flow
+
+Midpoint Functions Date
+
+Message Header
+
+Preferred event date
+
+Message Body
+
+Open the calendar and select your preferred date. Michelle will confirm availability.
+
+Message Footer
+
+Enquiry only. Type MENU to cancel.
+
+Footer Button Text
+
+Choose date
+
+Compose Next Message
+Message
+
+ Quick Reply
+
+Sections
+Message
+
+ Section
+
+Midpoint Gym
+
+Rows
+Reply
+
+ Row
+
+Join Now
+
+ Send your signup details to Christine 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Let’s get you moving. I will ask for your contact details, then you can review and email them to Christine. Membership, payment and gym...
+Compose Next Message
+Message
+
+ Row
+
+Membership Options
+
+ Explore membership with the Gym team 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Find the membership that fits your working day. Christine will confirm membership options and charges.
+https://midpointhub.com/gym/memb...
+Compose Next Message
+Message
+
+ Row
+
+Classes
+
+ View published classes 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+See published Gym classes and follow the booking guidance.
+https://midpointhub.com/gym/classes
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Row
+
+Your Access
+
+ Registration and access help 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Christine and the Gym team arrange Itensity registration, payment and access.
+https://midpointhub.com/gym/access
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Row
+
+Gym Info
+
+ Opening hours and where to find us 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+View current opening hours and Gym information.
+https://midpointhub.com/gym/info
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Row
+
+Gym Events
+
+ Explore published Gym events 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+See current Gym events. Places are confirmed separately.
+https://midpointhub.com/gym/events
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Row
+
+Contact Christine
+
+ Speak to the Gym team 
+Next
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Christine can help with signup, membership and access.
+christine@midpointhub.com
+
+Type MENU to return.
+Compose Next Message
+Message
+
+ Random Number Generator
+
+ MidpointGymSession
+
+Length of random value: 16
+
+Use numbers
+
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+First, your contact details. Please answer each question once and wait for the next prompt.
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Contact details
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What is your first name? 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymFirstName
+
+Next Question
+Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What is your surname? 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymSurname
+
+Next Question
+Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What email address should Christine use? 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymEmail
+
+Next Question
+Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Multiple Choice
+
+ We can use the number you are messaging from. Which number should Christine contact? 
+Use this number
+Use another number
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymPhoneChoice
+
+Thankyou Message
+Question
+
+ Random Number Generator
+
+ MidpointGymCheckpoint
+
+Length of random value: 16
+
+Use numbers
+
+Compose Next Message
+Message
+
+ Condition
+
+Match Type: All
+
+Custom Field
+
+if MidpointGymPhoneChoice = Use this number
+
+True
+False
+Reply
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Please enter the alternative contact number.
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Alternative number
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What alternative number should Christine use? Include the country code. 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymAltPhone
+
+Thankyou Message
+Question
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Almost done. Your company or tenant name is optional.
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Company current number
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What is your company or tenant name? Reply Not applicable if this does not apply. 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymCompany
+
+Thankyou Message
+Question
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Please check your Gym signup request:
+
+*First name:* #MidpointGymFirstName#
+*Surname:* #MidpointGymSurname#
+*Email:* #MidpointGymEmail#...
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Review and submit current number
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Multiple Choice
+
+ May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately. 
+Send to Christine
+Cancel request
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymConsent
+
+Thankyou Message
+Question
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Processing your request…
+Compose Next Message
+Message
+
+ HTTP API
+
+ Midpoint Gym - Send Signup To Christine : POST
+
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+#MidpointGymReply#
+
+For secure signup including identity details: https://midpointhub.com/gym/signup
+Type MENU to return.
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Almost done. Your company or tenant name is optional.
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Company alternative number
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Free Keyboard Input
+
+ What is your company or tenant name? Reply Not applicable if this does not apply. 
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymCompany
+
+Thankyou Message
+Question
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Please check your Gym signup request:
+
+*First name:* #MidpointGymFirstName#
+*Surname:* #MidpointGymSurname#
+*Email:* #MidpointGymEmail#...
+Compose Next Message
+Message
+
+ User Input Flow
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Campaign name
+
+Midpoint Gym - Review and submit alternative number
+
+Reply
+First Question
+
+ New Question
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Multiple Choice
+
+ May Midpoint use these contact details to process your Gym signup request and email them to Christine? Choose Send to Christine or Cancel request. Privacy: https://midpointhub.com/hub/privacy. Terms: https://midpointhub.com/hub/terms. Membership and access are confirmed separately. 
+Send to Christine
+Cancel request
+Reply type
+
+Text
+
+Save to custom field
+
+MidpointGymConsent
+
+Thankyou Message
+Question
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+Processing your request…
+Compose Next Message
+Message
+
+ HTTP API
+
+ Midpoint Gym - Send Signup To Christine : POST
+
+Compose Next Message
+Message
+
+ Text
+
+ Sent
+
+0
+
+ Delivered
+
+0
+
+ Subscribers
+
+0
+
+ Errors
+
+0
+
+#MidpointGymReply#
+
+For secure signup including identity details: https://midpointhub.com/gym/signup
+Type MENU to return.
+Compose Next Message
+Message
+Back
+Rearrange
+WHATSAPP
++27 69 042 0108
+Save

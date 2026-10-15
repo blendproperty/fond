@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),render=require('./render-gym-email.cjs');
+const code=fs.readFileSync(__dirname+'/prepare-gym-signup.js','utf8');
+const run=body=>vm.runInNewContext('(function(){'+code+'})()',{$input:{first:()=>({json:{body}})}})[0].json;
+const input={senderPhone:'27000000000',session:'2026101507550001',firstName:'TEST',surname:'Gym email preview',email:'test@example.com',phoneChoice:'Use this number',alternativePhone:'27111111111',company:'Not applicable',consent:'Send to Christine',passport:'MUST NEVER FORWARD'};
+assert.equal(run(input).replyPhone,'+27000000000');
+assert.equal(run({...input,phoneChoice:'Use another number'}).replyPhone,'+27111111111');
+assert.equal(run({...input,consent:'Cancel request'}).status,'cancelled');
+assert.equal(run({...input,consent:''}).status,'incomplete');
+assert.equal(run({...input,email:'invalid'}).status,'incomplete');
+assert.equal(run({...input,surname:'50'}).status,'incomplete');
+assert.equal(run({...input,phoneChoice:'Use another number',alternativePhone:'bad'}).status,'incomplete');
+assert.ok(!JSON.stringify(run(input)).includes('MUST NEVER FORWARD'));
+const payload=run(input).payload,html=render({...payload,firstName:'TEST <img src=x>'});
+assert.ok(!html.includes('<img')&&html.includes('&lt;img'));
+assert.equal(html.split('th scope="row"').length-1,7);
+assert.ok(html.includes('mailto:test%40example.com')&&html.includes('https://wa.me/27000000000'));
+fs.writeFileSync(__dirname+'/preview.html',render(payload));
+console.log('Gym checks passed: current/alternative number, consent/cancel, validation, identity exclusion, escaping, seven table rows and reply links.');

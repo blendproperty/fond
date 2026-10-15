@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-15",
+  "menu": 2169454,
+  "previousMenu": 2168591,
+  "httpApi": 10171,
+  "workflow": "B2MlZgtSc9C0waTk",
+  "publishedVersion": "20314bf5-5844-4512-8dbe-847d62ebb3df",
+  "activeVersionSameAsDraft": true,
+  "providerGraph": {
+    "nodes": 83,
+    "connections": 82
+  },
+  "syntheticProviderEmailTest": {
+    "session": "2026101507550001",
+    "status": "submitted",
+    "smtpAcceptanceRequiredByResponseCode": true,
+    "inboxReceiptVerified": false,
+    "executionDetailsRetained": false
+  },
+  "guards": [
+    {
+      "execution": {
+        "id": "13603",
+        "workflowId": "B2MlZgtSc9C0waTk",
+        "mode": "webhook",
+        "status": "success",
+        "startedAt": "2026-10-15T05:34:36.464Z",
+        "stoppedAt": "2026-10-15T05:34:36.510Z",
+        "retryOf": null,
+        "retrySuccessId": null,
+        "waitTill": null
+      },
+      "nodes": [
+        "Gym incomplete or cancelled response"
+      ],
+      "response": {
+        "status": "cancelled",
+        "message": "Your Gym request has been cancelled and has not been emailed. Type MENU to return."
+      }
+    },
+    {
+      "execution": {
+        "id": "13604",
+        "workflowId": "B2MlZgtSc9C0waTk",
+        "mode": "webhook",
+        "status": "success",
+        "startedAt": "2026-10-15T05:34:37.441Z",
+        "stoppedAt": "2026-10-15T05:34:37.480Z",
+        "retryOf": null,
+        "retrySuccessId": null,
+        "waitTill": null
+      },
+      "nodes": [
+        "Gym incomplete or cancelled response"
+      ],
+      "response": {
+        "status": "incomplete",
+        "message": "Your Gym request has not been sent. Enter a valid email address. Type MENU and choose Gym > Join now to try again."
+      }
+    }
+  ],
+  "preview": {
+    "widths": [
+      375,
+      760
+    ],
+    "horizontalOverflow": false,
+    "tables": 2,
+    "labelledRows": 7
+  },
+  "uat": "User agreed to test now; outcome pending",
+  "identity": "Not requested or emailed via WhatsApp; retained secure website/team step",
+  "remaining": [
+    "Phone current/alternative number branches, review, consent and restart/isolation",
+    "Christine inbox rendering and personal acknowledgement",
+    "WhatsApp delivery latency cause and remedy"
+  ]
+}
