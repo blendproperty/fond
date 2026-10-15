@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-15",
+  "status": "not received by provider at inspection",
+  "clientEvidence": {
+    "application": "WhatsApp Desktop",
+    "responseSentVisible": true,
+    "submittedResponseViewVisible": true,
+    "consent": "Send to Michelle",
+    "numberChoice": "Use this number",
+    "customerAnswersExcludedFromEvidence": true
+  },
+  "providerEvidence": {
+    "bot": "474865",
+    "form": "42768",
+    "metaFlowId": "1267695732178793",
+    "published": true,
+    "reportRows": 0,
+    "reportText": "No data available in table",
+    "inboxLastVisibleEvent": "Plan your event launcher, 10:29 SAST",
+    "submittedFormEventVisible": false,
+    "httpApi": "Midpoint Functions - Send enquiry table",
+    "replyFlow": "Midpoint Functions - Form submission result",
+    "configurationChanged": false
+  },
+  "emailEvidence": {
+    "workflow": "A88qBBIfTC5QG4Kb",
+    "newNativeSubmissionExecution": false,
+    "latestManualEmailTest": "13627",
+    "latestManualEmailTestReceived": "10:28 SAST",
+    "actualUserTestEmailReceived": false,
+    "mailboxRefreshed": true
+  },
+  "interpretation": "The email action has not run for the user's submitted native response. Provider report and inbox do not contain the response. This locates the observed failure before the email workflow but does not identify whether Meta delivery or WhatChimp receipt/processing is failing.",
+  "manualResendPerformed": false,
+  "supportSubmissionAuthorisation": "requested; user's earlier answer reported missing email and did not authorise sending the incident report"
+}
