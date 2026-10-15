@@ -1,0 +1,165 @@
+{
+  "formId": "42768",
+  "name": "Midpoint Functions Enquiry",
+  "screen": "MidpointFunctionsEnquiry",
+  "reply": "3532137",
+  "httpApi": "10157",
+  "fields": [
+    {
+      "label": "Review your event details before sending",
+      "options": [],
+      "selected": [],
+      "type": "header"
+    },
+    {
+      "custom": "custom_77885",
+      "label": "Preferred date",
+      "name": "event_date",
+      "options": [],
+      "required": true,
+      "selected": [],
+      "type": "date"
+    },
+    {
+      "custom": "custom_77887",
+      "label": "Catering style",
+      "name": "catering_style",
+      "options": [
+        "Buffet",
+        "Seated dinner",
+        "Canapés",
+        "Family style",
+        "Picnic",
+        "Braai"
+      ],
+      "required": true,
+      "selected": [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "type": "select"
+    },
+    {
+      "custom": "custom_77888",
+      "label": "Number of guests",
+      "name": "guests",
+      "options": [],
+      "required": true,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77889",
+      "label": "Contact name",
+      "name": "contact_name",
+      "options": [],
+      "required": true,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77890",
+      "label": "Email",
+      "name": "email",
+      "options": [],
+      "required": true,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77893",
+      "label": "Company (or Private)",
+      "name": "company",
+      "options": [],
+      "required": true,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77891",
+      "label": "Contact number",
+      "name": "phone_choice",
+      "options": [
+        "Use this number",
+        "Use another number"
+      ],
+      "required": true,
+      "selected": [
+        false,
+        false
+      ],
+      "type": "radio-group"
+    },
+    {
+      "custom": "custom_77892",
+      "label": "Alternative number",
+      "name": "alternative_phone",
+      "options": [],
+      "required": false,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77894",
+      "label": "Budget in rand",
+      "name": "budget",
+      "options": [],
+      "required": false,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77895",
+      "label": "Budget basis",
+      "name": "budget_basis",
+      "options": [
+        "Total budget",
+        "Per person",
+        "Not sure"
+      ],
+      "required": true,
+      "selected": [
+        false,
+        false,
+        false
+      ],
+      "type": "radio-group"
+    },
+    {
+      "custom": "custom_77896",
+      "label": "Occasion / theme",
+      "name": "occasion",
+      "options": [],
+      "required": false,
+      "selected": [],
+      "type": "text"
+    },
+    {
+      "custom": "custom_77897",
+      "label": "Email Michelle?",
+      "name": "consent",
+      "options": [
+        "Send to Michelle",
+        "Cancel enquiry"
+      ],
+      "required": true,
+      "selected": [
+        false,
+        false
+      ],
+      "type": "radio-group"
+    },
+    {
+      "label": "Submit enquiry",
+      "name": "button",
+      "options": [],
+      "selected": [],
+      "type": "button"
+    }
+  ],
+  "source": "Safe UI field inventory, not exported native JSON"
+}

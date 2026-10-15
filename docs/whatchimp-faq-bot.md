@@ -1,5 +1,14 @@
 # Midpoint Hub WhatChimp FAQ bot
 
+## Current MENU — complete Gym and Functions forms, 2026-10-15 08:49 SAST
+
+Active **MENU 2169689** preserves both submenus. **Functions & events → Functions menu → Plan an event → Plan your event** opens published native form **42768 / Midpoint Functions Enquiry**. The native date picker, catering, guests, contact/email, company, phone choice/alternative, budget/basis, occasion and Send to Michelle / Cancel enquiry are all in one editable form. Choose Use this number to reuse the conversation sender and leave alternative blank. Company accepts Private; budget and occasion are optional. Review and consent precede submission. Form HTTP API **10157** then result reply **2169675 / 3532137** use the unchanged branded Michelle email workflow. Its stored API Last Response is historical sample text; current live n8n version remains **00a4c7ca-5d76-48ef-90a5-3c81d4016a64**.
+
+Gym form **42767**, direct **GYM 2169644**, its sender-choice list and Christine email remain unchanged. Prior MENU **2169642** is now on midpointgymnativepreviousmenu. Date-only Functions form **42766** and continuation **2168579** remain historical/rollback routes for previously delivered buttons; the new MENU uses the complete form. Current menu has **63 nodes / 62 connections and zero chat input campaigns**.
+
+Meta preview verified date selection (15 Oct 2027), all catering choices, independent entry and required company/consent before enabled submit. Saved graph/field/API contract and existing renderer checks passed. [Form evidence and preview](evidence/2026-10-15-functions-form/). **Fresh native handset submission, custom-field/API ordering, both phone branches, cancel/restart/session isolation and Michelle receipt from this form remain UAT gates.** The older received Functions test email does not close these gates. Newer Gym execution **13615** at 08:36 SAST reached SMTP acceptance for Christine and returned submitted; exact handset values and Christine inbox receipt/rendering are still unverified. No new website or n8n release; WhatsApp latency cause remains unresolved. Earlier sections below are historical where they cite replaced menu IDs or chat questions.
+
+
 ## Current Gym journey — native form replacement, 2026-10-15 08:23 SAST
 
 The 08:07–08:08 handset test **failed**: the continuous chat campaign reused replies across adjacent questions. The sections below describing its readiness are historical; the provider event cause remains unconfirmed.

@@ -1,0 +1,78 @@
+{
+  "httpApi": "10157",
+  "contentType": "X-WWW-FORM-URLENCODED",
+  "fields": [
+    {
+      "key": "senderPhone",
+      "label": "Phone Number",
+      "value": "chat_id"
+    },
+    {
+      "key": "session",
+      "label": "MidpointFunctionSession",
+      "value": "77886"
+    },
+    {
+      "key": "date",
+      "label": "MidpointFunctionDate",
+      "value": "77885"
+    },
+    {
+      "key": "style",
+      "label": "MidpointFunctionStyle",
+      "value": "77887"
+    },
+    {
+      "key": "guests",
+      "label": "MidpointFunctionGuests",
+      "value": "77888"
+    },
+    {
+      "key": "contactPerson",
+      "label": "MidpointFunctionName",
+      "value": "77889"
+    },
+    {
+      "key": "email",
+      "label": "MidpointFunctionEmail",
+      "value": "77890"
+    },
+    {
+      "key": "phoneChoice",
+      "label": "MidpointFunctionPhoneChoice",
+      "value": "77891"
+    },
+    {
+      "key": "alternativePhone",
+      "label": "MidpointFunctionAltPhone",
+      "value": "77892"
+    },
+    {
+      "key": "company",
+      "label": "MidpointFunctionCompany",
+      "value": "77893"
+    },
+    {
+      "key": "budget",
+      "label": "MidpointFunctionBudget",
+      "value": "77894"
+    },
+    {
+      "key": "budgetBasis",
+      "label": "MidpointFunctionBudgetBasis",
+      "value": "77895"
+    },
+    {
+      "key": "occasion",
+      "label": "MidpointFunctionOccasion",
+      "value": "77896"
+    },
+    {
+      "key": "consent",
+      "label": "MidpointFunctionConsent",
+      "value": "77897"
+    }
+  ],
+  "responseMessageField": "MidpointFunctionSendReply",
+  "note": "Last Response shown by API editor is historical sample data, not active workflow output"
+}

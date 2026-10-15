@@ -1,0 +1,14 @@
+{
+  "workflow": "B2MlZgtSc9C0waTk",
+  "execution": "13615",
+  "startedAt": "2026-10-15T06:36:52.229Z",
+  "stoppedAt": "2026-10-15T06:36:53.082Z",
+  "accepted": [
+    "christine@midpointhub.com"
+  ],
+  "rejected": [],
+  "response": "250 2.0.0 Ok: queued as 4j4yz851bNz31jh",
+  "messageId": "<6291c4dc-8082-4bf5-b4f3-cc9ef057bff3@onpointoffices.co.za>",
+  "emailNodeMs": 770,
+  "sourceNote": "Observed webhook execution; WhatChimp API 10171 last called at 08:36 SAST. Exact handset field correctness and inbox receipt are not established by this receipt."
+}

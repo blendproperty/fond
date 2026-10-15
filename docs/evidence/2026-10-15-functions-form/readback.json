@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-15",
+  "menu": "2169689",
+  "form": "42768",
+  "resultFlow": "2169675",
+  "replyReference": "3532137",
+  "nativeGymFormUnchanged": "42767",
+  "directGymUnchanged": "2169644",
+  "menuReadback": {
+    "edges": 62,
+    "inputCampaigns": 0,
+    "nodes": 63,
+    "root": " Start Bot Flow\n\nMidpoint Hub - Gym And Functions Forms\n\nBot trigger keywords\n\nhi,hello,hey,start,help,menu,test,midpoint\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message"
+  },
+  "formState": "1\tMidpoint Functions Enquiry\t[\"LEAD_GENERATION\"]\t Published\t\n\t15th Oct 26 06:42 +00:00",
+  "previousMenuRoot": " Start Bot Flow\n\nMidpoint Hub - Previous Gym-Only Native Menu\n\nBot trigger keywords\n\nmidpointgymnativepreviousmenu\n\nKeyword matching type\n\nExact keyword match\n\nCompose Next Message",
+  "emailWorkflowVersion": "00a4c7ca-5d76-48ef-90a5-3c81d4016a64",
+  "previewChecks": {
+    "calendarOpened": true,
+    "selectedDate": "15 Oct 2027",
+    "sixCateringChoices": true,
+    "contactDidNotFillEmail": true,
+    "companyBlockedSubmit": true,
+    "submitEnabledAfterRequiredFields": true,
+    "consentInitiallyUnselected": true,
+    "previewSubmitClick": "No completion callback was displayed; not counted as a completed submission"
+  },
+  "remaining": [
+    "Completed handset native form submission",
+    "Form field save/API expansion order and customer acknowledgement",
+    "Michelle receipt of enquiry from this new form",
+    "Current/alternative phone, cancel/restart and session isolation",
+    "Earlier provider delivery latency cause"
+  ]
+}
