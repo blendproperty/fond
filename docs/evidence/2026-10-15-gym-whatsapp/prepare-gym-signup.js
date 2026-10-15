@@ -11,7 +11,7 @@ if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))return fail('Enter a valid em
 const phone=value=>{let v=String(value??'').replace(/[\s()+-]/g,'');if(/^0\d{9}$/.test(v))v='27'+v.slice(1);return /^[1-9]\d{7,14}$/.test(v)?'+'+v:'';};
 const senderPhone=phone(body.senderPhone),replyPhone=phoneChoice==='Use this number'?senderPhone:phoneChoice==='Use another number'?phone(body.alternativePhone):'';
 if(!senderPhone||!replyPhone)return fail('Choose this WhatsApp number or a valid alternative.');
-if(!company)return fail('Enter your company or choose Not applicable.');
+if(!company||/^(use this number|use another number|send to christine|cancel request)$/i.test(company))return fail('Enter your company or choose Not applicable.');
 const clean=value=>String(value).replace(/[\r\n\t]+/g,' ').trim();
 const payload={reference:session,firstName:clean(firstName),surname:clean(surname),email,replyPhone,company:/^(none|not applicable|n\/a)$/i.test(company)?'Not applicable':clean(company),request:'Gym signup enquiry',identity:'To be completed securely with the Gym team'};
 return [{json:{status:'ready',session,replyPhone,payload}}];

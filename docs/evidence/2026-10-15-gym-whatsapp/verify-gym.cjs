@@ -8,6 +8,7 @@ assert.equal(run({...input,consent:'Cancel request'}).status,'cancelled');
 assert.equal(run({...input,consent:''}).status,'incomplete');
 assert.equal(run({...input,email:'invalid'}).status,'incomplete');
 assert.equal(run({...input,surname:'50'}).status,'incomplete');
+assert.equal(run({...input,company:'Use this number'}).status,'incomplete');
 assert.equal(run({...input,phoneChoice:'Use another number',alternativePhone:'bad'}).status,'incomplete');
 assert.ok(!JSON.stringify(run(input)).includes('MUST NEVER FORWARD'));
 const payload=run(input).payload,html=render({...payload,firstName:'TEST <img src=x>'});

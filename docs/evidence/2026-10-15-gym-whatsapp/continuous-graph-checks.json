@@ -1,0 +1,68 @@
+[
+  {
+    "direct": false,
+    "flowId": 2169549,
+    "nodes": 82,
+    "campaigns": 2,
+    "paths": [
+      {
+        "alternative": false,
+        "questionFields": [
+          77938,
+          77939,
+          77940,
+          77943,
+          77944
+        ]
+      },
+      {
+        "alternative": true,
+        "questionFields": [
+          77938,
+          77939,
+          77940,
+          77942,
+          77943,
+          77944
+        ]
+      }
+    ],
+    "reviewQuestionLengths": [
+      644,
+      645
+    ]
+  },
+  {
+    "direct": true,
+    "flowId": 2169551,
+    "nodes": 47,
+    "campaigns": 2,
+    "paths": [
+      {
+        "alternative": false,
+        "questionFields": [
+          77938,
+          77939,
+          77940,
+          77943,
+          77944
+        ]
+      },
+      {
+        "alternative": true,
+        "questionFields": [
+          77938,
+          77939,
+          77940,
+          77942,
+          77943,
+          77944
+        ]
+      }
+    ],
+    "reviewQuestionLengths": [
+      644,
+      645
+    ]
+  }
+]

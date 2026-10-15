@@ -1,0 +1,20 @@
+{
+  "execution": {
+    "id": "13608",
+    "workflowId": "B2MlZgtSc9C0waTk",
+    "mode": "webhook",
+    "status": "success",
+    "startedAt": "2026-10-15T05:54:19.082Z",
+    "stoppedAt": "2026-10-15T05:54:19.888Z",
+    "retryOf": null,
+    "retrySuccessId": null,
+    "waitTill": null
+  },
+  "emailNodeMs": 755,
+  "accepted": [
+    "christine@midpointhub.com"
+  ],
+  "rejected": [],
+  "response": "250 2.0.0 Ok: queued as 4j4y233Knpz40Pl",
+  "messageId": "<5db28a6f-ae84-4fb1-3ef7-ac4118d82943@onpointoffices.co.za>"
+}
