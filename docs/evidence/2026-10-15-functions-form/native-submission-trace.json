@@ -32,5 +32,5 @@
   },
   "interpretation": "The email action has not run for the user's submitted native response. Provider report and inbox do not contain the response. This locates the observed failure before the email workflow but does not identify whether Meta delivery or WhatChimp receipt/processing is failing.",
   "manualResendPerformed": false,
-  "supportSubmissionAuthorisation": "requested; user's earlier answer reported missing email and did not authorise sending the incident report"
+  "supportSubmissionAuthorisation": "Explicit user approval received; ticket10648 submitted15Oct10:56SAST, Open; automated acknowledgement only"
 }

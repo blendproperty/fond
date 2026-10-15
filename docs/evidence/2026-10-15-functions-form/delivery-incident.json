@@ -13,5 +13,16 @@
     "Direct form delivery does not prove MENU/submenu latency has recovered.",
     "A manual TEST receiver execution13627 was accepted by SMTP and the labelled email was opened in Michelle's mailbox at10:28; this is separate from native form submission."
   ],
-  "sentToSupport": false
+  "sentToSupport": true,
+  "supportTicket": {
+    "id": "10648",
+    "url": "https://help.whatchimp.com/ticket/10648",
+    "status": "Open",
+    "submittedLocal": "2026-10-15 10:56 SAST",
+    "authorisation": "Explicit user approval in chat",
+    "attachmentsSent": 0,
+    "automatedReplyLocal": "2026-10-15 10:57 SAST",
+    "humanDiagnosisReceived": false,
+    "productionChangesAuthorised": false
+  }
 }
