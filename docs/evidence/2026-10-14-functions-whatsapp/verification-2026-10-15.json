@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-15",
+  "provider": {
+    "bot": "474865",
+    "menu": "2168591",
+    "continuation": "2168579",
+    "nativeCalendar": "42766",
+    "nodes": 37,
+    "connections": 36,
+    "emailConsentQuestions": 2,
+    "savedConsentMappings": 2,
+    "handsetEndToEnd": "pending"
+  },
+  "email": {
+    "workflow": "A88qBBIfTC5QG4Kb",
+    "version": "149c5348-4785-4dd6-b823-d8a44539087a",
+    "execution": "13596",
+    "status": "success",
+    "recipient": "michelle@midpointhub.com",
+    "smtpAccepted": true,
+    "smtpRejected": [],
+    "smtpResponse": "250 2.0.0 Ok: queued as 4j4x2f2bF1z40Pj",
+    "smtpMilliseconds": 859,
+    "workflowMilliseconds": 1005,
+    "clientRequestMilliseconds": 1767,
+    "inboxReceipt": "unverified",
+    "testOnly": true
+  },
+  "latency": {
+    "messageDate": "2026-10-14",
+    "customerMenu": "15:56 SAST",
+    "botRecorded": "15:56 SAST",
+    "deliveryReceipt": "15:59 SAST",
+    "precision": "minute",
+    "configuredDelaysSeconds": 0,
+    "rootCause": "unconfirmed between provider recording and WhatsApp delivery",
+    "fixed": false
+  }
+}

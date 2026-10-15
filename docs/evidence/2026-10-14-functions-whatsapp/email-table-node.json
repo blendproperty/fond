@@ -1,0 +1,20 @@
+{
+  "name": "Email Michelle enquiry table",
+  "type": "n8n-nodes-base.emailSend",
+  "typeVersion": 2.1,
+  "parameters": {
+    "resource": "email",
+    "operation": "send",
+    "fromEmail": "Midpoint Hub Enquiries <no-reply@onpointoffices.co.za>",
+    "toEmail": "michelle@midpointhub.com",
+    "subject": "={{ (/^TEST\\b/i.test($json.payload.contactPerson) ? 'TEST - ' : '') + 'Midpoint function enquiry - ' + $json.session }}",
+    "emailFormat": "both",
+    "text": "={{ 'Hi Michelle,\\n\\nA customer submitted this function enquiry through WhatsApp.\\n\\n' + $json.table.replace(/`/g, '') + '\\n\\nThis is an enquiry, not a confirmed booking. Please contact the customer to confirm availability and arrangements.' }}",
+    "html": "={{ (() => { const p=$json.payload; const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c])); const labels={reference:'Reference',date:'Preferred date',style:'Catering',guests:'Guests',contactPerson:'Contact',replyPhone:'Reply number',email:'Email',company:'Company',budget:'Budget',budgetBasis:'Budget basis',occasion:'Occasion'};return '<p>Hi Michelle,</p><p>A customer submitted this Functions and Events enquiry through Midpoint WhatsApp.</p><table style=\"border-collapse:collapse\">'+Object.entries(labels).map(([k,l])=>'<tr><th style=\"border:1px solid #ddd;padding:8px;text-align:left\">'+esc(l)+'</th><td style=\"border:1px solid #ddd;padding:8px\">'+esc(p[k])+'</td></tr>').join('')+'</table><p>This is an enquiry, not a confirmed booking. Please contact the customer to confirm availability, catering and pricing.</p>'; })() }}",
+    "options": {
+      "appendAttribution": false,
+      "allowUnauthorizedCerts": false,
+      "replyTo": "={{ $json.payload.email }}"
+    }
+  }
+}
