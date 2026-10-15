@@ -33,9 +33,6 @@
 .hub-app .hub-next .hub-section-heading{display:block;margin-bottom:18px}.hub-app .hub-next .hub-section-heading h2{font-size:24px;font-weight:700;letter-spacing:-.6px}.hub-next .hub-section-heading .hub-eyebrow{display:none}
 .hub-app.hub-wide .hub-actions a{box-shadow:0 4px 16px #19352905;border-color:var(--hub-line);background:#ffffffb8}.hub-app.hub-wide .hub-actions b{font-size:18px}.hub-app.hub-wide .hub-actions p{font-size:12px}
 .hub-app .hub-service-bottom{background:var(--hub-tint);border:0;border-radius:24px;padding:26px;gap:24px}.hub-app .hub-service-bottom .hub-note h3{font-size:22px;line-height:1.2}.hub-app .hub-service-bottom .hub-note p{font-size:13px;line-height:1.7}.hub-app .hub-service-contact h2{font-size:20px}.hub-app .hub-service-contact>a{font-size:12px;gap:6px}
-.hub-michelle-note{display:flex;align-items:flex-start;gap:20px;margin:22px 0;padding:26px 22px;background:#f3e8d7;border:1px solid #e9dbc8;border-radius:24px}
-.hub-chef-monogram{position:relative;display:grid;place-items:center;flex-shrink:0;background:#743d4c;color:#f7dbba;width:66px;height:76px;border-radius:35px 35px 18px 18px;font:italic 42px Georgia,serif}.hub-chef-monogram>span{position:absolute;right:-7px;bottom:-7px;color:#743d4c;background:#ebbb87;border-radius:50%;font:24px Arial;padding:3px}
-.hub-michelle-note .hub-eyebrow{font-size:9px;letter-spacing:1.1px;margin:0 0 8px;color:#795052}.hub-app.hub-wide .hub-michelle-note h2{font:28px Georgia,serif;letter-spacing:-.5px;margin-bottom:12px}.hub-michelle-note p{font-size:13px;line-height:1.8;max-width:600px}.hub-michelle-note a{display:inline-flex;align-items:center;gap:12px;font-size:12px;font-weight:750;border-bottom:1px solid #b38e83;padding-bottom:3px;margin-top:12px}
 .hub-mood-functions .function-booking-form{scroll-margin-top:18px;background:#fffdfa;gap:22px;border-color:#e7d9cf;padding:28px}
 .hub-mood-functions .function-booking-form>div>h2{font:30px Georgia,serif!important;letter-spacing:-.5px}.hub-mood-functions .function-booking-form .hub-eyebrow{color:#84554f;margin-bottom:10px}
 .hub-function-styles{margin:0;padding:0;border:0;min-width:0}.hub-function-styles legend{font-size:13px;font-weight:750;margin-bottom:10px}.hub-style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.hub-style-options button{display:flex;align-items:center;gap:9px;border:1px solid #e7d9cf;background:#faf3e9;border-radius:13px;padding:13px 12px;text-align:left;min-height:62px;font-size:12px;font-weight:700}.hub-style-options button svg{color:#94603e;width:22px;height:22px}.hub-style-options button[aria-pressed=true]{background:#743d4c;color:#fff9ef;border-color:#743d4c}.hub-style-options button[aria-pressed=true] svg{color:#f4ba91}.hub-style-options button:hover{border-color:#743d4c}
@@ -55,19 +52,10 @@
  .hub-section-intro{display:block;margin-top:25px}.hub-section-intro>p{max-width:none;margin-top:8px}.hub-app.hub-wide .hub-section-intro h2{font-size:22px}
  .hub-mood-strip{gap:10px;align-items:flex-start;font-size:10px;padding:17px 0}.hub-mood-strip span{flex:1;display:block;line-height:1.5}.hub-mood-strip span:before{display:block;margin-bottom:4px}
  .hub-app .hub-service-bottom{padding:22px}.hub-app.hub-wide .hub-actions b{font-size:18px}.hub-app.hub-wide .hub-actions p{font-size:12px}
- .hub-michelle-note{gap:15px;padding:22px 18px}.hub-chef-monogram{width:48px;height:61px;font-size:34px}.hub-app.hub-wide .hub-michelle-note h2{font-size:24px}.hub-michelle-note p{font-size:12px}.hub-michelle-note .hub-eyebrow{font-size:8px;letter-spacing:.8px}
  .hub-mood-functions .function-booking-form{padding:22px 16px}.hub-style-options{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-style-options button{font-size:11px;gap:7px;padding:12px 9px;min-height:56px}.hub-style-options button svg{width:19px;height:19px}
  .hub-mood-functions .function-days button{min-height:34px}
 }
 @media(max-width:370px){.hub-personality-hero{padding:24px 20px}.hub-app.hub-wide .hub-personality-hero h1{font-size:35px}.hub-app.hub-wide .hub-feast-hero h1{font-size:40px}.hub-page-label{font-size:8px;max-width:140px}.hub-scene-wrap{width:145px}.hub-feast-hero .hub-scene-wrap{width:170px}.hub-app.hub-wide .hub-actions b{font-size:16px}}
-
-/* User-supplied chef portrait and evidence-backed, personal introduction. */
-.hub-michelle-note{display:grid;grid-template-columns:180px minmax(0,1fr);gap:26px;align-items:start}
-.hub-chef-portrait{margin:0;min-width:0}.hub-chef-portrait img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:70px 70px 18px 18px;border:5px solid #fff8ed}.hub-chef-portrait figcaption{font-size:8px;letter-spacing:1px;line-height:1.7;text-align:center;margin-top:12px;color:#785453}
-.hub-chef-story{min-width:0}.hub-michelle-note .hub-chef-intro{font:italic 21px/1.35 Georgia,serif;color:#743d4c;margin-bottom:15px}.hub-chef-story>p+p{margin-top:12px}
-.hub-chef-flavours{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 4px}.hub-chef-flavours span{padding:5px 9px;border-radius:20px;background:#e9d7c3;color:#654237;font-size:10px;font-weight:650}
-.hub-chef-social{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}.hub-chef-social a{font-size:10px;font-weight:500;gap:4px;border:0;color:#76504f;min-height:36px;margin-top:0}
-@media(max-width:700px){.hub-michelle-note{display:block;padding:23px 20px}.hub-chef-portrait{display:flex;align-items:center;gap:18px;margin-bottom:22px}.hub-chef-portrait img{width:108px;height:108px;border-radius:40px 40px 13px 13px}.hub-chef-portrait figcaption{text-align:left;max-width:110px;margin:0;font-size:9px;line-height:1.8}.hub-michelle-note .hub-chef-intro{font-size:21px}.hub-chef-story>p{font-size:13px}.hub-chef-social{gap:12px}}
 
 .hub-style-hint{font-size:11px;line-height:1.5;color:#78695e!important;margin:0 0 12px!important}
 
@@ -175,7 +163,7 @@
 
 /* Shared public typeface and readable destination captions. */
 .hub-shell{font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif}
-.hub-app.hub-wide .hub-feast-hero h1,.hub-app.hub-wide .hub-michelle-note h2,.hub-mood-functions .function-booking-form>div>h2,.hub-michelle-note .hub-chef-intro{font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif!important}
+.hub-app.hub-wide .hub-feast-hero h1,.hub-mood-functions .function-booking-form>div>h2{font-family:'Figtree','Segoe UI','Helvetica Neue',Arial,sans-serif!important}
 .hub-app.hub-wide .hub-destination-caption p{font-size:18px;line-height:1.35;font-weight:400;letter-spacing:0}
 @media(max-width:700px){.hub-mood-home .hub-home-destinations>.hub-destination-tile{aspect-ratio:.88;padding:18px 12px}.hub-app.hub-wide .hub-home-destinations h2{font-size:clamp(21px,6.2vw,27px);line-height:1.15;overflow-wrap:normal}.hub-app.hub-wide .hub-destination-caption p{font-size:16px;font-weight:400;line-height:1.35}.hub-app.hub-wide .hub-home-greeting>p{font-weight:400}}
 .hub-home-destinations>.hub-destination-tile{flex-direction:column}
