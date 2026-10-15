@@ -1,0 +1,46 @@
+{
+  "execution": {
+    "id": "13599",
+    "workflowId": "A88qBBIfTC5QG4Kb",
+    "mode": "webhook",
+    "status": "success",
+    "startedAt": "2026-10-15T05:17:18.231Z",
+    "stoppedAt": "2026-10-15T05:17:19.177Z",
+    "retryOf": null,
+    "retrySuccessId": null,
+    "waitTill": null
+  },
+  "mail": {
+    "accepted": [
+      "michelle@midpointhub.com"
+    ],
+    "rejected": [],
+    "response": "250 2.0.0 Ok: queued as 4j4xCL5xsQz1yMX",
+    "messageId": "<2cb7e475-85d6-9acd-23d6-2c8b04943e08@onpointoffices.co.za>"
+  },
+  "emailNodeMs": 883,
+  "publishedVersion": "00a4c7ca-5d76-48ef-90a5-3c81d4016a64",
+  "configuration": {
+    "activeVersionMatchesDraft": true,
+    "htmlReadbackMatchesRenderer": true
+  },
+  "browserPreview": {
+    "desktopViewport": 760,
+    "mobileViewport": 375,
+    "detailTables": 2,
+    "labelledRows": 10,
+    "horizontalOverflow": false
+  },
+  "inbox": {
+    "receivedTestSubject": "TEST - Midpoint function enquiry - 2026101507450001",
+    "client": "Hostinger Mail",
+    "visibleTimestamp": "Oct 15, 7:17 AM",
+    "rendering": "Branded header, date summary, contact and event tables, reply links verified visually",
+    "humanReadAcknowledgement": false
+  },
+  "remainingGates": [
+    "Full revised handset calendar/number/consent journey",
+    "Exact WhatsApp delivery latency cause and remedy",
+    "Other client and physical-device rendering"
+  ]
+}

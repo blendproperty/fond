@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const render = require('./render-function-enquiry-email.cjs');
+const html = render({date:'2026-11-15', guests:50, style:'Buffet', contactPerson:'TEST <img src=x onerror=alert(1)>', email:'test@example.com', replyPhone:'+27 00 000 0000', company:'Private', occasion:'Not sure', budget:'Not sure', budgetBasis:'Not sure', reference:'TEST-20261015'});
+assert.ok(html.includes('&lt;img'));
+assert.ok(!html.includes('<img'));
+assert.ok(html.includes('15 November 2026'));
+assert.ok(html.includes('Private function'));
+assert.equal(html.split('th scope="row"').length - 1, 10);
+assert.ok(html.includes('To be discussed'));
+assert.ok(!html.includes('user_input_data') && !html.includes('chat_id'));
+assert.ok(html.includes('mailto:test%40example.com'));
+assert.ok(html.includes('https://wa.me/27000000000'));
+assert.ok(html.includes('TEST ENQUIRY'));
+assert.ok(!render({contactPerson:'Customer'}).includes('TEST ENQUIRY'));
+console.log('Email verification passed: ten labelled rows, escaped inputs, readable date, reply links and conditional TEST banner.');
