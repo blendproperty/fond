@@ -1,0 +1,108 @@
+{
+  "status": "DRAFT_NOT_PUBLISHED",
+  "date": "2026-10-16",
+  "botId": "474865",
+  "previewTrigger": "midpointsupportpreview20261016",
+  "activationTriggers": [
+    "human",
+    "help",
+    "support",
+    "assistance",
+    "agent",
+    "real person",
+    "speak to someone",
+    "speak to somebody",
+    "talk to someone",
+    "talk to somebody",
+    "speak to staff",
+    "talk to staff",
+    "chat with someone",
+    "need assistance",
+    "need help",
+    "help me",
+    "can you help",
+    "please help",
+    "assist me",
+    "customer service",
+    "contact the team",
+    "speak to a member",
+    "team",
+    "complaint",
+    "complaints",
+    "cancel my order",
+    "change my order",
+    "order help"
+  ],
+  "activationMatching": "string",
+  "menuText": "Choose what your enquiry is about, and we will connect you with the right person.",
+  "routes": [
+    {
+      "topic": "Padel",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Padel.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Padel."
+    },
+    {
+      "topic": "Accounts",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Accounts.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Accounts."
+    },
+    {
+      "topic": "FOND",
+      "person": "Ray",
+      "phone": "27662205519",
+      "url": "https://wa.me/27662205519?text=Hi+Ray%2C+I+came+from+Midpoint+Hub+and+need+help+with+FOND.",
+      "prefilledMessage": "Hi Ray, I came from Midpoint Hub and need help with FOND."
+    },
+    {
+      "topic": "Functions",
+      "person": "Michelle",
+      "phone": "27704179160",
+      "url": "https://wa.me/27704179160?text=Hi+Michelle%2C+I+came+from+Midpoint+Hub+and+need+help+with+Functions.",
+      "prefilledMessage": "Hi Michelle, I came from Midpoint Hub and need help with Functions."
+    },
+    {
+      "topic": "Gym",
+      "person": "Christine",
+      "phone": "27716896343",
+      "url": "https://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Gym.",
+      "prefilledMessage": "Hi Christine, I came from Midpoint Hub and need help with Gym."
+    },
+    {
+      "topic": "Sales",
+      "person": "Christine",
+      "phone": "27716896343",
+      "url": "https://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Sales.",
+      "prefilledMessage": "Hi Christine, I came from Midpoint Hub and need help with Sales."
+    },
+    {
+      "topic": "Complaints",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Complaints.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Complaints."
+    },
+    {
+      "topic": "Other",
+      "mode": "preserve-existing-handoff",
+      "savedAssignee": "Alistair",
+      "savedAssigneeId": "333467",
+      "liveVerificationRequired": true
+    }
+  ],
+  "sourceExport": "docs\\midpoint-interactive-menu.txt",
+  "sourceSha256": "b13f3baf8a9fa3fa1e0d92c62400653161584ff1d4c0cec06589327b9f7e9f79",
+  "publicationGates": [
+    "Restore browser control and read back current live configuration",
+    "Backup live keyword, current main-menu and human-action flows",
+    "Verify Other preserves the existing live destination without guessing a number",
+    "Remove HELP from main-menu keywords to avoid trigger conflict",
+    "Replace existing team-contact keyword handling in place or remove overlapping triggers after backup; do not leave competing support flows",
+    "Ensure main-menu Talk to a human opens support submenu without preassigning or pausing",
+    "Activate only after provider import/save/reopen and all routes verified",
+    "Complete fresh handset tests and staff receipt/reply checks"
+  ]
+}
