@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-16",
+  "botId": "474865",
+  "supportFlow": "2171423",
+  "mainFlow": "2171424",
+  "support": [
+    {
+      "topic": "Padel",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Padel.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Padel.",
+      "providerMessage": "Alistair can help with your Padel enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Padel.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "Accounts",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Accounts.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Accounts.",
+      "providerMessage": "Alistair can help with your Accounts enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Accounts.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "FOND",
+      "person": "Ray",
+      "phone": "27662205519",
+      "url": "https://wa.me/27662205519?text=Hi+Ray%2C+I+came+from+Midpoint+Hub+and+need+help+with+FOND.",
+      "prefilledMessage": "Hi Ray, I came from Midpoint Hub and need help with FOND.",
+      "providerMessage": "Ray can help with your FOND enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27662205519?text=Hi+Ray%2C+I+came+from+Midpoint+Hub+and+need+help+with+FOND.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "Functions",
+      "person": "Michelle",
+      "phone": "27704179160",
+      "url": "https://wa.me/27704179160?text=Hi+Michelle%2C+I+came+from+Midpoint+Hub+and+need+help+with+Functions.",
+      "prefilledMessage": "Hi Michelle, I came from Midpoint Hub and need help with Functions.",
+      "providerMessage": "Michelle can help with your Functions enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27704179160?text=Hi+Michelle%2C+I+came+from+Midpoint+Hub+and+need+help+with+Functions.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "Gym",
+      "person": "Christine",
+      "phone": "27716896343",
+      "url": "https://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Gym.",
+      "prefilledMessage": "Hi Christine, I came from Midpoint Hub and need help with Gym.",
+      "providerMessage": "Christine can help with your Gym enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Gym.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "Sales",
+      "person": "Christine",
+      "phone": "27716896343",
+      "url": "https://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Sales.",
+      "prefilledMessage": "Hi Christine, I came from Midpoint Hub and need help with Sales.",
+      "providerMessage": "Christine can help with your Sales enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27716896343?text=Hi+Christine%2C+I+came+from+Midpoint+Hub+and+need+help+with+Sales.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    },
+    {
+      "topic": "Complaints",
+      "person": "Alistair",
+      "phone": "27827465401",
+      "url": "https://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Complaints.",
+      "prefilledMessage": "Hi Alistair, I came from Midpoint Hub and need help with Complaints.",
+      "providerMessage": "Alistair can help with your Complaints enquiry.\n\n\nTap the link below to open a direct WhatsApp chat, then tap Send:\nhttps://wa.me/27827465401?text=Hi+Alistair%2C+I+came+from+Midpoint+Hub+and+need+help+with+Complaints.\n\n\nThis opens a separate conversation. Your Midpoint chat history is not transferred.\n\n\nType MENU to return to Midpoint Hub.",
+      "matched": true
+    }
+  ],
+  "main": [
+    {
+      "topic": "Padel",
+      "phone": "27827465401",
+      "matched": true
+    },
+    {
+      "topic": "Accounts",
+      "phone": "27827465401",
+      "matched": true
+    },
+    {
+      "topic": "FOND",
+      "phone": "27662205519",
+      "matched": true
+    },
+    {
+      "topic": "Functions",
+      "phone": "27704179160",
+      "matched": true
+    },
+    {
+      "topic": "Gym",
+      "phone": "27716896343",
+      "matched": true
+    },
+    {
+      "topic": "Sales",
+      "phone": "27716896343",
+      "matched": true
+    }
+  ]
+}

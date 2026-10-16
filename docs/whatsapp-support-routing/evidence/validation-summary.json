@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-16",
+  "configuration": "published",
+  "supportRows": 8,
+  "supportNodes": 21,
+  "mainNodes": 81,
+  "supportExpandedLinksVerified": 7,
+  "mainExpandedLinksVerified": 6,
+  "unrelatedNodesPreserved": true,
+  "graphEdgesReciprocal": true,
+  "mainHelpConflictRemoved": true,
+  "handsetUAT": "pending"
+}

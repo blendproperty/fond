@@ -1,0 +1,140 @@
+- region:
+  - complementary:
+    - generic: Flow blocks
+    - generic: Drag a block onto the canvas
+    - search:
+      - generic: Search flow blocks
+      - generic: 
+      - searchbox
+      - text: 
+    - heading [level=3]: Messages
+    - generic: 
+    - generic: Text
+    - generic: 
+    - generic: Image
+    - generic: 
+    - generic: Audio
+    - generic: 
+    - generic: Video
+    - generic: 
+    - generic: File
+    - generic: 
+    - generic: Location
+    - generic: 
+    - generic: AI Reply
+    - heading [level=3]: Data Collection
+    - generic: 
+    - generic: User Input Flow
+    - generic: 
+    - generic: Whatsapp Flows
+    - generic: 
+    - generic: Appointment
+    - heading [level=3]: Interactive
+    - generic: 
+    - generic: Interactive Message
+    - generic: 
+    - generic: Template Message
+    - generic: 
+    - generic: CTA URL Button
+    - heading [level=3]: Flow control
+    - generic: 
+    - generic: Condition
+    - generic: 
+    - generic: New Sequence Campaign
+    - generic: 
+    - generic: Label Assign
+    - generic: "#"
+    - generic: Random Number Generator
+    - heading [level=3]: Integrations
+    - generic: 
+    - generic: HTTP API
+    - generic: 
+    - generic: Google Sheet Data Fetch
+- paragraph:
+  - generic: 
+  - text: Start Bot Flow
+- paragraph: Midpoint Hub - Team contact
+- text: Bot trigger keywords
+- paragraph: team,human,person,agent,contact,speak to someone,speak to somebody,speak to a member,speak to ali,speak to alistair,speak to staff,talk to someone,talk to somebody,talk to ali,talk to alistair,talk to staff,chat with someone,chat with ali,real person,need assistance,need help,help me,can you help,please help,assist me,assistance,support,complaint,cancel my order,change my order,ray,call ray,phone ray,order help
+- text: Keyword matching type
+- paragraph: String match
+- text: Assign conversation to a user
+- paragraph: Alistair
+- generic: Compose Next Message
+- paragraph:
+  - generic: 
+  - text: Text
+- list:
+  - generic: 
+  - text: Sent
+  - paragraph: "0"
+  - generic: 
+  - text: Delivered
+  - paragraph: "0"
+  - generic: 
+  - text: Subscribers
+  - paragraph: "0"
+  - generic: 
+  - text: Errors
+  - paragraph: "0"
+- generic: I have passed your message to Ali (Alistair) for assistance. Leave your question here; he will reply when available. Replies may not be...
+- generic: Compose Next Message
+- generic: Message
+- img: 
+- toolbar:
+  - button:
+    - generic: 
+    - generic: Back
+  - button:
+    - generic: 
+    - generic: Rearrange
+  - link:
+    - /url: https://wa.me/27690420108
+    - generic: 
+    - generic: WhatsApp
+    - generic: +27 69 042 0108
+  - text: 
+  - button:
+    - generic: 
+    - generic: Save
+- toolbar:
+  - button:
+    - generic: 
+  - button:
+    - generic: 
+- dialog:
+  - generic: 
+  - heading "Configure Text Message" [level=2]
+  - paragraph: Compose your reply message with variables and emojis.
+  - generic: 
+  - heading "Reply message *" [level=3]:
+    - text: Reply message
+    - generic: "*"
+  - paragraph: Main text content sent to the subscriber.
+  - button " Custom":
+    - generic: 
+    - text: Custom
+  - generic: 
+  - text: Name
+  - application:
+    - text: I have passed your message to Ali (Alistair) for assistance. Leave your question here; he will reply when available. Replies may not be immediate.
+    - text: To request Ali directly another time, type ALI while the bot is active, or choose Talk to a human from MENU.
+    - text: "For an order issue, include your FOND order reference. Urgent FOND orders: call Ray on +27 66 220 5519."
+    - text: The bot cannot cancel/change an order or confirm a refund or booking.
+    - generic "Use the TAB key to insert emoji faster"
+  - generic: 432/4096
+  - button " Delivery Options Optional Typing indicator and reply delay settings. ":
+    - generic: 
+    - heading "Delivery Options Optional" [level=3]:
+      - text: Delivery Options
+      - generic: Optional
+    - paragraph: Typing indicator and reply delay settings.
+    - generic: 
+  - text:    
+  - text: "!"
+  - button " Save Changes" [disabled]:
+    - generic: 
+    - text: Save Changes
+  - button " Close" [disabled]:
+    - generic: 
+    - text: Close

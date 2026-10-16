@@ -1,0 +1,90 @@
+- region "Flow blocks palette":
+  - complementary:
+    - generic: Flow blocks
+    - generic: Drag a block onto the canvas
+    - search:
+      - generic: Search flow blocks
+      - generic: 
+      - searchbox "Search flow blocks"
+      - text: 
+    - heading "Messages" [level=3]
+    - generic: 
+    - generic: Text
+    - generic: 
+    - generic: Image
+    - generic: 
+    - generic: Audio
+    - generic: 
+    - generic: Video
+    - generic: 
+    - generic: File
+    - generic: 
+    - generic: Location
+    - generic: 
+    - generic: AI Reply
+    - heading "Data Collection" [level=3]
+    - generic: 
+    - generic: User Input Flow
+    - generic: 
+    - generic: Whatsapp Flows
+    - generic: 
+    - generic: Appointment
+    - heading "Interactive" [level=3]
+    - generic: 
+    - generic: Interactive Message
+    - generic: 
+    - generic: Template Message
+    - generic: 
+    - generic: CTA URL Button
+    - heading "Flow control" [level=3]
+    - generic: 
+    - generic: Condition
+    - generic: 
+    - generic: New Sequence Campaign
+    - generic: 
+    - generic: Label Assign
+    - generic: "#"
+    - generic: Random Number Generator
+    - heading "Integrations" [level=3]
+    - generic: 
+    - generic: HTTP API
+    - generic: 
+    - generic: Google Sheet Data Fetch
+- paragraph:
+  - generic: 
+  - text: Start Bot Flow
+- paragraph: Midpoint Hub - Previous Team contact retained
+- text: Bot trigger keywords
+- paragraph: midpointlegacyteam20261016
+- text: Keyword matching type
+- paragraph: Exact keyword match
+- text: Assign conversation to a user
+- paragraph: Alistair
+- generic: Compose Next Message
+- generic "referenceOutput"
+- paragraph:
+  - generic: 
+  - text: Text
+- generic: I have passed your message to Ali (Alistair) for assistance. Leave your question here; he will reply when available. Replies may not be...
+- generic: Compose Next Message
+- generic "textOutput"
+- generic "textInput"
+- generic: Message
+- img: 
+- toolbar "Flow editor toolbar":
+  - group "Navigation and canvas tools":
+    - button "Back":
+      - generic: 
+      - generic: Back
+    - button "Rearrange":
+      - generic: 
+      - generic: Rearrange
+  - link "WhatsApp +27 69 042 0108":
+    - /url: https://wa.me/27690420108
+    - generic: 
+    - generic: WhatsApp
+    - generic: +27 69 042 0108
+  - generic: 
+  - button "Save":
+    - generic: 
+    - generic: Save

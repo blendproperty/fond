@@ -1,8 +1,14 @@
-# Midpoint WhatsApp support menu - prepared, not published
+# Midpoint WhatsApp support routing - published configuration
 
-Prepared 16 October 2026. Provider bot: Midpoint Cafe `474865`.
+**16 October 2026: published and reopened in WhatChimp bot474865.** Support keyword flow2171423 and main menu2171424 are saved. HUMAN/HELP/SUPPORT and related phrases open the eight-choice support list. MENU/HI/HELLO/HEY/START/TEST/MIDPOINT open the new main menu; its Talk to a human row opens the same routing choices without early assignment or pause. The old team2159819 and main2169689 remain recoverable under internal exact legacy triggers. HELP no longer overlaps the main-menu exact triggers.
 
-**Status: local draft only.** Both browser-control runtimes failed before session startup with `failed to write kernel assets: The system cannot find the path specified. (os error 3)`. No provider writes, customer messages or changes to existing live routing were made. Publishing and provider/handset verification remain outstanding.
+Provider persistence and the seven exact direct links in support2171423 are verified. The main menu uses the same validated branch payload; six links were expanded and matched independently, while the Complaints node preview matches its imported payload and support equivalent. Native Gym/Functions forms and TRACK branches are retained. Other keeps Alistair's existing inbox assignment and Chat with human button; it does not introduce a guessed external telephone number.
+
+**Handset UAT remains outstanding.** No test message or customer/staff conversation was sent. Saved configuration is not evidence of delivery, opening the destination on a physical phone, staff receipt/reply, same-chat pause/resume or old-menu compatibility. Send a fresh MENU to obtain current menu choices; already-delivered legacy buttons retain their original identities.
+
+Browser control was restored after the prior kernel-path failure. File upload initially required the ChatGPT Edge extension's Allow access to file URLs setting; the owner enabled it, after which both imports succeeded. Provider Export flow data showed Success but did not expose a captured file/download; retained original flows and visible before snapshots are the rollback record, not a claimed fresh full JSON export. The new main was built from the saved current2169689 export after live visual/field comparison. Unrelated base nodes were compared byte-for-byte in local JSON, except start1, support row15 and Other reply input34.
+
+Evidence is under `evidence/`: live main/support snapshots after reload, all seven expanded support messages, six expanded main links, retained previous triggers, before snapshots, keyword settings screenshot and FOND direct-link screenshot. `activated-support-source.txt` and `activated-main-source.txt` are the prepared payloads with the provider-verified active start settings; they are not newly exported provider files. `routing-plan.json` records the current provider IDs, contact map and pending gates. `provider-import-draft.json`, `support-preview.txt`, `main-preview.txt` and `local-validation.json` are historical local preview artifacts. `build-routing.py` emits a separate draft-routing-plan.json so it cannot overwrite the published status record.
 
 Customer copy:
 
@@ -21,15 +27,15 @@ List button: **Choose enquiry**. Section: **Choose your enquiry**.
 | Gym | Christine | +27 71 689 6343 |
 | Sales | Christine | +27 71 689 6343 |
 | Complaints | Alistair | +27 82 746 5401 |
-| Other | Preserve existing live handoff | Verify current destination before publication |
+| Other | Existing Midpoint inbox handoff to Alistair | +27 69 042 0108 (Midpoint inbox) |
 
 Complaints is included as a separate eighth choice because the owner explicitly assigned its routing. Each direct branch supplies a clickable `wa.me` link with the destination and enquiry topic already filled in. The customer opens it and taps Send; this is a separate WhatsApp conversation, without automatic transcript transfer. It does not automatically send to staff or prove staff receipt.
 
 `routing-plan.json` contains every exact destination, prefilled message, requested trigger and release gate. `provider-import-draft.json` uses the saved WhatChimp graph schema and an isolated **midpointsupportpreview20261016** trigger. It intentionally does not activate HUMAN/HELP/SUPPORT during import. `build-routing.py` reproduces and validates the draft without network access.
 
-The existing saved export's main-menu human row assigns Alistair (member `333467`) and leads to nodes34/35. Other preserves that saved row assignment, reply and system Chat with human button exactly. This is historical configuration evidence, not proof of the current destination. No new number has been guessed for Other.
+The existing saved export's main-menu human row assigns Alistair (member `333467`) and leads to nodes34/35. Other preserves that saved row assignment, reply and system Chat with human button exactly. The current Other assignment was confirmed in the live main/team editor on16October and preserved. No new external number has been guessed for Other.
 
-## Publication steps once browser control is restored
+## Historical publication checklist and remaining handset checks
 
 1. Open the signed-in Midpoint bot and export the latest main menu, team keyword flow2159819 and system human action2158936. Verify the current Other destination. Preserve each complete live export as rollback evidence.
 2. Import the draft under its isolated preview trigger. Reopen it and verify provider acceptance of all eight rows and seven direct links. If using native CTA buttons instead of text links, confirm the provider's actual CTA schema in the UI; the draft does not invent that schema.

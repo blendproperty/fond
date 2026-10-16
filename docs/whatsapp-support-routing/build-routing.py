@@ -96,7 +96,7 @@ for index,(topic,description,person,phone) in enumerate(ROUTES):
 flow = {'id':base['id'],'nodes':nodes}
 (OUT/'provider-import-draft.json').write_text(json.dumps(flow,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 plan = dict(status='DRAFT_NOT_PUBLISHED',date='2026-10-16',botId='474865',previewTrigger='midpointsupportpreview20261016',activationTriggers=TRIGGERS,activationMatching='string',menuText=nodes['5']['data']['textMessage'],routes=manifest,sourceExport=str(BASE.relative_to(ROOT)),sourceSha256=hashlib.sha256(BASE.read_bytes()).hexdigest(),publicationGates=['Restore browser control and read back current live configuration','Backup live keyword, current main-menu and human-action flows','Verify Other preserves the existing live destination without guessing a number','Remove HELP from main-menu keywords to avoid trigger conflict','Replace existing team-contact keyword handling in place or remove overlapping triggers after backup; do not leave competing support flows','Ensure main-menu Talk to a human opens support submenu without preassigning or pausing','Activate only after provider import/save/reopen and all routes verified','Complete fresh handset tests and staff receipt/reply checks'])
-(OUT/'routing-plan.json').write_text(json.dumps(plan,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+(OUT/'draft-routing-plan.json').write_text(json.dumps(plan,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 
 # Local structural and link verification. This does not establish provider acceptance.
 assert len(ROUTES)==8 and len({r[0] for r in ROUTES})==8
