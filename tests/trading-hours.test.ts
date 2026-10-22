@@ -13,7 +13,7 @@ beforeEach(()=>{resetDbForTests();delete process.env.FOND_HOST;delete process.en
 const hours={...DEFAULT_SETTINGS,enforceHours:true};
 const saturday=new Date('2026-10-03T10:00:00+02:00');
 const sunday=new Date('2026-10-04T10:00:00+02:00');
-const order=(ids:string[],fulfillment:'collection'|'delivery'='collection',collectionTime='ASAP')=>createOrder({submissionKey:randomUUID(),customerName:'Schedule test',contactNumber:'0821234567',building:'Test office',fulfillment,collectionTime,paymentMethod:fulfillment==='delivery'?'yoco_online':'pay_at_collection',source:'customer',lines:ids.map(id=>({id,quantity:1}))});
+const order=(ids:string[],fulfillment:'collection'|'delivery'|'dine_in'='collection',collectionTime='ASAP')=>createOrder({submissionKey:randomUUID(),customerName:'Schedule test',contactNumber:'0821234567',building:'Test office',fulfillment,collectionTime,paymentMethod:fulfillment==='delivery'?'yoco_online':'pay_at_collection',source:'customer',lines:ids.map(id=>({id,quantity:1}))});
 
 test('opening message handles before opening, exact cutoff, weekends and paused ordering in South African time',()=>{
   assert.equal(orderingHoursMessage(hours,new Date('2026-10-01T04:00:00Z')),'Opens today at 07:00');
@@ -52,12 +52,13 @@ test('Saturday collection stops at noon and truck/mixed baskets have no weekend 
 test('server enforces Saturday category rules for collection and delivery, including mixed baskets',t=>{
   t.mock.timers.enable({apis:['Date'],now:saturday});
   saveDocument('trading',hours,'fixture');
-  for(const fulfillment of ['collection','delivery'] as const){
+  for(const fulfillment of ['collection','delivery','dine_in'] as const){
     assert.doesNotThrow(()=>order(['espresso-single'],fulfillment));
     assert.throws(()=>order(['truck-kota-russian'],fulfillment),/Food Truck ordering is closed/);
     assert.throws(()=>order(['espresso-single','truck-kota-russian'],fulfillment),/Food Truck ordering is closed/);
   }
   assert.throws(()=>order(['espresso-single'],'collection','2026-10-03T12:15:00+02:00'),/available collection time/);
+  assert.throws(()=>order(['espresso-single'],'dine_in','2026-10-03T12:15:00+02:00'),/available collection time/);
   t.mock.timers.setTime(new Date('2026-10-03T11:59:00+02:00').getTime());
   assert.throws(()=>order(['espresso-single']),/cannot be ready before closing/);
   t.mock.timers.setTime(new Date('2026-10-03T12:00:00+02:00').getTime());

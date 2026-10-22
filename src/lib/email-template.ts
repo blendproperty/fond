@@ -97,17 +97,17 @@ export function buildVerificationEmail(code: string): EmailMessage {
   return { subject, text, html: receiptLayout({ preview: `Your FOND verification code is ${code}.`, title: 'Verify your FOND email address', statusLine: 'Use the secure code below within 10 minutes', content, footer: 'This security message was requested from your FOND account.' }) };
 }
 
-const statusLabel = (status: OrderStatus,fulfilment?:OrderRecord['fulfillment']) => status==='ready'?(fulfilment==='delivery'?'Ready for delivery':'Ready for collection'):status==='out_for_delivery'?'Out for delivery':({ received: 'Received', accepted: 'Accepted', preparing: 'Preparing', completed: 'Completed', cancelled: 'Cancelled' }[status]);
+const statusLabel = (status: OrderStatus,fulfilment?:OrderRecord['fulfillment']) => status==='ready'?(fulfilment==='delivery'?'Ready for delivery':fulfilment==='dine_in'?'Ready for table service':'Ready for collection'):status==='out_for_delivery'?'Out for delivery':({ received: 'Received', accepted: 'Accepted', preparing: 'Preparing', completed: 'Completed', cancelled: 'Cancelled' }[status]);
 
 export function buildOrderEmail(order: OrderRecord, event: 'received' | 'accepted' | 'ready' | 'completed'): EmailMessage {
   const templates=publishedMessageTemplates();
-  const fulfilment = order.fulfillment === 'delivery' ? 'Delivery' : 'Collection';
-  const payment = order.paymentMethod === 'yoco_online' ? 'Paid securely online' : (order.fulfillment==='delivery'?'Pay by card on delivery — our team will bring the Yoco card machine':'Pay in person on collection');
+  const fulfilment = order.fulfillment === 'delivery' ? 'Delivery' : order.fulfillment==='dine_in'?'Dine in · plated':'Collection';
+  const payment = order.paymentMethod === 'yoco_online' ? 'Paid securely online' : (order.fulfillment==='delivery'?'Pay by card on delivery — our team will bring the Yoco card machine':order.fulfillment==='dine_in'?'Pay in person at FOND':'Pay in person on collection');
   const destination = order.fulfillment === 'delivery' ? [order.building, order.company].filter(Boolean).join(' · ') : 'FOND · Midpoint Hub';
   const itemText = order.lines.map(line => `${line.quantity} × ${line.name}${line.note?` (Item note: ${line.note})`:''}${line.modifiers?.length ? ` (${line.modifiers.map(modifier => modifier.name).join(', ')})` : ''} — ${money(line.subtotalCents)}${line.rewardDiscountCents?` (coffee reward: -${money(line.rewardDiscountCents)})`:""}`).join('\n');
   const itemsHtml = order.lines.map(line => `<tr><td style="padding:8px 16px 8px 0;color:${BRAND.ink};font-size:11px;line-height:17px;vertical-align:top"><strong>${line.quantity} × ${escapeHtml(line.name)}</strong>${line.note?`<br><span style="color:${BRAND.slate};font-size:10px">Item note: ${escapeHtml(line.note)}</span>`:''}${line.modifiers?.length ? `<br><span style="color:${BRAND.slate};font-size:10px">${escapeHtml(line.modifiers.map(modifier => modifier.name).join(' · '))}</span>` : ''}</td><td align="right" valign="top" style="padding:8px 0;color:${BRAND.ink};font-size:11px;line-height:17px;font-weight:700;white-space:nowrap">${escapeHtml(money(line.subtotalCents))}${line.rewardDiscountCents?`<br><small>Coffee reward: -${escapeHtml(money(line.rewardDiscountCents))}</small>`:""}</td></tr>`).join('');
   const amountDue = order.paymentMethod === 'yoco_online' ? 0 : order.totalCents;
-  const key:EmailMessageKey=event==='ready'?(order.fulfillment==='delivery'?'readyDelivery':'readyCollection'):event;
+  const key:EmailMessageKey=event==='ready'?(order.fulfillment==='delivery'?'readyDelivery':order.fulfillment==='dine_in'?'readyDineIn':'readyCollection'):event;
   const collectionTime=formatCollectionTime(order.collectionTime);
   const values={customerName:order.customerName,reference:order.displayReference,prepMinutes:order.estimatedPrepMinutes,collectionTime:collectionTime,destination,total:money(order.totalCents)};
   const configured=templates.email.templates[key],subject=renderMessageText(configured.subject,values),title=renderMessageText(configured.title,values),status=renderMessageText(configured.status,values),intro=renderMessageText(configured.intro,values);

@@ -7,7 +7,7 @@ import {publishedMessageTemplates} from './message-templates';
 
 export type SmsConfig={accountSid:string;sender:string};
 export type SmsTemplate='order_accepted'|'order_ready';
-export type SmsFulfillment='collection'|'delivery';
+export type SmsFulfillment='collection'|'delivery'|'dine_in';
 export const EMPTY_SMS:SmsConfig={accountSid:'',sender:''};
 export const smsConfig=():SmsConfig=>({...EMPTY_SMS,...document('twilio-sms-config',EMPTY_SMS)});
 export function validateSmsConfig(input:unknown):SmsConfig{
@@ -18,7 +18,7 @@ export function validateSmsConfig(input:unknown):SmsConfig{
 }
 export function smsConfigured(){try{validateSmsConfig(smsConfig());return !!providerSecret('twilio-auth-token');}catch{return false;}}
 export function smsBody(template:SmsTemplate,reference:string,fulfillment:SmsFulfillment='collection',customerName=''){
- const key:SmsMessageKey=template==='order_accepted'?'accepted':fulfillment==='delivery'?'readyDelivery':'readyCollection';
+ const key:SmsMessageKey=template==='order_accepted'?'accepted':fulfillment==='delivery'?'readyDelivery':fulfillment==='dine_in'?'readyDineIn':'readyCollection';
  return renderMessageText(publishedMessageTemplates().sms[key],{reference,customerName});
 }
 export async function sendSmsNotification(input:{toE164:string;templateName:SmsTemplate;reference:string;customerName?:string;fulfillment?:SmsFulfillment;statusCallback?:boolean}){

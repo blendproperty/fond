@@ -236,6 +236,7 @@ footer span:last-child{margin-left:auto}
 .staff-fulfilment{display:grid;gap:3px;margin:9px 0 11px;padding:10px 11px;border-radius:8px;background:#f3f7f6;font-size:12px;color:var(--slate)}
 .staff-fulfilment strong{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:12px;letter-spacing:.06em}
 .staff-fulfilment[data-fulfilment="delivery"]{background:#eef8f5;border-left:4px solid #238f78}
+.staff-fulfilment[data-fulfilment="dine_in"]{background:#fff8eb;border-left:4px solid #a66b22}
 .staff-fulfilment[data-fulfilment="collection"]{border-left:4px solid #328c42}
 .staff-history-toggle{margin:0 0 10px;padding:0;border:0;background:none;color:var(--oxblood);font:inherit;font-size:11px;font-weight:800;text-decoration:underline;cursor:pointer}
 .staff-audit{margin:0 0 12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fafafa;font-size:10px;line-height:1.4;color:var(--slate);overflow-wrap:anywhere}

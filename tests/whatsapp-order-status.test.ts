@@ -71,3 +71,12 @@ test('persistent rate limit resets its window and stores no raw phone', () => {
   const rows = getDb().prepare('SELECT key FROM whatsapp_lookup_limits').all();
   assert.equal(JSON.stringify(rows).includes('27821234567'), false);
 });
+
+
+test('dine-in WhatsApp status uses table service and served wording',()=>{
+ const item=order();
+ getDb().prepare("UPDATE orders SET status='ready',fulfillment='dine_in' WHERE id=?").run(item.id);
+ assert.match(lookupWhatsAppOrderStatus({reference:item.displayReference,phone:'27821234567'}).message,/table service/);
+ getDb().prepare("UPDATE orders SET status='completed' WHERE id=?").run(item.id);
+ assert.match(lookupWhatsAppOrderStatus({reference:item.displayReference,phone:'27821234567'}).message,/marked served/);
+});

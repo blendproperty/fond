@@ -12,7 +12,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await page.goto('/staff');
   await page.getByLabel('Staff access code').fill(process.env.FOND_STAFF_CODE!);
   await page.getByRole('button', { name: 'Open order queue' }).click();
-  for (const title of ['New','Awaiting Yoco payment confirmation','Added to Yoco system','Preparing','Ready for delivery','Out for delivery','Ready for collection']) {
+  for (const title of ['New','Awaiting Yoco payment confirmation','Added to Yoco system','Preparing','Ready for delivery','Out for delivery','Ready for collection / table service']) {
     await expect(page.getByRole('region',{name:title,includeHidden:true})).toBeAttached();
     await expect(page.getByRole('tab',{name:new RegExp(`^${title}`)})).toBeVisible();
   }
@@ -53,7 +53,7 @@ test('staff accepts, records Yoco entry, then marks the order ready', async ({ p
   await card.getByRole('button', { name: 'Start preparing' }).click();
   await expect(page.getByRole('region',{name:'Preparing'}).locator('.staff-card').filter({hasText:displayReference})).toBeVisible();
   await card.getByRole('button', { name: 'Ready for collection' }).click();
-  await expect(page.getByRole('region',{name:'Ready for collection'}).locator('.staff-card').filter({hasText:displayReference})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Ready for collection / table service'}).locator('.staff-card').filter({hasText:displayReference})).toBeVisible();
   await expect(card.getByRole('button',{name:'Mark collected'})).toHaveCount(0);
   await card.getByRole('button',{name:'Take payment'}).click();
   const paymentDialog=page.getByRole('dialog',{name:'Record payment received'});

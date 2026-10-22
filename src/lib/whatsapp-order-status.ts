@@ -56,9 +56,9 @@ export function lookupWhatsAppOrderStatus(input: { reference?: unknown; phone?: 
     received: 'Received — waiting for the FOND team to accept it.',
     accepted: 'Accepted — the FOND team has accepted your order.',
     preparing: 'Preparing — your order is being prepared.',
-    ready: row.fulfillment === 'delivery' ? 'Ready — awaiting delivery.' : 'Ready — available for collection at FOND.',
+    ready: row.fulfillment === 'dine_in' ? 'Ready for table service at FOND. Please tell staff when you arrive.' : row.fulfillment === 'delivery' ? 'Ready — awaiting delivery.' : 'Ready — available for collection at FOND.',
     out_for_delivery: 'Out for delivery — your order is on its way.',
-    completed: 'Completed — your order has been marked collected or delivered.',
+    completed: row.fulfillment==='dine_in'?'Completed — your dine-in order has been marked served.':'Completed — your order has been marked collected or delivered.',
     cancelled: 'Cancelled — your order has been cancelled.',
   };
   const status = labels[row.status];

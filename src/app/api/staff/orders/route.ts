@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       note: typeof body.note === 'string' ? body.note : null,
       lines: body.lines,
       collectionTime: body.collectionTime,
+      fulfillment: body.fulfillment,
       source: 'staff',
       actor: teamSession((await cookies()).get(STAFF_COOKIE)?.value) ? 'team:'+teamSession((await cookies()).get(STAFF_COOKIE)?.value)!.id : 'shared-staff-tablet',
     });

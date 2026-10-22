@@ -20,3 +20,12 @@ test('legacy lines do not invent item value from the current menu',()=>{
  const o=fixture('2026-09-15T08:00:00Z');getDb().prepare('UPDATE orders SET lines_json=? WHERE id=?').run(JSON.stringify([{id:'espresso-single',quantity:2}]),o.id);
  const a=analytics('2026-09-15','2026-09-15');assert.equal(a.summary.value,o.totalCents);assert.equal(a.products[0].unpricedUnits,2);assert.equal(a.products[0].value,0);
 });
+
+test('dine-in completed orders appear in their own report mix and filter',()=>{
+ const order=fixture('2026-09-15T08:00:00Z');
+ getDb().prepare("UPDATE orders SET fulfillment='dine_in' WHERE id=?").run(order.id);
+ const report=analytics('2026-09-15','2026-09-15','dine_in');
+ assert.equal(report.summary.orders,1);
+ assert.equal(report.mix.find(m=>m.name==='dine_in')?.orders,1);
+ assert.equal(analytics('2026-09-15','2026-09-15','collection').summary.orders,0);
+});

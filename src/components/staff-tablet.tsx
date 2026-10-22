@@ -32,7 +32,7 @@ type StaffOrder = {
   source: 'customer' | 'staff';
   createdAt: string;
   updatedAt: string;
-  fulfillment: 'collection' | 'delivery';
+  fulfillment: 'collection' | 'delivery' | 'dine_in';
   contactNumber: string | null;
   company: string | null;
   building: string | null;
@@ -57,7 +57,7 @@ const STAFF_LANE_LABELS: Record<QueueLane, string> = {
   preparing: 'Preparing',
   delivery: 'Ready delivery',
   out: 'Delivering',
-  collection: 'Ready collection',
+  collection: 'Collection / table service',
 };
 
 function timeAgo(iso: string): string {
@@ -68,9 +68,9 @@ function timeAgo(iso: string): string {
 }
 
 function staffStatus(order:StaffOrder){
-  if(order.status==='ready')return order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection';
+  if(order.status==='ready')return order.fulfillment==='delivery'?'Ready for delivery':order.fulfillment==='dine_in'?'Ready for table service':'Ready for collection';
   if(order.status==='out_for_delivery')return 'Out for delivery';
-  if(order.status==='completed')return order.fulfillment==='delivery'?'Delivered':'Collected';
+  if(order.status==='completed')return order.fulfillment==='delivery'?'Delivered':order.fulfillment==='dine_in'?'Served':'Collected';
   return order.status.charAt(0).toUpperCase()+order.status.slice(1);
 }
 
@@ -319,7 +319,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
       </div>
       {(alerts.alertError||alerts.permission==='denied')&&<div className="staff-alert-status" role="status"><span>{alerts.alertError||'Notifications are blocked. Allow them in the tablet’s app or browser settings.'}</span></div>}
       {searchOpen&&<div className="staff-search-backdrop" onMouseDown={()=>setSearchOpen(false)}><section className="staff-search-modal" role="dialog" aria-modal="true" aria-label="Find an order" onMouseDown={event=>event.stopPropagation()}><header><div><p className="eyebrow">ORDER LOOKUP</p><h2>Find any order</h2></div><button className="icon-button" aria-label="Close order search" onClick={()=>setSearchOpen(false)}><X size={20}/></button></header><form className="staff-order-search" role="search" onSubmit={event=>void searchOrder(event)}><label htmlFor="staff-order-search"><Search size={18}/><span>Find order</span></label><input id="staff-order-search" autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder="Order number, name, mobile, company or building"/><button className="primary" disabled={searching}>{searching?'Searching…':'Search'}</button>{searchResults!==null&&<button className="quiet" type="button" onClick={()=>{setSearchQuery('');setSearchResults(null);}}>Clear</button>}</form>
-      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong><DeliveryDirections order={order}/></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/>{line.note&&<p className="staff-note"><strong>ITEM NOTE</strong><span>{line.note}</span></p>}</li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
+      {searchResults!==null&&<section className="staff-search-results" aria-live="polite"><div className="staff-search-heading"><h2>Search results</h2><span>{searchResults.length} found</span></div>{searchResults.length===0?<p>No orders matched that search.</p>:<div className="staff-search-grid">{searchResults.map(order=><article key={order.id}><div><span className="staff-search-number">FOND {order.staffNumber}</span><small>Customer number: {order.displayReference}</small><strong>{order.customerName}</strong><small>{staffStatus(order)} · {order.fulfillment==='delivery'?'Delivery':order.fulfillment==='dine_in'?'Dine in · plated':'Collection'} · {new Date(order.createdAt).toLocaleString('en-ZA')}</small></div><div><span>{order.contactNumber}</span><span>{order.fulfillment==='delivery'?[order.building,order.company].filter(Boolean).join(' · '):formatCollectionTime(order.collectionTime)}</span><strong>{money(order.totalCents)}</strong><DeliveryDirections order={order}/></div><ul>{order.lines.map((line,index)=><li key={`${order.id}-${line.id}-${index}`}>{line.quantity}× {line.name??line.id}<StaffItemChanges names={line.modifiers?.map(modifier=>modifier.name)??[]}/>{line.note&&<p className="staff-note"><strong>ITEM NOTE</strong><span>{line.note}</span></p>}</li>)}</ul>{order.note&&<p className="staff-note"><strong>CUSTOMER NOTE</strong><span>{order.note}</span></p>}<button className="quiet" type="button" onClick={()=>void toggleHistory(order.id)}>{historyOrderId===order.id?'Hide audit trail':'View audit trail'}</button>{historyOrderId===order.id&&<div className="staff-audit">{!orderAudit?<p>Loading audit trail…</p>:<>{orderAudit.events.map((event,index)=><p key={`${event.created_at}-${index}`}>{event.from_status??'Created'} → {event.to_status} · {event.actor} · {new Date(event.created_at).toLocaleString('en-ZA')}</p>)}</>}</div>}</article>)}</div>}</section>}</section></div>}
       <nav className="staff-stage-navigation" aria-label="Order stages">
         <button className="staff-stage-arrow" type="button" aria-label="Previous order stage" disabled={activeLaneIndex===0} onClick={() => moveLane(-1)}><ChevronLeft size={22}/></button>
         <div className="staff-stage-tabs" role="tablist" aria-label="Choose an order stage">
@@ -345,8 +345,8 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                   ? `PAID ${paidOnline?'ONLINE':`IN PERSON · ${paidMethod}`} · ${money(order.payment?.paidCents ?? order.totalCents)}`
                   : paymentState === 'pending'
                     ? 'ONLINE PAYMENT NOT COMPLETED · DO NOT ACCEPT OR PREPARE'
-                    : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
-                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order',lane:'new' as QueueLane} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing',lane:'preparing' as QueueLane} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':'Ready for collection',lane:(order.fulfillment==='delivery'?'delivery':'collection') as QueueLane} : order.status==='ready' && order.fulfillment==='delivery' && fullyPaid ? {next:'out_for_delivery' as const,label:'Send out for delivery',lane:'out' as QueueLane} : order.status==='ready' && order.fulfillment==='collection' && fullyPaid ? {next:'completed' as const,label:'Mark collected',lane:'collection' as QueueLane} : order.status==='out_for_delivery' && fullyPaid ? {next:'completed' as const,label:'Mark delivered',lane:'out' as QueueLane} : null;
+                    : `PAY IN PERSON ON ${order.fulfillment==='delivery'?'DELIVERY':order.fulfillment==='dine_in'?'DINE IN':'COLLECTION'} · ${money(Math.max(0, order.totalCents - (order.payment?.paidCents ?? 0)))} DUE`;
+                const step = order.status==='received' && col.key==='new' ? {next:'accepted' as const,label:'Accept order',lane:'new' as QueueLane} : order.status==='accepted' && (order.posRecordedAt || !order.posRequired) ? {next:'preparing' as const,label:'Start preparing',lane:'preparing' as QueueLane} : order.status==='preparing' ? {next:'ready' as const,label:order.fulfillment==='delivery'?'Ready for delivery':order.fulfillment==='dine_in'?'Ready for table service':'Ready for collection',lane:(order.fulfillment==='delivery'?'delivery':'collection') as QueueLane} : order.status==='ready' && order.fulfillment==='delivery' && fullyPaid ? {next:'out_for_delivery' as const,label:'Send out for delivery',lane:'out' as QueueLane} : order.status==='ready' && order.fulfillment!=='delivery' && fullyPaid ? {next:'completed' as const,label:order.fulfillment==='dine_in'?'Mark served':'Mark collected',lane:'collection' as QueueLane} : order.status==='out_for_delivery' && fullyPaid ? {next:'completed' as const,label:'Mark delivered',lane:'out' as QueueLane} : null;
                 return (
                   <article className="staff-card" data-delayed={timing.delayed} key={order.id}>
                     <div className="staff-card-top">
@@ -358,7 +358,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     {order.fulfillment === 'delivery' ? (
                       <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
                     ) : (
-                      <div className="staff-fulfilment" data-fulfilment="collection"><strong><ShoppingBag size={15}/> COLLECTION</strong><span>Collecting: {order.customerName} · {order.contactNumber}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment={order.fulfillment}><strong><ShoppingBag size={15}/> {order.fulfillment==='dine_in'?'DINE IN · PLATED':'COLLECTION'}</strong>{order.fulfillment==='dine_in'&&<strong>Plate and serve at the table — do not pack</strong>}<span>{order.fulfillment==='dine_in'?'Dining in':'Collecting'}: {order.customerName} · {order.contactNumber}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
                     )}
                     <ul className="staff-lines">
                       {order.lines.map((line) => {
@@ -405,6 +405,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [collectionTime, setCollectionTime] = useState('As soon as possible');
+  const [fulfillment,setFulfillment]=useState<'collection'|'dine_in'>('collection');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -457,7 +458,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
     sending.current = true;
     setSubmitting(true);
     try {
-      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, note, lines: cart, ...(membershipCode.trim()?{membershipCode:membershipCode.trim()}:{}), ...(rewardQuote?{rewardCode:rewardCode.trim()}: {}) });
+      const payload = JSON.stringify({ customerName, contactNumber, collectionTime, fulfillment, note, lines: cart, ...(membershipCode.trim()?{membershipCode:membershipCode.trim()}:{}), ...(rewardQuote?{rewardCode:rewardCode.trim()}: {}) });
       const key = await submissionKey(payload);
       const res = await fetch('/api/staff/orders', {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:payload});
       const data = await res.json();
@@ -527,7 +528,8 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
           <section className="basket-rewards"><h3>Customer coffee reward</h3>{!rewardMode&&<CoffeeRewardScanner onScanned={code=>{if(code===rewardCode&&cart.length){scannedReward.current=null;void checkReward();}else{scannedReward.current=code;setRewardCode(code);}}}/>}<label className="field">Coffee reward code<input maxLength={40} value={rewardCode} onChange={e=>setRewardCode(e.target.value)} placeholder="COFFEE-…"/></label><button className="outline" disabled={checkingReward||!rewardCode.trim()||!cart.length} onClick={checkReward}>{checkingReward?'Checking…':'Validate coffee code'}</button>{rewardError&&<p role="alert">{rewardError}</p>}{rewardQuote&&<p role="status">{rewardQuote.environment==='test'?'TEST code verified.':'Code verified.'} One coffee discounted; extras remain payable. {rewardQuote.totalCents===0?'Nothing to collect.':`${money(rewardQuote.totalCents)} remains due.`}</p>}</section>
           <label className="field">Name / table / desk<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Table 4, or Jane (OnPoint 2nd floor)" /></label>
           <label className="field">Contact number<input required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Customer's phone number" /></label>
-          <label className="field">Collection time
+          <label className="field">Serve as<select value={fulfillment} onChange={e=>setFulfillment(e.target.value as 'collection'|'dine_in')}><option value="collection">Collection · packed</option><option value="dine_in">Dine in · plated</option></select></label>
+          <label className="field">{fulfillment==='dine_in'?'Arrival time':'Collection time'}
             <select value={collectionTime} onChange={(e) => setCollectionTime(e.target.value)}>
               <option>As soon as possible</option>
               <option>Breakfast collection</option>

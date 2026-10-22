@@ -188,3 +188,24 @@ test('delivery can be accepted and dispatched with payment due on arrival',()=>{
   assert.equal(updateOrderStatus(order.id,'out_for_delivery').status,'out_for_delivery');
   assert.equal((getDb().prepare('SELECT count(*) AS n FROM payment_records WHERE order_id=?').get(order.id) as {n:number}).n,0);
 });
+
+
+test('dine-in persists, filters and completes as table service with payment and POS guards',()=>{
+ const order=createOrder({customerName:'Diner',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567',fulfillment:'dine_in',note:'Table 4'});
+ assert.equal(getOrderByReference(order.reference)?.fulfillment,'dine_in');
+ assert.equal(searchOrders({fulfillment:'dine_in'})[0].note,'Table 4');
+ assert.equal(searchOrders({fulfillment:'collection'}).length,0);
+ updateOrderStatus(order.id,'accepted');
+ assert.throws(()=>updateOrderStatus(order.id,'ready'),/Record the Yoco order entry/);
+ recordPosEntry(order.id,'DINE-IN-POS','fixture');
+ updateOrderStatus(order.id,'preparing');
+ updateOrderStatus(order.id,'ready');
+ assert.throws(()=>updateOrderStatus(order.id,'out_for_delivery'),/Only delivery/);
+ assert.throws(()=>updateOrderStatus(order.id,'completed'),/Record full payment/);
+ getDb().prepare('INSERT INTO payment_records VALUES (?,?,?,?,?,?,?)').run('dine-payment',order.id,order.totalCents,'card','dine-receipt','fixture',new Date().toISOString());
+ assert.equal(updateOrderStatus(order.id,'completed').status,'completed');
+});
+
+test('unknown fulfilment cannot silently become collection',()=>{
+ assert.throws(()=>createOrder({customerName:'Diner',lines,collectionTime:'ASAP',source:'customer',contactNumber:'0821234567',fulfillment:'invalid' as 'collection'}),/Choose collection, delivery or dine in/);
+});

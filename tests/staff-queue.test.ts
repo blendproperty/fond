@@ -28,3 +28,5 @@ test('an online-payment order stays in the payment lane before checkout creation
   assert.equal(queueLane({...base,paymentRequired:true,payment:{paidCents:0,checkout:null}}),'payment');
   assert.equal(queueLane({...base,paymentRequired:true,payment:{paidCents:9500,checkout:'paid'}}),'new');
 });
+
+test('ready dine-in orders stay on site for table service',()=>{assert.equal(queueLane({...base,status:'ready',fulfillment:'dine_in'}),'collection');});

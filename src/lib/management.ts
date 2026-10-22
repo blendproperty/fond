@@ -69,7 +69,8 @@ export function assertTrading(fulfillment:string,source:string) {
   const s=settings();
   if(!orderingAvailable(s))throw new Error(s.closedMessage);
   if(fulfillment==='delivery'&&!s.deliveryEnabled)throw new Error('Delivery is unavailable. Please choose collection.');
-  if(fulfillment==='collection'&&!s.collectionEnabled)throw new Error('Collection is unavailable.');
+  // Dine in uses the existing on-site availability switch.
+  if((fulfillment==='collection'||fulfillment==='dine_in')&&!s.collectionEnabled)throw new Error('Collection and dine in are unavailable.');
   const count=getDb().prepare("SELECT count(*) AS n FROM orders WHERE status IN ('received','accepted','preparing','ready')").get() as {n:number};
   if(count.n>=s.maxActiveOrders)throw new Error('The kitchen is at capacity. Please try again shortly.');
 }

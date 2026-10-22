@@ -6,7 +6,7 @@ function date(value:string){const n=Date.parse(value+'T00:00:00Z');if(!/^\d{4}-\
 type Row={created_at:string;status:string;total_cents:number;fulfillment:string;lines_json:string};
 export function analytics(from:string,to:string,fulfillment='all'){
  const start=date(from),end=date(to),days=(end-start)/DAY+1;
- if(days<1||days>366||!['all','collection','delivery'].includes(fulfillment))throw new Error('Choose a range of 1–366 days and a valid fulfilment filter.');
+ if(days<1||days>366||!['all','collection','delivery','dine_in'].includes(fulfillment))throw new Error('Choose a range of 1–366 days and a valid fulfilment filter.');
  const previousFrom=new Date(start-days*DAY).toISOString().slice(0,10),previousTo=new Date(start-DAY).toISOString().slice(0,10);
  const rows=getDb().prepare("SELECT created_at,status,total_cents,fulfillment,lines_json FROM orders WHERE date(created_at,'+2 hours') BETWEEN ? AND ? AND (?='all' OR fulfillment=?)").all(previousFrom,to,fulfillment,fulfillment) as Row[];
  const menu=getFullMenu(),catalogue=new Map(menu.map(m=>[m.id,m]));
@@ -23,6 +23,6 @@ export function analytics(from:string,to:string,fulfillment='all'){
  }
  const ranked=[...products.values()].sort((a,b)=>b.units-a.units||a.name.localeCompare(b.name));
  const groups=new Map<string,{name:string;units:number;value:number}>();for(const p of ranked){const c=groups.get(p.category)??{name:p.category,units:0,value:0};c.units+=p.units;c.value+=p.value;groups.set(c.name,c);}
- return {from,to,previousFrom,previousTo,fulfillment,generatedAt:new Date().toISOString(),summary:summary(current),previous:summary(previous),daily,hours,products:ranked,categories:[...groups.values()].sort((a,b)=>b.units-a.units),status:['received','accepted','preparing','ready','completed','cancelled'].map(status=>({name:status,orders:current.filter(r=>r.status===status).length})),mix:['collection','delivery'].map(name=>({name,orders:current.filter(r=>r.status==='completed'&&r.fulfillment===name).length})),noSalesCount:menu.filter(m=>m.available!==false&&!products.has(m.id)).length,unpricedUnits:ranked.reduce((n,p)=>n+p.unpricedUnits,0)};
+ return {from,to,previousFrom,previousTo,fulfillment,generatedAt:new Date().toISOString(),summary:summary(current),previous:summary(previous),daily,hours,products:ranked,categories:[...groups.values()].sort((a,b)=>b.units-a.units),status:['received','accepted','preparing','ready','completed','cancelled'].map(status=>({name:status,orders:current.filter(r=>r.status===status).length})),mix:['collection','delivery','dine_in'].map(name=>({name,orders:current.filter(r=>r.status==='completed'&&r.fulfillment===name).length})),noSalesCount:menu.filter(m=>m.available!==false&&!products.has(m.id)).length,unpricedUnits:ranked.reduce((n,p)=>n+p.unpricedUnits,0)};
 }
 export type Analytics=ReturnType<typeof analytics>;

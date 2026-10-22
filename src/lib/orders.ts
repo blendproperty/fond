@@ -25,7 +25,7 @@ import {validateDeliveryLocation,type DeliveryLocation} from './delivery-locatio
 
 export type OrderStatus = 'received' | 'accepted' | 'preparing' | 'ready' | 'out_for_delivery' | 'completed' | 'cancelled';
 export type OrderSource = 'customer' | 'staff';
-export type FulfillmentType = 'collection' | 'delivery';
+export type FulfillmentType = 'collection' | 'delivery' | 'dine_in';
 export type PaymentMethod = 'yoco_online' | 'pay_at_collection';
 
 export type PricedLine = CartLine & { rewardDiscountCents?:number; name: string; unitPriceCents: number; subtotalCents: number; prepMinutes?:number; modifiers?: {id:string;name:string;price:number}[] };
@@ -240,7 +240,8 @@ export function createOrder(input: {
     if (!collectionTime || collectionTime.length > 100) throw new Error('Choose a collection time.');
     const note = input.note?.trim() || null;
     if (note && note.length > 300) throw new Error('Note is too long.');
-    const fulfillment: FulfillmentType = input.fulfillment === 'delivery' ? 'delivery' : 'collection';
+    if(input.fulfillment!==undefined&&!['collection','delivery','dine_in'].includes(input.fulfillment))throw new Error('Choose collection, delivery or dine in.');
+    const fulfillment: FulfillmentType = input.fulfillment ?? 'collection';
     const paymentMethod:PaymentMethod=input.paymentMethod==='yoco_online'?'yoco_online':'pay_at_collection';
     const contactNumber = input.contactNumber?.trim() || null;
     if (!contactNumber) throw new Error('Enter a contact number so FOND can reach you about your order.');
@@ -272,7 +273,7 @@ export function createOrder(input: {
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
     const estimatedPrepMinutes=basketPrepMinutes+queueDelayMinutes;
-    if(fulfillment==='collection')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
+    if(fulfillment!=='delivery')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.

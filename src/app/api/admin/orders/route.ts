@@ -4,7 +4,7 @@ import { isValidAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth';
 import { searchOrders, type OrderStatus, type FulfillmentType } from '@/lib/orders';
 
 const VALID_STATUSES: OrderStatus[] = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
-const VALID_FULFILLMENT: FulfillmentType[] = ['collection', 'delivery'];
+const VALID_FULFILLMENT: FulfillmentType[] = ['collection', 'delivery', 'dine_in'];
 
 export async function GET(request: Request) {
   const store = await cookies();

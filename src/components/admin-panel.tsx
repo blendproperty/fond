@@ -27,7 +27,7 @@ type AdminOrder = {
   displayReference:string;
   customerName: string;
   status: string;
-  fulfillment: 'collection' | 'delivery';
+  fulfillment: 'collection' | 'delivery' | 'dine_in';
   totalCents: number;
   collectionTime: string;
   building: string | null;
@@ -394,9 +394,9 @@ function OrdersAdmin() {
           <option value="cancelled">Cancelled</option>
         </select>
         <select value={fulfillment} onChange={(e) => setFulfillment(e.target.value)}>
-          <option value="">Collection &amp; delivery</option>
+          <option value="">All fulfilment types</option>
           <option value="collection">Collection only</option>
-          <option value="delivery">Delivery only</option>
+          <option value="delivery">Delivery only</option><option value="dine_in">Dine in only</option>
         </select>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search order number, name, mobile or location" />
         <button className="quiet" onClick={refresh}><RefreshCw size={16} /> Refresh</button>
@@ -408,7 +408,7 @@ function OrdersAdmin() {
             <div className="admin-order-row" key={o.id}>
               <span className="staff-ref">{o.displayReference}</span>
               <strong>{o.customerName}</strong>
-              <span>{o.fulfillment === 'delivery' ? `Delivery · ${o.building ?? ''}` : o.collectionTime}</span>
+              <span>{o.fulfillment === 'delivery' ? `Delivery · ${o.building ?? ''}` : `${o.fulfillment==='dine_in'?'Dine in · ':''}${o.collectionTime}`}</span>
               <span className={`admin-status admin-status-${o.status}`}>{o.status.replaceAll('_',' ')}</span>
               <strong>{money(o.totalCents)}</strong>
               <span className="admin-order-time">{new Date(o.createdAt).toLocaleString('en-ZA')}</span>

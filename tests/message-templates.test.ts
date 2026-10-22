@@ -16,7 +16,7 @@ test('item notes appear in confirmation emails and HTML is escaped',()=>{const o
 test('message templates allow known placeholders and reject ambiguous or unsafe content',()=>{
  const valid=validateMessageTemplates(copy());
  assert.equal(renderMessageText(valid.email.templates.received.subject,{reference:'FOND-1'}),'Order received · FOND-1');
- assert.deepEqual(ACTIVE_EMAIL_MESSAGE_KEYS,['received','readyCollection','readyDelivery']);
+ assert.deepEqual(ACTIVE_EMAIL_MESSAGE_KEYS,['received','readyCollection','readyDelivery','readyDineIn']);
  const missingReference=copy();missingReference.sms.accepted='Your order is being prepared.';
  assert.throws(()=>validateMessageTemplates(missingReference),/must include \{reference\}/);
  const unknown=copy();unknown.email.templates.received.intro='Hello {firstName}';
@@ -67,4 +67,21 @@ test('legacy stored defaults upgrade to the current two-message customer journey
  assert.equal(upgraded.email.templates.received.subject,'Order received · {reference}');
  assert.equal(upgraded.email.templates.readyDelivery.title,'Your FOND order is ready for delivery');
  assert.equal(upgraded.email.banner.buttonLabel,'Order again from FOND');
+});
+
+
+test('dine-in notifications use table service and old saved templates preserve custom content',()=>{
+ const legacy=copy();
+ legacy.email.templates.received.title='My custom receipt';
+ delete (legacy.email.templates as Partial<typeof legacy.email.templates>).readyDineIn;
+ delete (legacy.sms as Partial<typeof legacy.sms>).readyDineIn;
+ const upgraded=validateMessageTemplates(legacy);
+ assert.equal(upgraded.email.templates.received.title,'My custom receipt');
+ saveDocument('message-templates-published',upgraded,'fixture');
+ const order=createOrder({customerName:'Diner',lines:[{id:'espresso-single',quantity:1}],collectionTime:'ASAP',source:'customer',fulfillment:'dine_in',contactNumber:'0821234567'});
+ const email=buildOrderEmail(order,'ready');
+ assert.match(email.text,/Dine in|dine-in/);
+ assert.match(email.html,/table service/);
+ assert.doesNotMatch(email.text,/ready for collection|collect from|on collection/i);
+ assert.match(smsBody('order_ready',order.displayReference,'dine_in'),/table service/);
 });

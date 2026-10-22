@@ -13,7 +13,7 @@ export const QUEUE_LANES: {key:QueueLane;title:string;targetMinutes:number}[] = 
   {key:'preparing',title:'Preparing',targetMinutes:20},
   {key:'delivery',title:'Ready for delivery',targetMinutes:10},
   {key:'out',title:'Out for delivery',targetMinutes:10},
-  {key:'collection',title:'Ready for collection',targetMinutes:10},
+  {key:'collection',title:'Ready for collection / table service',targetMinutes:10},
 ];
 
 export function queueLane(order: QueueOrder): QueueLane {

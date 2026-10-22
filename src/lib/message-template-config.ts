@@ -1,8 +1,8 @@
-export const EMAIL_MESSAGE_KEYS = ['received','accepted','readyCollection','readyDelivery','completed'] as const;
-export const ACTIVE_EMAIL_MESSAGE_KEYS = ['received','readyCollection','readyDelivery'] as const;
-export const SMS_MESSAGE_KEYS = ['accepted','readyCollection','readyDelivery'] as const;
+export const EMAIL_MESSAGE_KEYS = ['received','accepted','readyCollection','readyDelivery','readyDineIn','completed'] as const;
+export const ACTIVE_EMAIL_MESSAGE_KEYS = ['received','readyCollection','readyDelivery','readyDineIn'] as const;
+export const SMS_MESSAGE_KEYS = ['accepted','readyCollection','readyDelivery','readyDineIn'] as const;
 export type EmailMessageKey = typeof EMAIL_MESSAGE_KEYS[number];
-export function emailIncludesPromotion(key:EmailMessageKey){return key==='received'||key==='readyCollection'||key==='readyDelivery';}
+export function emailIncludesPromotion(key:EmailMessageKey){return key==='received'||key==='readyCollection'||key==='readyDelivery'||key==='readyDineIn';}
 export type SmsMessageKey = typeof SMS_MESSAGE_KEYS[number];
 export type EditableEmailTemplate = {subject:string;title:string;status:string;intro:string};
 export type EmailBanner = {enabled:boolean;imageUrl:string;imageAlt:string;eyebrow:string;title:string;body:string;buttonLabel:string;buttonUrl:string};
@@ -27,6 +27,7 @@ export const DEFAULT_MESSAGE_TEMPLATES:MessageTemplateConfig={
       accepted:{subject:'FOND accepted {reference}',title:'Order accepted by FOND Midpoint',status:'Estimated preparation time: {prepMinutes} min',intro:'Good news, {customerName}. The FOND team has accepted your order.'},
       readyCollection:{subject:'Ready for collection · {reference}',title:'Your FOND order is ready for collection',status:'Collect from FOND at Midpoint Hub',intro:'{customerName}, your order is ready to collect from FOND at Midpoint Hub.'},
       readyDelivery:{subject:'Ready for delivery · {reference}',title:'Your FOND order is ready for delivery',status:'Ready for the delivery handoff',intro:'{customerName}, your order is ready and will be handed over for delivery shortly.'},
+      readyDineIn:{subject:'Ready for table service · {reference}',title:'Your FOND dine-in order is ready',status:'Ready for table service at FOND',intro:'{customerName}, your dine-in order is ready for table service. Please tell staff when you arrive and quote {reference}.'},
       completed:{subject:'Thank you for your FOND order {reference}',title:'Your FOND order is complete',status:'Thank you for ordering from FOND',intro:'{customerName}, your order has been completed. We hope you enjoy it.'},
     },
     banner:{enabled:true,imageUrl:'',imageAlt:'FOND food and coffee',eyebrow:'READY FOR YOUR NEXT FOND FAVOURITE?',title:'Good food. Everyday.',body:'Pre-order your next coffee, breakfast or lunch for collection or delivery.',buttonLabel:'Order again from FOND',buttonUrl:'/'},
@@ -35,6 +36,7 @@ export const DEFAULT_MESSAGE_TEMPLATES:MessageTemplateConfig={
   sms:{
     accepted:'FOND: Your order {reference} has been accepted and is being prepared.',
     readyCollection:'FOND: Your order {reference} is ready for collection.',
+    readyDineIn:'FOND: Your dine-in order {reference} is ready for table service. Please tell staff when you arrive.',
     readyDelivery:'FOND: Your order {reference} is ready and will be delivered shortly.',
   },
 };
@@ -68,7 +70,7 @@ export function validateMessageTemplates(input:unknown):MessageTemplateConfig{
   const legacy=raw.version!==2;
   const templates={} as Record<EmailMessageKey,EditableEmailTemplate>;
   for(const key of EMAIL_MESSAGE_KEYS){
-    const item=raw.email.templates?.[key];
+    const item=raw.email.templates?.[key]??(key==='readyDineIn'?DEFAULT_MESSAGE_TEMPLATES.email.templates.readyDineIn:undefined);
     if(!item)throw new Error(`Complete the ${key} email template.`);
     templates[key]={subject:cleanText(item.subject,`${key} email subject`,150),title:cleanText(item.title,`${key} email heading`,120),status:cleanText(item.status,`${key} email status line`,180),intro:cleanText(item.intro,`${key} email message`,600)};
     if(legacy&&(key==='received'||key==='readyCollection'||key==='readyDelivery'))for(const field of ['subject','title','status','intro'] as const)if(templates[key][field]===LEGACY_EMAIL_DEFAULTS[key][field])templates[key][field]=DEFAULT_MESSAGE_TEMPLATES.email.templates[key][field];
@@ -91,7 +93,7 @@ export function validateMessageTemplates(input:unknown):MessageTemplateConfig{
   if(banner.enabled&&banner.buttonLabel&&!banner.buttonUrl)throw new Error('Add a link for the banner button.');
   const sms={} as Record<SmsMessageKey,string>;
   for(const key of SMS_MESSAGE_KEYS){
-    sms[key]=cleanText(raw.sms[key],`${key} SMS`,320);
+    sms[key]=cleanText(raw.sms[key]??(key==='readyDineIn'?DEFAULT_MESSAGE_TEMPLATES.sms.readyDineIn:undefined),`${key} SMS`,320);
     if(!sms[key].includes('{reference}'))throw new Error(`${key} SMS must include {reference}.`);
     if(renderMessageText(sms[key],SAMPLE_MESSAGE_VALUES).length>320)throw new Error(`${key} SMS is too long after its placeholders are filled.`);
   }
