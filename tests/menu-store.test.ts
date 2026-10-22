@@ -60,11 +60,11 @@ test('existing menu migration fills only empty items and preserves admin options
   assert.deepEqual(menu.find(item => item.id === 'toastie-cheddar-tomato')?.modifiers, []);
 });
 
-test('published 2026-09-21 food menu replaces legacy food once and preserves beverages and custom items', () => {
+test('photographed 2026-10-08 food menu replaces legacy food once and preserves beverages and custom items', () => {
   getFullMenu();
   const db = getDb();
   const now = new Date().toISOString();
-  db.prepare('DELETE FROM app_documents WHERE key = ?').run('published-food-menu-2026-09-21-v1');
+  db.prepare('DELETE FROM app_documents WHERE key = ?').run('published-food-menu-2026-10-08-photo-v1');
   db.prepare('DELETE FROM menu_items WHERE id = ?').run('golden-goddess-bowl');
   db.prepare('UPDATE menu_items SET price_cents = ? WHERE id = ?').run(99900, 'smashed-avo');
   db.prepare('UPDATE menu_items SET price_cents = ? WHERE id = ?').run(5100, 'espresso-single');
@@ -134,4 +134,50 @@ test('deleting an item removes it from both the full and available menu', () => 
   const created = createMenuItem({ id: 'temp-item', name: 'Temp Item', description: '', category: 'Sides, Sauces & Add-Ons', price: 1000 });
   deleteMenuItem(created.id);
   assert.equal(getFullMenu().find((m) => m.id === created.id), undefined);
+});
+
+test('photographed food menu matches every transcribed price and breakfast/quesadilla extra',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const reference=JSON.parse(readFileSync(new URL('../docs/menu/food-menu-reference-2026-10-08.json',import.meta.url),'utf8'));
+ const {PUBLISHED_FOOD_MENU}=await import('../src/lib/published-food-menu');
+ assert.deepEqual(Object.fromEntries(PUBLISHED_FOOD_MENU.map(m=>[m.id,m.price])),reference.pricesCents);
+ const menu=getFullMenu();
+ for(const item of menu.filter(m=>m.category==='All-Day Breakfast'||m.id==='quesadilla')){
+  const extras=Object.fromEntries(item.modifiers!.filter(m=>m.name.startsWith('Add ')).map(m=>[m.name,m.price]));
+  assert.deepEqual(extras,reference.breakfastAndQuesadillaExtrasCents);
+ }
+ for(const id of reference.removeFromSale)assert.ok(!getAvailableMenu().some(m=>m.id===id));
+ assert.match(menu.find(m=>m.id==='green-caesar-salad')!.description,/chicken/);
+ assert.ok(!menu.find(m=>m.id==='green-caesar-salad')!.diet?.includes('vegetarian'));
+ assert.match(menu.find(m=>m.id==='salmon-poke')!.description,/Smoked salmon trout/);
+ assert.match(menu.find(m=>m.id==='brekkie-bun')!.description,/mayonnaise.*chips/);
+ assert.ok(!menu.find(m=>m.id==='brekkie-bun')!.modifiers?.some(m=>/mustard/.test(m.name)));
+ assert.equal(menu.filter(m=>m.category==='Pasta').length,3);
+});
+
+test('photo reconciliation updates an existing database once and preserves sold-out status, timing and history',async()=>{
+ const {createOrder,getOrderByReference}=await import('../src/lib/orders');
+ getFullMenu();
+ const db=getDb(),now=new Date().toISOString();
+ const snapshot=db.prepare('SELECT * FROM menu_items WHERE id=?').get('espresso-single');
+ db.prepare('DELETE FROM app_documents WHERE key=?').run('published-food-menu-2026-10-08-photo-v1');
+ db.prepare('DELETE FROM menu_items WHERE id=?').run('three-egg-omelette');
+ db.prepare('UPDATE menu_items SET available=0,prep_minutes=27,price_cents=1 WHERE id=?').run('brekkie-bun');
+ db.prepare(`INSERT INTO menu_items (id,name,description,category,price_cents,diet_json,symbol,sort_order,available,is_special,special_label,special_price_cents,modifiers_json,prep_minutes,updated_at) VALUES (?,?,?,?,?,?,?,?,1,0,NULL,NULL,'[]',?,?)`)
+  .run('grilled-lamb-chops','Grilled Lamb Chops','Historical recipe','Plates',16000,'[]','plate',0,18,now);
+ // The old menu is present before the new migration, including an actual order snapshot.
+ db.prepare('INSERT INTO app_documents VALUES (?,?,?)').run('published-food-menu-2026-10-08-photo-v1','pending-fixture',now);
+ const old=createOrder({customerName:'Historical fixture',contactNumber:'0821234567',collectionTime:'ASAP',source:'staff',lines:[{id:'grilled-lamb-chops',quantity:1}]});
+ db.prepare('DELETE FROM app_documents WHERE key=?').run('published-food-menu-2026-10-08-photo-v1');
+ const menu=getFullMenu();
+ assert.equal(menu.find(m=>m.id==='three-egg-omelette')?.price,5500);
+ assert.equal(menu.find(m=>m.id==='brekkie-bun')?.available,false);
+ assert.equal(menu.find(m=>m.id==='brekkie-bun')?.prepMinutes,27);
+ assert.equal(menu.find(m=>m.id==='brekkie-bun')?.price,9500);
+ assert.equal(menu.find(m=>m.id==='grilled-lamb-chops')?.available,false);
+ assert.deepEqual(db.prepare('SELECT * FROM menu_items WHERE id=?').get('espresso-single'),snapshot);
+ assert.equal(getOrderByReference(old.reference)?.lines[0].name,'Grilled Lamb Chops');
+ assert.equal(getOrderByReference(old.reference)?.totalCents,16000);
+ updateMenuItem('three-egg-omelette',{price:5600});
+ assert.equal(getFullMenu().find(m=>m.id==='three-egg-omelette')?.price,5600);
 });

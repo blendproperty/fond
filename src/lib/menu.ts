@@ -2,7 +2,7 @@ import { PUBLISHED_FOOD_MENU } from './published-food-menu';
 import { FOOD_TRUCK_MENU } from './food-truck-menu';
 
 // FOND Midpoint menu. The current food range is transcribed from
-// FOND_A3_Food_Menu_Landscape.md (supplied 2026-09-21); the separate beverage
+// the photographed food menu (supplied 2026-10-22); the separate beverage
 // range remains from the previously approved drinks menu. Prices are Rand,
 // stored here in integer cents. This array is only
 // the SEED data: the live, editable menu lives in the menu_items SQLite
@@ -14,6 +14,7 @@ export type Category =
   | 'All-Day Breakfast'
   | 'The Grill'
   | 'Plates'
+  | 'Pasta'
   | 'Burgers'
   | 'Sandwiches'
   | 'Buddha Bowls'
@@ -243,7 +244,7 @@ const BEVERAGE_ADDON_IDS = new Set([
   'addon-protein-powder',
 ]);
 
-// The 2026-09-21 document replaces the food range only. Keep the separate
+// The photographed menu replaces the restaurant food range only. Keep the separate
 // beverage catalogue and its add-ons until an updated drinks menu is supplied.
 export const SEED_MENU: Meal[] = [
   ...PUBLISHED_FOOD_MENU,
@@ -263,7 +264,7 @@ export const categories: Category[] = [
   'Pizzas & Foldovers',
   'Poke Bowls',
   'Salads',
-  'Plates',
+  'Pasta',
   'Wraps',
   'Coffee',
   'Tea & Steamers',

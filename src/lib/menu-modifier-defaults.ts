@@ -4,7 +4,7 @@ import { SEED_MENU, type Modifier } from './menu';
 // published add-on/swap prices are used; removing an ingredient costs R0.
 const itemOptions: Record<string, { name: string; price: number }[]> = {
   'smashed-avo': [{ name: 'Vegan swap: smoky hummus instead of cheese', price: 0 }, { name: 'No pickled red onion', price: 0 }, { name: 'No Parmesan', price: 0 }],
-  'brekkie-bun': [{ name: 'Vegan swap: tofu scramble & grilled aubergine', price: 0 }, { name: 'No bacon', price: 0 }, { name: 'No mustard', price: 0 }],
+  'brekkie-bun': [{ name: 'Vegan swap: tofu scramble & grilled aubergine', price: 0 }, { name: 'No bacon', price: 0 }, { name: 'No mayonnaise', price: 0 }],
   'honey-halloumi-bowl': [{ name: 'Swap eggs for tofu scramble', price: 0 }, { name: 'No halloumi', price: 0 }],
   'everyday-breakfast': [{ name: 'No caramelised onion', price: 0 }],
   'spicy-chicken-burger': [{ name: 'No caramelised onions', price: 0 }, { name: 'No cheddar', price: 0 }, { name: 'No tomato', price: 0 }, { name: 'No garlic mayonnaise', price: 0 }],
@@ -25,9 +25,19 @@ const option = (name: string, price: number): Modifier => ({
   price,
 });
 
+// Prices printed under Add to any breakfast; the quesadilla explicitly shares them.
+const BREAKFAST_EXTRAS = [
+  {name:'Add bacon',price:4000},{name:'Add beef sausage',price:4000},
+  {name:'Add feta',price:2400},{name:'Add blistered cherry tomatoes',price:1800},
+  {name:'Add caramelized onions',price:1200},{name:'Add salmon',price:5000},
+  {name:'Add cheddar',price:2400},{name:'Add roasted peppers',price:1600},
+  {name:'Add mushrooms',price:3000},{name:'Add chicken',price:4000},
+];
+
 export const DEFAULT_MENU_MODIFIERS: Record<string, Modifier[]> = Object.fromEntries(
   SEED_MENU.map(meal => {
     const choices = [...(itemOptions[meal.id] ?? [])];
+    if (meal.category === 'All-Day Breakfast' || meal.id === 'quesadilla') choices.push(...BREAKFAST_EXTRAS);
     if (meal.category === 'Smoothies') choices.push(
       { name: 'Add maca', price: 3000 },
       { name: 'Add collagen', price: 3000 },

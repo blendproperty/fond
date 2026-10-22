@@ -5,7 +5,7 @@ import type {Category,Meal} from './menu';
 // normal-service averages. Specific overrides reflect dishes with a materially
 // slower/faster method than their category.
 const CATEGORY_MINUTES:Record<Category,number>={
-  'All-Day Breakfast':12,'The Grill':18,'Plates':15,'Burgers':11,'Sandwiches':8,
+  'All-Day Breakfast':12,'The Grill':18,'Plates':15,'Pasta':15,'Burgers':11,'Sandwiches':8,
   'Buddha Bowls':9,'Poke Bowls':9,'Wraps':8,
   'Salads':7,'Desserts':8,'Pizzas & Foldovers':15,'Tapas':10,'Coffee':3,
   'Tea & Steamers':4,'Cold Brew & Iced':3,'Smoothies':5,'Cold Bar & Juice':4,

@@ -95,10 +95,11 @@ function seedIfEmpty() {
   // Replace the published food range once on every existing database while
   // leaving the separately supplied beverage catalogue and any admin-created
   // items untouched. Retired rows are hidden rather than deleted so historic
-  // orders and reports can still resolve their original item ids.
-  const foodMenuMarker = 'published-food-menu-2026-09-21-v1';
+  // orders and reports can still resolve their original item ids. Retained items
+  // keep staff availability and measured preparation times.
+  const foodMenuMarker = 'published-food-menu-2026-10-08-photo-v1';
   if (!db.prepare('SELECT key FROM app_documents WHERE key = ?').get(foodMenuMarker)) {
-    db.exec('SAVEPOINT fond_food_menu_20260921');
+    db.exec('SAVEPOINT fond_food_menu_20261008');
     try {
       const now = new Date().toISOString();
       const upsert = db.prepare(`
@@ -113,12 +114,10 @@ function seedIfEmpty() {
           diet_json = excluded.diet_json,
           symbol = excluded.symbol,
           sort_order = excluded.sort_order,
-          available = 1,
           is_special = 0,
           special_label = NULL,
           special_price_cents = NULL,
           modifiers_json = excluded.modifiers_json,
-          prep_minutes = excluded.prep_minutes,
           updated_at = excluded.updated_at
       `);
       PUBLISHED_FOOD_MENU.forEach((meal, index) => {
@@ -139,10 +138,10 @@ function seedIfEmpty() {
       const retire = db.prepare(`UPDATE menu_items SET available = 0, is_special = 0, special_label = NULL, special_price_cents = NULL, updated_at = ? WHERE id = ?`);
       for (const id of RETIRED_FOOD_MENU_IDS) retire.run(now, id);
       db.prepare('INSERT INTO app_documents (key, value, updated_at) VALUES (?, ?, ?)').run(foodMenuMarker, 'applied', now);
-      db.exec('RELEASE fond_food_menu_20260921');
+      db.exec('RELEASE fond_food_menu_20261008');
     } catch (error) {
-      db.exec('ROLLBACK TO fond_food_menu_20260921');
-      db.exec('RELEASE fond_food_menu_20260921');
+      db.exec('ROLLBACK TO fond_food_menu_20261008');
+      db.exec('RELEASE fond_food_menu_20261008');
       throw error;
     }
   }
