@@ -9,7 +9,7 @@ test('menu illustrations remain visible behind compact dietary labels and match 
   await expect(card.locator('svg[data-food-art]')).toHaveAttribute('data-food-art',kind);
   await expect(card.locator('[role="img"]')).toHaveAccessibleName(`${name} illustration`);
   const tag=card.locator('.meal-tag');
-  if(await tag.count())expect(await tag.evaluate(el=>el.getBoundingClientRect().height)).toBeLessThan(30);
+  if(await tag.count()){expect(await tag.innerText()).not.toBe('');expect(await tag.evaluate(el=>el.getBoundingClientRect().height)).toBeLessThan(30);}
   await card.getByRole('button',{name:`View ${name}`,exact:true}).click();
   await expect(page.locator('.fond-item-art [data-food-art]')).toHaveAttribute('data-food-art',kind);
   await page.getByRole('button',{name:'Close item'}).click();
