@@ -51,12 +51,15 @@ test('messaging studio shows the two-message journey and promotion previews for 
  await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
  await expect(page.getByText(/sends an order receipt first, then one ready email/i)).toBeVisible();
  const stages=page.getByLabel('Order stage');
- await expect(stages.locator('option')).toHaveCount(3);
- await expect(stages.locator('option')).toHaveText(['Order received','Ready · collection','Ready · delivery']);
+ await expect(stages.locator('option')).toHaveCount(4);
+ await expect(stages.locator('option')).toHaveText(['Order received','Ready · collection','Ready · delivery','Ready for table service']);
  await stages.selectOption('readyDelivery');
  await expect(page.locator('.email-mini-status.is-ready')).toContainText('ORDER READY');
  await expect(page.locator('.email-mini-status.is-ready')).toContainText('ready for delivery');
  await expect(page.locator('.email-mini-banner')).toContainText(/Order again from FOND|See the menu/);
+ await stages.selectOption('readyDineIn');
+ await expect(page.locator('.email-mini-status.is-ready')).toContainText('table service');
+ await expect(page.locator('.email-mini-body')).toContainText('Dine in');
  await stages.selectOption('received');
  await expect(page.locator('.email-mini-status.is-ready')).toHaveCount(0);
  await expect(page.locator('.email-mini-banner')).toBeVisible();
