@@ -14,14 +14,17 @@ test('browse, adjust basket, place order and track it',async({page})=>{
  const fourItemEstimate=Number(((await collectionTimes.locator('option').first().textContent())??'').match(/approx\. (\d+) min/)?.[1]);
  expect(fourItemEstimate).toBeGreaterThan(oneItemEstimate);
  await expect(page.getByText('Today only · Kitchen closes at 18:30.')).toBeVisible();
- await collectionTimes.selectOption({index:1});
+ // Concurrent browser fixtures change the queue; scheduled-slot rules have dedicated tests.
+ await collectionTimes.selectOption('As soon as possible');
  await page.getByLabel(/Your name/).fill('Playwright Test');
  await page.getByLabel('Contact number').fill('0821234567');
  await page.getByLabel('Email address (optional)').fill('guest@example.test');
  await expect(page.getByLabel('Email me when my order is received and ready')).toBeChecked();
  await expect(page.getByLabel('Email me when my order is received and ready')).toBeEnabled();
  await expect(page.getByLabel('WhatsApp notifications unavailable — setup pending')).toBeDisabled();
+ const submitted=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Send order to FOND'}).click();
+ const response=await submitted;expect(response.status(),await response.text()).toBe(201);
  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
  await expect(page.getByRole('dialog')).toContainText(/480/);
  await page.getByRole('button',{name:'Back to the menu'}).click();
