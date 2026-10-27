@@ -39,3 +39,12 @@
 .fond-service-status{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin:14px 0 8px}.fond-service-status .fond-trading-pill{margin:0;padding:5px 9px}.fond-opening-time{font-size:13px;color:#173d32}.fond-trading-hours{margin:0 0 14px;font-size:12px;line-height:1.6;color:#675748}.fond-trading-hours p{margin:2px 0}.fond-trading-hours strong{color:#173d32;margin-right:5px}.fond-trading-hours small{font-size:10px}
 @media(min-width:760px){.fond-welcome-card{grid-template-columns:minmax(0,1fr) 260px;padding:28px 36px;border-radius:28px;gap:25px}.fond-ordering-app .fond-welcome-copy h1{font-size:40px;letter-spacing:-1.5px}.fond-welcome-copy .eyebrow{font-size:9px}.fond-welcome-copy>p:not(.eyebrow){font-size:14px;max-width:390px}.fond-welcome-copy>a{font-size:13px}.fond-welcome-art>span{width:64px;height:64px;font-size:7px;bottom:8px}.fond-order-start{max-width:none}}
 @media(max-width:350px){.fond-welcome-card{grid-template-columns:minmax(0,1fr) 85px;padding:18px 13px}.fond-ordering-app .fond-welcome-copy h1{font-size:22px}.fond-welcome-copy .eyebrow{font-size:6px}.fond-welcome-art>span{width:32px;height:32px;font-size:4px}}
+
+/* A separate selector avoids the primary category tabs' underline-only styling. */
+.fond-ordering-app .food-truck-sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:6px;margin:0 0 24px;background:#f0e8dd;border:1px solid #e4d9c8;border-radius:16px}
+.fond-ordering-app .food-truck-sections button{min-width:0;min-height:54px;padding:14px 12px;border:0;border-radius:11px;background:transparent;color:#526356;font:inherit;font-size:14px;font-weight:600;line-height:1.35;text-align:center;cursor:pointer;transition:background .15s,color .15s}
+.fond-ordering-app .food-truck-sections button[aria-selected=true]{background:#23382e;color:#fffaf2;box-shadow:0 2px 6px #142c2220}
+.fond-ordering-app .food-truck-sections button:focus-visible{outline:3px solid #d96c37;outline-offset:2px}
+@media(hover:hover){.fond-ordering-app .food-truck-sections button[aria-selected=false]:hover{background:#fffaf2;color:#23382e}}
+@media(max-width:600px){.fond-ordering-app .food-truck-sections{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:20px}.fond-ordering-app .food-truck-sections button{min-height:50px;padding:13px 10px}}
+@media(prefers-reduced-motion:reduce){.fond-ordering-app .food-truck-sections button{transition:none}}
