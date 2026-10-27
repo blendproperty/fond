@@ -5,7 +5,7 @@ import { assertTrading,settings } from './management';
 import {basketPrepMinutes as calculateBasketPrepMinutes} from './preparation-estimates';
 import {currentKitchenDelayMinutes} from './kitchen-workload';
 import {tradingWindow} from './trading-hours';
-import {assertFoodTruckOrderingAvailable,validateScheduledCollection} from './fulfilment';
+import {assertFoodTruckOrderingAvailable,validateScheduledCollection,validateScheduledDelivery} from './fulfilment';
 import { randomUUID, createHash } from 'node:crypto';
 import { getDb } from './db';
 import { quoteCart, type CartLine } from './menu';
@@ -273,7 +273,8 @@ export function createOrder(input: {
     const basketPrepMinutes=calculateBasketPrepMinutes(priced,trading.preparationWeightPercent,trading.preparationParallelItems);
     const queueDelayMinutes=input.source==='customer'?currentKitchenDelayMinutes(trading.preparationParallelOrders):0;
     const estimatedPrepMinutes=basketPrepMinutes+queueDelayMinutes;
-    if(fulfillment!=='delivery')validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
+    if(fulfillment==='delivery')validateScheduledDelivery(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
+    else validateScheduledCollection(collectionTime,estimatedPrepMinutes,{...trading,...window},new Date(),input.source==='customer'&&trading.enforceHours);
     const now = new Date().toISOString();
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.

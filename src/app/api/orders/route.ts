@@ -5,6 +5,7 @@ import { automaticOrderEmailEvent,deliverOrderEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 import { SubmissionConflictError, createOrder, getOrderByReference } from '@/lib/orders';
 import { settings } from '@/lib/management';
+import {deliveryArrivalAt} from '@/lib/fulfilment';
 
 // Customer orders enter FOND's staff queue. Hosted payment is optional.
 export async function POST(request: Request) {
@@ -47,10 +48,11 @@ export async function POST(request: Request) {
         displayReference: order.displayReference,
         status: order.status,
         totalCents: order.totalCents,
-        message: order.fulfillment==='dine_in'?'Your dine-in order has been sent to FOND. Please tell staff when you arrive and pay at FOND.':'Your order has been sent to FOND. Please pay at the counter on collection.',
+        message: order.fulfillment==='delivery'?'Your delivery order has been sent to FOND. Pay by card on delivery.':order.fulfillment==='dine_in'?'Your dine-in order has been sent to FOND. Please tell staff when you arrive and pay at FOND.':'Your order has been sent to FOND. Please pay at the counter on collection.',
         paymentMethod:order.paymentMethod,
         redirectUrl,
         estimatedPrepMinutes:order.estimatedPrepMinutes,
+        estimatedArrivalAt:order.fulfillment==='delivery'?deliveryArrivalAt(order,settings().deliveryAllowanceMinutes):null,
       },
       { status: 201, headers: { 'Cache-Control': 'no-store' } },
     );
@@ -70,7 +72,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ code: 'NOT_FOUND', message: 'No order found with that reference.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }
   return NextResponse.json(
-    { reference: order.reference, displayReference:order.displayReference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime, fulfillment:order.fulfillment,paymentMethod:order.paymentMethod,payment:paymentStatus(order.id),estimatedPrepMinutes:order.estimatedPrepMinutes,updatedAt:order.updatedAt,estimatedArrivalAt:order.status==='out_for_delivery'?new Date(Date.parse(order.updatedAt)+settings().readyDeliveryMinutes*60000).toISOString():null },
+    { reference: order.reference, displayReference:order.displayReference, status: order.status, totalCents: order.totalCents, collectionTime: order.collectionTime, fulfillment:order.fulfillment,paymentMethod:order.paymentMethod,payment:paymentStatus(order.id),estimatedPrepMinutes:order.estimatedPrepMinutes,updatedAt:order.updatedAt,estimatedArrivalAt:order.fulfillment==='delivery'?deliveryArrivalAt(order,settings().deliveryAllowanceMinutes):null },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

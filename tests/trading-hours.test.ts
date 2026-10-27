@@ -90,3 +90,21 @@ test('sold-out items reject old baskets immediately and can be made available ag
   updateMenuItem('espresso-single',{available:true});
   assert.doesNotThrow(()=>order(['espresso-single']));
 });
+
+
+test('customer delivery server checks preparation plus travel and handover, including kitchen queue and truck cutoff',t=>{
+  t.mock.timers.enable({apis:['Date'],now:new Date('2026-10-01T09:00:00+02:00')});
+  saveDocument('trading',hours,'fixture');
+  assert.doesNotThrow(()=>order(['espresso-single'],'delivery','2026-10-01T09:30:00+02:00'));
+  assert.throws(()=>order(['espresso-single'],'delivery','2026-10-01T09:15:00+02:00'),/available delivery time/);
+  assert.throws(()=>order(['espresso-single'],'delivery','invalid'),/available delivery time/);
+  t.mock.timers.setTime(new Date('2026-10-01T15:10:00+02:00').getTime());
+  assert.throws(()=>order(['truck-kota-russian'],'delivery'),/Delivery is closed/);
+  t.mock.timers.setTime(new Date('2026-10-01T18:15:00+02:00').getTime());
+  assert.throws(()=>order(['espresso-single'],'delivery'),/Delivery is closed/);
+});
+
+test('delivery allowance is configurable and bounded',()=>{
+  assert.equal(validateSettings({...hours,deliveryAllowanceMinutes:20}).deliveryAllowanceMinutes,20);
+  for(const deliveryAllowanceMinutes of [0,4,121,15.5,NaN])assert.throws(()=>validateSettings({...hours,deliveryAllowanceMinutes}),/travel and handover/);
+});

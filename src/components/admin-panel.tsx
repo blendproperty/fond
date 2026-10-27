@@ -1,4 +1,5 @@
 'use client';
+import {formatCollectionTime} from '@/lib/fulfilment';
 import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
@@ -415,7 +416,7 @@ function OrdersAdmin() {
             <div className="admin-order-row" key={o.id}>
               <span className="staff-ref">{o.displayReference}</span>
               <strong>{o.customerName}</strong>
-              <span>{o.fulfillment === 'delivery' ? `Delivery · ${o.building ?? ''}` : `${o.fulfillment==='dine_in'?'Dine in · ':''}${o.collectionTime}`}</span>
+              <span>{o.fulfillment === 'delivery' ? `Delivery · ${formatCollectionTime(o.collectionTime)} · ${o.building ?? ''}` : `${o.fulfillment==='dine_in'?'Dine in · ':''}${o.collectionTime}`}</span>
               <span className={`admin-status admin-status-${o.status}`}>{o.status.replaceAll('_',' ')}</span>
               <strong>{money(o.totalCents)}</strong>
               <span className="admin-order-time">{new Date(o.createdAt).toLocaleString('en-ZA')}</span>
