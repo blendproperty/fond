@@ -33,7 +33,7 @@ export type Category =
   | 'Food Truck';
 
 export type Diet = 'vegan' | 'vegetarian' | 'gluten-free';
-export type Modifier = { id: string; name: string; price: number }; // price in cents, added when selected
+export type Modifier = { id: string; name: string; price: number; choiceGroup?: string }; // a choice group requires exactly one option
 export type Meal = {
   id: string;
   name: string;
@@ -314,6 +314,9 @@ export function quoteCart(lines: CartLine[], sourceMenu: Meal[] = SEED_MENU) {
       if (!mod) throw new Error('Your basket has an invalid modifier selection.');
       return mod;
     });
+    for (const group of new Set(meal.modifiers?.map(mod => mod.choiceGroup).filter(Boolean))) {
+      if (selectedModifiers.filter(mod => mod.choiceGroup === group).length !== 1) throw new Error(`Choose one option for ${group}.`);
+    }
     seen.add(key);
     const unitPrice = meal.price + selectedModifiers.reduce((sum, m) => sum + m.price, 0);
     if (!Number.isSafeInteger(unitPrice) || unitPrice<0) throw new Error('Invalid item total.');

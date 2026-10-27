@@ -96,7 +96,7 @@ test('food truck menu is added once to existing databases without overwriting la
   assert.equal(foodTruck.length, 26);
   assert.equal(menu.find(item => item.id === 'truck-kota-steak')?.price, 7000);
   assert.equal(menu.find(item => item.id === 'truck-kota-vienna')?.price, 3100);
-  assert.equal(menu.find(item => item.id === 'truck-kota-russian')?.modifiers?.[0]?.name, 'Achar instead of chakalaka');
+  assert.equal(menu.find(item => item.id === 'truck-kota-russian')?.modifiers?.[0]?.name, 'Kota: Atchar');
   assert.equal(menu.find(item => item.id === 'truck-kota-create-your-own')?.available, false);
   assert.equal(getAvailableMenu().find(item => item.id === 'truck-kota-create-your-own'), undefined);
 });
@@ -180,4 +180,22 @@ test('photo reconciliation updates an existing database once and preserves sold-
  assert.equal(getOrderByReference(old.reference)?.totalCents,16000);
  updateMenuItem('three-egg-omelette',{price:5600});
  assert.equal(getFullMenu().find(m=>m.id==='three-egg-omelette')?.price,5600);
+});
+
+test('Food Truck preferences migrate once without changing prices, availability, custom options or other menus', () => {
+  const before = getFullMenu();
+  const db = getDb();
+  db.prepare('DELETE FROM app_documents WHERE key=?').run('food-truck-options-2026-10-27-v1');
+  const legacy = [{id:'achar-instead-of-chakalaka',name:'Achar instead of chakalaka',price:0},{id:'custom-extra',name:'Kitchen extra',price:500}];
+  db.prepare('UPDATE menu_items SET modifiers_json=?,price_cents=3333,available=0 WHERE id=?').run(JSON.stringify(legacy),'truck-kota-vienna');
+  const migrated = getFullMenu();
+  const kota = migrated.find(item => item.id === 'truck-kota-vienna')!;
+  assert.equal(kota.price,3333); assert.equal(kota.available,false);
+  assert.equal(kota.modifiers?.length,11);
+  assert.ok(kota.modifiers?.some(mod=>mod.id==='custom-extra'&&mod.price===500));
+  assert.equal(kota.modifiers?.filter(mod=>mod.choiceGroup==='Kota relish').length,3);
+  assert.deepEqual(migrated.filter(item=>item.category!=='Food Truck'),before.filter(item=>item.category!=='Food Truck'));
+  for (const item of migrated.filter(item=>item.id.startsWith('truck-chow-')||item.id.startsWith('truck-breakfast-')||/^truck-side-(small|medium|large)-chips$/.test(item.id))) assert.equal(item.modifiers?.length,7);
+  updateMenuItem(kota.id,{modifiers:[]});
+  assert.deepEqual(getFullMenu().find(item=>item.id===kota.id)?.modifiers,[]);
 });

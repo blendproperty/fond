@@ -13,7 +13,7 @@ beforeEach(()=>{resetDbForTests();delete process.env.FOND_HOST;delete process.en
 const hours={...DEFAULT_SETTINGS,enforceHours:true};
 const saturday=new Date('2026-10-03T10:00:00+02:00');
 const sunday=new Date('2026-10-04T10:00:00+02:00');
-const order=(ids:string[],fulfillment:'collection'|'delivery'|'dine_in'='collection',collectionTime='ASAP')=>createOrder({submissionKey:randomUUID(),customerName:'Schedule test',contactNumber:'0821234567',building:'Test office',fulfillment,collectionTime,paymentMethod:fulfillment==='delivery'?'yoco_online':'pay_at_collection',source:'customer',lines:ids.map(id=>({id,quantity:1}))});
+const order=(ids:string[],fulfillment:'collection'|'delivery'|'dine_in'='collection',collectionTime='ASAP')=>createOrder({submissionKey:randomUUID(),customerName:'Schedule test',contactNumber:'0821234567',building:'Test office',fulfillment,collectionTime,paymentMethod:fulfillment==='delivery'?'yoco_online':'pay_at_collection',source:'customer',lines:ids.map(id=>({id,quantity:1,modifierIds:id.startsWith('truck-kota-')?['truck-kota-chakalaka']:[]}))});
 
 test('opening message handles before opening, exact cutoff, weekends and paused ordering in South African time',()=>{
   assert.equal(orderingHoursMessage(hours,new Date('2026-10-01T04:00:00Z')),'Opens today at 07:00');

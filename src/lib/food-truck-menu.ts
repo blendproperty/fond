@@ -1,4 +1,4 @@
-import type { Meal } from './menu';
+import type { Meal, Modifier } from './menu';
 
 export const FOOD_TRUCK_SECTIONS = ['Build Your Plate', 'Kotas', 'Chow for 1', 'Breakfast'] as const;
 export type FoodTruckSection = (typeof FOOD_TRUCK_SECTIONS)[number];
@@ -14,7 +14,7 @@ export function foodTruckSection(item: Pick<Meal, 'id'>): FoodTruckSection {
 // on 2026-09-25. Prices are fixed Rand amounts stored in cents. The printed
 // "Create Your Own" kota is intentionally not orderable online because its
 // R25+ price depends on choices that the source menu does not price.
-export const FOOD_TRUCK_MENU: Meal[] = [
+const FOOD_TRUCK_BASE_MENU: Meal[] = [
   // Build your plate — proteins
   { id: 'truck-plate-beef', name: 'Build Your Plate · Beef', description: 'Shisa nyama beef. Choose your sides and sauce separately from this Food Truck menu.', category: 'Food Truck', price: 7000, symbol: '🥩' },
   { id: 'truck-plate-drumsticks', name: 'Build Your Plate · Drumsticks', description: 'Chicken drumsticks. Choose your sides and sauce separately from this Food Truck menu.', category: 'Food Truck', price: 2000, symbol: '🍗' },
@@ -51,3 +51,24 @@ export const FOOD_TRUCK_MENU: Meal[] = [
   { id: 'truck-breakfast-brekkie-bun', name: 'Food Truck Brekkie Bun', description: 'Bun with bacon, tomato relish, egg and cheese, served with chips.', category: 'Food Truck', price: 5500, symbol: '🍳' },
   { id: 'truck-breakfast-chicken-mayo-toastie', name: 'Food Truck Chicken Mayo Toastie', description: 'Chicken mayonnaise toastie from the Food Truck.', category: 'Food Truck', price: 5500, symbol: '🥪' },
 ];
+
+export const FOOD_TRUCK_CHIP_OPTIONS: Modifier[] = [
+  ['tomato', 'Tomato sauce'], ['bbq', 'BBQ'], ['peri-peri', 'Peri-peri'],
+  ['chips-sauce', 'Chips sauce'], ['salt', 'Salt'], ['vinegar', 'Vinegar'], ['chips-spice', 'Chips spice'],
+].map(([id, name]) => ({id: `truck-chips-${id}`, name: `Chips: ${name}`, price: 0}));
+
+export const FOOD_TRUCK_KOTA_OPTIONS: Modifier[] = [
+  {id: 'achar-instead-of-chakalaka', name: 'Kota: Atchar', price: 0, choiceGroup: 'Kota relish'},
+  {id: 'truck-kota-chakalaka', name: 'Kota: Chakalaka', price: 0, choiceGroup: 'Kota relish'},
+  {id: 'truck-kota-dry', name: 'Kota: Dry (no relish)', price: 0, choiceGroup: 'Kota relish'},
+];
+
+export const FOOD_TRUCK_MENU: Meal[] = FOOD_TRUCK_BASE_MENU.map(meal => {
+  const kota = meal.id.startsWith('truck-kota-') && meal.id !== 'truck-kota-create-your-own';
+  const chips = kota || meal.id.startsWith('truck-chow-') || meal.id.startsWith('truck-breakfast-') || /^truck-side-(small|medium|large)-chips$/.test(meal.id);
+  if (!chips) return meal;
+  return {...meal,
+    description: kota ? `${meal.description.split(' with ')[0]} with chips, cheese and egg. Choose Atchar, chakalaka or dry; choose chip sauces and seasoning separately.` : meal.description,
+    modifiers: [...(kota ? FOOD_TRUCK_KOTA_OPTIONS : []), ...FOOD_TRUCK_CHIP_OPTIONS],
+  };
+});

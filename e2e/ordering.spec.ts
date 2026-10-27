@@ -86,10 +86,16 @@ test('food truck menu is clearly separated and can be ordered',async({page},test
  await page.getByRole('tab',{name:'Kotas',exact:true}).click();
  const kota=page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Kota · Russian'})});
  await expect(kota).toContainText('R 40,00');
- await kota.getByLabel('Achar instead of chakalaka').check();
+ await expect(kota.getByRole('button',{name:'Add Kota · Russian'})).toBeDisabled();
+ await kota.getByRole('radio',{name:'Kota: Atchar',exact:true}).check();
+ await kota.getByRole('radio',{name:'Kota: Chakalaka',exact:true}).check();
+ await expect(kota.getByRole('radio',{name:'Kota: Atchar',exact:true})).not.toBeChecked();
+ await kota.getByRole('radio',{name:'Kota: Atchar',exact:true}).check();
+ await kota.getByLabel('Chips: BBQ',{exact:true}).check();
+ await kota.getByLabel('Chips: Salt',{exact:true}).check();
  await kota.getByRole('button',{name:'Add Kota · Russian'}).click();
  await page.getByRole('button',{name:/^Basket/}).click();
- await expect(page.getByText('Achar instead of chakalaka').last()).toBeVisible();
+ await expect(page.getByText(/Kota: Atchar.*Chips: BBQ.*Chips: Salt/).last()).toBeVisible();
  await expect(page.getByText('Today only · Food Truck closes at 15:30.')).toBeVisible();
  await expect(page.getByLabel('Preferred collection time (today)').locator('option').last()).toContainText('15:30');
  await page.keyboard.press('Escape');

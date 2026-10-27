@@ -1,4 +1,5 @@
 'use client';
+import {ModifierOptions, modifierChoicesComplete, toggleModifierChoice} from './modifier-options';
 import {MembershipScanner} from './membership-scanner';
 import {CoffeeRewardScanner} from './coffee-reward-scanner';
 import {CounterStamps} from './counter-rewards';
@@ -424,7 +425,7 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
   function toggleModifier(itemId: string, modifierId: string) {
     setPendingMods(current => {
       const selected = current[itemId] ?? [];
-      return {...current, [itemId]: selected.includes(modifierId) ? selected.filter(id => id !== modifierId) : [...selected, modifierId]};
+      return {...current, [itemId]: toggleModifierChoice(menu.find(meal => meal.id === itemId)?.modifiers, selected, modifierId)};
     });
   }
 
@@ -496,10 +497,10 @@ function ManualOrderPanel({ menu, rewardMode=false, onClose, onCreated }: { menu
               const selected = pendingMods[m.id] ?? [];
               const selectedPrice = (m.modifiers ?? []).filter(mod => selected.includes(mod.id)).reduce((sum, mod) => sum + mod.price, m.price);
               return <div className="staff-item" key={m.id}>
-                <button className="staff-item-add" onClick={() => change(m.id, 1, selected)} aria-label={`Add ${m.name}`}>
+                <button className="staff-item-add" disabled={!modifierChoicesComplete(m.modifiers,selected)} onClick={() => change(m.id, 1, selected)} aria-label={`Add ${m.name}`}>
                   <span>{m.symbol}</span><strong>{m.name}</strong><em>{money(selectedPrice)}</em>
                 </button>
-                {!!m.modifiers?.length && <div className="staff-item-modifiers">{m.modifiers.map(mod => <label key={mod.id}><input type="checkbox" checked={selected.includes(mod.id)} onChange={() => toggleModifier(m.id, mod.id)}/>{mod.name}{mod.price ? ` (+${money(mod.price)})` : ''}</label>)}</div>}
+                {!!m.modifiers?.length && <div className="staff-item-modifiers"><ModifierOptions modifiers={m.modifiers} selected={selected} onChange={id => toggleModifier(m.id, id)}/></div>}
               </div>;
             })}
           </div>

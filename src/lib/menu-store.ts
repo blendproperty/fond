@@ -187,6 +187,31 @@ function seedIfEmpty() {
       throw error;
     }
   }
+
+  const truckOptionsMarker = 'food-truck-options-2026-10-27-v1';
+  if (!db.prepare('SELECT key FROM app_documents WHERE key=?').get(truckOptionsMarker)) {
+    db.exec('SAVEPOINT fond_truck_options');
+    try {
+      const now = new Date().toISOString();
+      const update = db.prepare('UPDATE menu_items SET modifiers_json=?, description=?, updated_at=? WHERE id=?');
+      for (const meal of FOOD_TRUCK_MENU.filter(item => item.modifiers?.length)) {
+        const row = db.prepare('SELECT * FROM menu_items WHERE id=?').get(meal.id) as MenuRow | undefined;
+        if (!row) continue;
+        const current: Modifier[] = JSON.parse(row.modifiers_json);
+        const modifiers = [...meal.modifiers!, ...current.filter(mod => !meal.modifiers!.some(option => option.id === mod.id))];
+        const legacyKotaDescription = / with chakalaka, chips, cheese and egg\. Select the achar option below if preferred\.$/.test(row.description)
+          || row.description === 'Steak with tomato relish, plus chips, cheese and egg.';
+        update.run(JSON.stringify(modifiers), legacyKotaDescription ? meal.description : row.description, now, meal.id);
+      }
+      db.prepare('INSERT INTO app_documents (key,value,updated_at) VALUES (?,?,?)').run(truckOptionsMarker,'included preferences; existing prices and staff settings preserved',now);
+      db.exec('RELEASE fond_truck_options');
+    } catch (error) {
+      db.exec('ROLLBACK TO fond_truck_options');
+      db.exec('RELEASE fond_truck_options');
+      throw error;
+    }
+  }
+
 }
 
 // Full menu including unavailable items — for the admin panel only.
@@ -227,6 +252,7 @@ function validateModifiers(modifiers: Modifier[] | undefined): string | undefine
     if (!m || typeof m.id !== 'string' || typeof m.name !== 'string' || !m.name.trim() || m.name.length > 60) {
       throw new MenuValidationError('Each modifier needs a name.');
     }
+    if (m.choiceGroup !== undefined && (typeof m.choiceGroup !== 'string' || !m.choiceGroup.trim() || m.choiceGroup.length > 60)) throw new MenuValidationError('Invalid modifier choice group.');
     if (!Number.isInteger(m.price) || m.price < -100_00 || m.price > 100_00) {
       throw new MenuValidationError('Modifier price must be a valid amount (can be negative, e.g. "no cheese").');
     }
