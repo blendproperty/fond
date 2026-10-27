@@ -15,7 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Provide a modifier name and price.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
   try {
-    const item = addModifier(id, { name: body.name, price: body.price },admin.actor);
+    const item = addModifier(id, { name: body.name, price: body.price, choiceGroup: body.choiceGroup },admin.actor);
     return NextResponse.json({ item }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const message = error instanceof MenuValidationError ? error.message : 'Could not add that modifier.';

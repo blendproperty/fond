@@ -8,12 +8,14 @@ let getAvailableMenu: typeof import('../src/lib/menu-store').getAvailableMenu;
 let updateMenuItem: typeof import('../src/lib/menu-store').updateMenuItem;
 let createMenuItem: typeof import('../src/lib/menu-store').createMenuItem;
 let deleteMenuItem: typeof import('../src/lib/menu-store').deleteMenuItem;
+let addModifier: typeof import('../src/lib/menu-store').addModifier;
+let removeModifier: typeof import('../src/lib/menu-store').removeModifier;
 let MenuValidationError: typeof import('../src/lib/menu-store').MenuValidationError;
 let getDb: typeof import('../src/lib/db').getDb;
 
 before(async () => {
   ({ resetDbForTests, getDb } = await import('../src/lib/db'));
-  ({ getFullMenu, getAvailableMenu, updateMenuItem, createMenuItem, deleteMenuItem, MenuValidationError } = await import('../src/lib/menu-store'));
+  ({ getFullMenu, getAvailableMenu, updateMenuItem, createMenuItem, deleteMenuItem, addModifier, removeModifier, MenuValidationError } = await import('../src/lib/menu-store'));
 });
 
 beforeEach(() => resetDbForTests());
@@ -198,4 +200,17 @@ test('Food Truck preferences migrate once without changing prices, availability,
   for (const item of migrated.filter(item=>item.id.startsWith('truck-chow-')||item.id.startsWith('truck-breakfast-')||/^truck-side-(small|medium|large)-chips$/.test(item.id))) assert.equal(item.modifiers?.length,7);
   updateMenuItem(kota.id,{modifiers:[]});
   assert.deepEqual(getFullMenu().find(item=>item.id===kota.id)?.modifiers,[]);
+});
+
+test('self-service modifiers persist optional prices and required groups with boundary validation', () => {
+  const item=createMenuItem({id:'self-service-options',name:'Options fixture',description:'',category:'Food Truck',price:1000});
+  addModifier(item.id,{name:'BBQ',price:0});
+  addModifier(item.id,{name:'White bread',price:0,choiceGroup:' Bread choice '});
+  const saved=addModifier(item.id,{name:'Brown bread',price:500,choiceGroup:'Bread choice'});
+  assert.equal(saved.modifiers?.filter(mod=>mod.choiceGroup==='Bread choice').length,2);
+  assert.equal(saved.modifiers?.find(mod=>mod.name==='BBQ')?.choiceGroup,undefined);
+  for(const choiceGroup of ['', ' ', 'x'.repeat(61), 123, null]) assert.throws(()=>addModifier(item.id,{name:'Bad',price:0,choiceGroup:choiceGroup as any}),MenuValidationError);
+  assert.equal(getFullMenu().find(mod=>mod.id===item.id)?.modifiers?.length,3);
+  const removed=removeModifier(item.id,saved.modifiers!.find(mod=>mod.name==='Brown bread')!.id);
+  assert.equal(removed.modifiers?.length,2);
 });

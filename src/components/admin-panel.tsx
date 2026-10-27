@@ -244,7 +244,7 @@ function MenuAdmin() {
             <h2>{cat}</h2>
             <div className={`admin-item-list admin-item-list-${view}`}>
               {catItems.map((item) => (
-                <MenuRow key={item.id} item={item} view={view} saving={savingId === item.id} onPatch={(body) => patch(item.id, body)} onRemove={() => remove(item.id)} />
+                <MenuRow key={item.id} item={item} view={view} saving={savingId === item.id} onRefresh={refresh} onPatch={(body) => patch(item.id, body)} onRemove={() => remove(item.id)} />
               ))}
             </div>
           </section>
@@ -256,7 +256,7 @@ function MenuAdmin() {
 
 const DIET_OPTIONS: Array<'vegan' | 'vegetarian' | 'gluten-free'> = ['vegan', 'vegetarian', 'gluten-free'];
 
-function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: ViewMode; saving: boolean; onPatch: (body: Record<string, unknown>) => void; onRemove: () => void }) {
+function MenuRow({ item, view, saving, onPatch, onRemove, onRefresh }: { item: Meal; view: ViewMode; saving: boolean; onPatch: (body: Record<string, unknown>) => void; onRemove: () => void; onRefresh: () => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [price, setPrice] = useState((item.basePrice ?? item.price) / 100 + '');
   const [specialPrice, setSpecialPrice] = useState(item.isSpecial && item.basePrice ? (item.price / 100 + '') : '');
@@ -268,6 +268,7 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
   const [diet, setDiet] = useState<string[]>(item.diet ?? []);
   const [newModName, setNewModName] = useState('');
   const [newModPrice, setNewModPrice] = useState('');
+  const [newModGroup, setNewModGroup] = useState('');
   const [modBusy, setModBusy] = useState(false);
   const [modError, setModError] = useState('');
   const [prepMinutes,setPrepMinutes]=useState(String(item.prepMinutes??10));
@@ -280,24 +281,28 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
 
   async function addModifier() {
     setModError('');
-    const priceCents = Math.round(parseFloat(newModPrice || '0') * 100);
-    if (!newModName.trim() || !Number.isFinite(priceCents)) { setModError('Enter a modifier name and price.'); return; }
+    const priceCents = Math.round(Number(newModPrice.trim() || '0') * 100);
+    if (!newModName.trim() || !Number.isFinite(priceCents)) { setModError('Enter a modifier name and valid price.'); return; }
     setModBusy(true);
-    const res = await fetch(`/api/admin/menu/${item.id}/modifiers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newModName.trim(), price: priceCents }) });
-    setModBusy(false);
-    if (!res.ok) { const data = await res.json().catch(() => null); setModError(data?.message ?? 'Could not add that modifier.'); return; }
-    const data = await res.json();
-    onPatch({ modifiers: data.item.modifiers });
-    setNewModName(''); setNewModPrice('');
+    try {
+      const res = await fetch(`/api/admin/menu/${item.id}/modifiers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newModName.trim(), price: priceCents, choiceGroup: newModGroup.trim() || undefined }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not add that modifier.');
+      setNewModName(''); setNewModPrice('');
+      await onRefresh();
+    } catch (error) { setModError(error instanceof Error ? error.message : 'Connection lost. Refresh the menu before trying again.'); }
+    finally { setModBusy(false); }
   }
 
   async function removeModifier(modifierId: string) {
-    setModBusy(true);
-    const res = await fetch(`/api/admin/menu/${item.id}/modifiers/${modifierId}`, { method: 'DELETE' });
-    setModBusy(false);
-    if (!res.ok) return;
-    const data = await res.json();
-    onPatch({ modifiers: data.item.modifiers });
+    setModError('');setModBusy(true);
+    try {
+      const res = await fetch(`/api/admin/menu/${item.id}/modifiers/${modifierId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not remove that modifier.');
+      await onRefresh();
+    } catch (error) { setModError(error instanceof Error ? error.message : 'Connection lost. Refresh the menu before trying again.'); }
+    finally { setModBusy(false); }
   }
 
   return (
@@ -326,19 +331,21 @@ function MenuRow({ item, view, saving, onPatch, onRemove }: { item: Meal; view: 
             ))}
           </div>
           <div className="admin-modifiers">
-            <h4>Modifiers (add this / remove this)</h4>
+            <h4>Options, sauces &amp; extras</h4><p className="small">Use 0 for included options. Leave the group blank for optional extras that can be combined. Use the same group name for choices where the customer must select exactly one (for example, Kota relish). Saved options appear on customer and staff menus immediately.</p>
             {(item.modifiers ?? []).length === 0 && <p className="small">No modifiers yet — e.g. &ldquo;Extra cheese&rdquo; at +R15 or &ldquo;No onion&rdquo; at R0.</p>}
             {(item.modifiers ?? []).map((mod: Modifier) => (
               <div className="admin-modifier-row" key={mod.id}>
-                <span>{mod.name}</span>
+                <span>{mod.name}{mod.choiceGroup && <small> · {mod.choiceGroup} · choose one</small>}</span>
                 <span>{mod.price > 0 ? '+' : ''}{money(mod.price)}</span>
                 <button className="icon-button" aria-label={`Remove ${mod.name}`} disabled={modBusy} onClick={() => removeModifier(mod.id)}><Minus size={14} /></button>
               </div>
             ))}
             <div className="admin-modifier-add">
-              <input value={newModName} onChange={(e) => setNewModName(e.target.value)} placeholder="e.g. Extra cheese" />
-              <input value={newModPrice} onChange={(e) => setNewModPrice(e.target.value)} placeholder="15.00 (or -15.00, or 0)" inputMode="decimal" style={{ maxWidth: 130 }} />
-              <button className="quiet" disabled={modBusy} onClick={addModifier}><Plus size={14} /> Add</button>
+              <input aria-label="Option name" maxLength={60} value={newModName} onChange={(e) => setNewModName(e.target.value)} placeholder="e.g. Extra cheese" />
+              <input aria-label="Option price (Rand)" value={newModPrice} onChange={(e) => setNewModPrice(e.target.value)} placeholder="15.00 (or -15.00, or 0)" inputMode="decimal" style={{ maxWidth: 130 }} />
+              <input aria-label="Required choice group (optional)" maxLength={60} list={`${item.id}-modifier-groups`} value={newModGroup} onChange={e=>setNewModGroup(e.target.value)} placeholder="Group name (optional)"/>
+              <datalist id={`${item.id}-modifier-groups`}>{[...new Set(item.modifiers?.map(mod=>mod.choiceGroup).filter(Boolean))].map(group=><option key={group} value={group}/>)}</datalist>
+              <button className="quiet" aria-label="Add modifier" disabled={modBusy||saving} onClick={addModifier}><Plus size={14} /> Add</button>
             </div>
             {modError && <p role="alert">{modError}</p>}
           </div>

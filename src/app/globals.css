@@ -487,3 +487,7 @@ footer span:last-child{margin-left:auto}
 
 /* Solid iPhone browser/status-bar surround; body retains each page palette. */
 html{background-color:#17221e}
+
+@media(max-width:600px){.admin-row .icon-button,.admin-modifier-add button{min-width:56px;min-height:56px}}
+
+@media(max-width:900px){.admin-main>.staff-header{margin:0 0 18px;padding:22px 16px}}

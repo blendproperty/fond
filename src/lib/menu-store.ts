@@ -257,7 +257,7 @@ function validateModifiers(modifiers: Modifier[] | undefined): string | undefine
       throw new MenuValidationError('Modifier price must be a valid amount (can be negative, e.g. "no cheese").');
     }
   }
-  return JSON.stringify(modifiers);
+  return JSON.stringify(modifiers.map(mod => ({...mod, ...(mod.choiceGroup ? {choiceGroup: mod.choiceGroup.trim()} : {})})));
 }
 
 export function updateMenuItem(id: string, patch: MenuItemPatch, actor?:string): Meal {
@@ -349,10 +349,10 @@ export function deleteMenuItem(id: string,actor?:string): void {
 // Add a single "add this / remove this" option to an item, e.g. "Extra
 // cheese" at +R15, or "No onion" at R0 — the price can be negative for a
 // removal that should discount (rare, but the field allows it).
-export function addModifier(itemId: string, input: { name: string; price: number },actor?:string): Meal {
+export function addModifier(itemId: string, input: { name: string; price: number; choiceGroup?: string },actor?:string): Meal {
   const item = getFullMenu().find((m) => m.id === itemId);
   if (!item) throw new MenuValidationError('Menu item not found.');
-  const modifiers = [...(item.modifiers ?? []), { id: randomUUID(), name: input.name, price: input.price }];
+  const modifiers = [...(item.modifiers ?? []), { id: randomUUID(), name: input.name.trim(), price: input.price, ...(input.choiceGroup !== undefined ? {choiceGroup: input.choiceGroup} : {}) }];
   return updateMenuItem(itemId, { modifiers },actor);
 }
 

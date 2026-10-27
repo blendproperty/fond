@@ -21,6 +21,10 @@ All seven navigation sections have working screens:
 - Settings: ordering/fulfilment, Johannesburg hours, capacity, preparation estimate, contact, collection preferences, providers and named team accounts. Managers run operations; Owners can review and roll back operational changes and manage staff/manager accounts; Super Admins additionally control providers and privileged access. Staff use the tablet. Named sessions expire after 12 hours and are revoked on account edits/logout. Shared codes remain during transition.
 - Change history: named menu, trading, website-content and customer-message edits retain before/after versions. Owners and Super Admins can roll back only the latest change to an item; security, provider, customer, payment and retry actions remain in a protected activity log without passwords or provider secrets.
 
+### Add food choices without a code change
+
+In `/admin`, open **Menu & specials**, find the item and select its pencil button. Under **Options, sauces & extras**, enter the option name and price in Rand (`0` means included), then select **Add**. Leave **Required choice group** blank for optional sauces/extras that can be combined. For a required single choice, give every alternative the same group name, such as `Kota relish` or `Bread choice`; existing group names are suggested. The customer must select exactly one option in each named group. Use the minus button to remove an option. Changes apply to that item immediately on refreshed customer/staff menus and are recorded in existing Change history. Repeat for each applicable item; this does not grant anyone new access.
+
 ## Verification
 
 Node 24. Run npm ci, npm run typecheck, npm test and npm run build. Install Playwright Chromium; set test-only FOND_STAFF_CODE, FOND_ADMIN_CODE and FOND_DB_PATH=:memory: before npm run test:e2e. Never point order-creating tests at production. Yoco fixture tests are not real provider sandbox certification.
