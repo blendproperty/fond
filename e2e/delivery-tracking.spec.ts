@@ -5,7 +5,7 @@ const result={reference,displayReference,status:'received',fulfillment:'delivery
 
 async function deliveryBasket(page:Page){
   await page.clock.setFixedTime(new Date('2026-10-01T09:00:00+02:00'));
-  await page.route('**/api/store',async route=>{const response=await route.fetch(),body=await response.json();body.open=true;body.onlinePayments=false;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.enforceHours=false;await route.fulfill({response,json:body});});
+  await page.route('**/api/store',async route=>{const response=await route.fetch(),body=await response.json();body.open=true;body.queueDelayMinutes=0;body.onlinePayments=false;body.paymentMode='sandbox';body.settings.deliveryEnabled=true;body.settings.enforceHours=false;await route.fulfill({response,json:body});});
   await page.goto('/');
   await page.getByRole('button',{name:'Delivery',exact:true}).click();
   await page.getByRole('button',{name:'Add Smashed Avo',exact:true}).click();
@@ -76,4 +76,30 @@ test('staff can open directions for a delivery pin while guests cannot retrieve 
   await page.goto('/staff');await expect(page.getByRole('heading',{name:'Live order board'})).toBeVisible();await page.getByRole('tab',{name:/Awaiting Yoco payment confirmation/}).click();
   const directions=page.getByRole('link',{name:/Directions in Google Maps/});await expect(directions).toBeVisible();expect(new URL((await directions.getAttribute('href'))!).searchParams.get('destination')).toBe('-26.0010063,28.1237302');
   expect((await request.get('/api/staff/orders')).status()).toBe(401);
+});
+
+
+test('delivery arrival selector includes preparation and travel, submits the selected time and shows confirmation',async({page},info)=>{
+  let posted:any;
+  await page.route('**/api/orders',route=>{posted=route.request().postDataJSON();return route.fulfill({status:201,json:{...result,estimatedArrivalAt:'2026-10-01T07:30:00.000Z'}});});
+  await deliveryBasket(page);
+  const selector=page.getByLabel('Preferred delivery time (today)');
+  await expect(selector).toBeVisible();
+  await expect(selector.locator('option').first()).toContainText('28 min');
+  await expect(page.getByText(/15 minutes for travel, finding you and handover/)).toBeVisible();
+  await selector.selectOption('2026-10-01T09:30:00+02:00');
+  await page.getByRole('dialog').screenshot({path:info.outputPath('delivery-arrival.png')});
+  await page.getByRole('button',{name:'Send order to FOND'}).click();
+  await expect(page.getByText('Order sent to FOND.')).toBeVisible();
+  expect(posted.collectionTime).toBe('2026-10-01T09:30:00+02:00');
+  await expect(page.getByText(/Estimated delivery:.*09:30/)).toBeVisible();
+});
+
+test('delivery closes when preparation and handover cannot fit before closing',async({page})=>{
+  await deliveryBasket(page);
+  await page.clock.setFixedTime(new Date('2026-10-01T18:10:00+02:00'));
+  await page.getByRole('tab',{name:'Collection',exact:true}).click();
+  await page.getByRole('tab',{name:'Delivery',exact:true}).click();
+  await expect(page.getByLabel('Preferred delivery time (today)')).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Send order to FOND'})).toBeDisabled();
 });

@@ -133,7 +133,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     fetch('/api/menu').then((r) => r.json()).then((data) => setMenu(data.menu ?? [])).catch(() => {});
-    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setPaymentMode(data.paymentMode??'none');setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,out:Number(s.readyDeliveryMinutes)||10,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
+    fetch('/api/store').then(r=>r.json()).then(data=>{const s=data.settings??{};setPaymentMode(data.paymentMode??'none');setQueueTargets({new:Number(s.newOrderMinutes)||5,payment:Number(s.paymentConfirmationMinutes)||10,yoco:Number(s.yocoEntryMinutes)||5,preparing:Number(s.preparationMinutes)||20,delivery:Number(s.readyDeliveryMinutes)||10,out:Number(s.deliveryAllowanceMinutes)||15,collection:Number(s.readyCollectionMinutes)||10});}).catch(()=>{});
     const timer=setInterval(()=>setNow(Date.now()),15000);
     return ()=>clearInterval(timer);
   }, []);
@@ -357,7 +357,7 @@ export function StaffTablet({ testEnvironment = false }: { testEnvironment?: boo
                     <div className="staff-timing"><span><Clock3 size={13}/> {timing.elapsedMinutes} min in stage · target {timing.targetMinutes} min{col.key==='preparing'?' · basket estimate':''}</span>{timing.delayed&&<strong className="staff-delayed" role="status">Delayed</strong>}</div>
                     <div className="staff-payment-status" data-payment-state={paymentState} role="status"><span>{paymentLabel}</span>{paidOnline && <Check size={18} aria-hidden="true"/>}</div>
                     {order.fulfillment === 'delivery' ? (
-                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
+                      <div className="staff-fulfilment" data-fulfilment="delivery"><strong><Truck size={15}/> DELIVERY</strong><span>For: {order.customerName} · {order.contactNumber}</span><span>To: {order.building}{order.company ? ` · ${order.company}` : ''}</span><DeliveryDirections order={order}/><span>{order.fulfillment==='delivery'?'Delivery arrival':'Requested'}: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)}</span></div>
                     ) : (
                       <div className="staff-fulfilment" data-fulfilment={order.fulfillment}><strong><ShoppingBag size={15}/> {order.fulfillment==='dine_in'?'DINE IN · PLATED':'COLLECTION'}</strong>{order.fulfillment==='dine_in'&&<strong>Plate and serve at the table — do not pack</strong>}<span>{order.fulfillment==='dine_in'?'Dining in':'Collecting'}: {order.customerName} · {order.contactNumber}</span><DeliveryDirections order={order}/><span>Requested: {formatCollectionTime(order.collectionTime)} · ordered {timeAgo(order.createdAt)} {order.source === 'staff' && '· added by staff'}</span></div>
                     )}

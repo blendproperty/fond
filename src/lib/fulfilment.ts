@@ -29,7 +29,7 @@ export function collectionSlots(input:{now?:Date;prepMinutes:number;incrementMin
   const cursor=new Date(now),key=dateKey(cursor),open=toMinutes(input.openingTime),close=toMinutes(input.closingTime);
   if(!input.openDays.includes(weekday(cursor))||dateKey(new Date(earliest))!==key)return [];
   const earliestLocal=new Date(earliest+ZA_OFFSET_MS),afterPrep=earliestLocal.getUTCHours()*60+earliestLocal.getUTCMinutes();
-  if(afterPrep>close)return [];
+  if(earliest>Date.parse(`${key}T${input.closingTime}:00+02:00`))return [];
   const start=Math.max(open,Math.ceil(afterPrep/increment)*increment);
   const slots:CollectionSlot[]=[{value:'As soon as possible',label:`As soon as possible · approx. ${input.prepMinutes} min`,dateLabel:'Today only'}];
   for(let at=start;at<=close;at+=increment){
@@ -53,4 +53,18 @@ export function validateScheduledCollection(value:string,prepMinutes:number,sett
 export function deliveryLocationValue(entry:string){
   const [business,...rest]=entry.split('|');
   return {business:business.trim(),building:rest.join('|').trim()};
+}
+
+export function validateScheduledDelivery(value:string,prepMinutes:number,settings:{deliveryAllowanceMinutes:number;collectionSlotIncrementMinutes:number;openingTime:string;closingTime:string;openDays:number[]},now=new Date(),enforceAvailability=false){
+  const available=collectionSlots({...settings,prepMinutes:prepMinutes+settings.deliveryAllowanceMinutes,incrementMinutes:settings.collectionSlotIncrementMinutes,now});
+  if(enforceAvailability&&!available.length)throw new Error('Delivery is closed for today. Allow time for preparation, travel and handover before closing.');
+  if(value==='ASAP'||value==='As soon as possible')return;
+  if(!available.some(slot=>slot.value===value))throw new Error('Choose an available delivery time for today, allowing for preparation, travel and handover.');
+}
+
+export function deliveryArrivalAt(order:{collectionTime:string;createdAt:string;updatedAt:string;status:string;estimatedPrepMinutes:number},allowanceMinutes:number){
+  if(order.status==='out_for_delivery')return new Date(Date.parse(order.updatedAt)+allowanceMinutes*60000).toISOString();
+  if(['completed','cancelled'].includes(order.status))return null;
+  const scheduled=Date.parse(order.collectionTime);
+  return Number.isFinite(scheduled)?new Date(scheduled).toISOString():new Date(Date.parse(order.createdAt)+(order.estimatedPrepMinutes+allowanceMinutes)*60000).toISOString();
 }
