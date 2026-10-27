@@ -1,3 +1,13 @@
+## 2026-10-27 - Node.js 24.22.1 runtime patch candidate
+
+- **Implementation:** pin the actual application Docker stages to official Node 24.22.1 Alpine OCI digest; qualify the built runtime in CI. Retain the existing supported production major. Existing tests and production build remain required. No business features, dependencies, schemas, secrets, provider, permission or network settings change.
+- **Testing:** preparation/configuration checks only; hosted regression and actual Docker image checks pending. No local Node version is substituted for production qualification.
+- **Commit/push:** isolated codex/node-patch-20261027 candidate; exact pushed SHA and remote context readback recorded after publication. Existing local work preserved.
+- **Merge:** draft PR pending normal passing checks and repository review requirements.
+- **Deployment/configuration:** pending established release; retain previous running image and checkout for rollback before restart. FOND already runs patched 24.22.1; its change makes that runtime reproducible. No deployment is claimed by this candidate record.
+- **Live production verification:** pending exact production commit/image, in-container Node version, health and read-only public application routes; CI runner version alone is not evidence. Check companion workers where present.
+- **Retained gates:** all existing customer/staff/device/UAT, source-data, provider delivery, finance, signing/payment, legal/privacy, training, physical-access, offline, recovery and approval gates remain. No real transactions or outbound test messages. No tracker in scope.
+
 ## 2026-10-27 - Delivery arrival scheduling with vehicle travel and recipient handover
 
 Implementation: customer delivery checkout now offers ASAP with a total estimate or a preferred arrival time today, using the existing 15-minute slot increment. Earliest arrival combines basket quantities/preparation, current kitchen queue and a new configurable deliveryAllowanceMinutes (default 15; validated 5-120). Owner confirmed 10 minutes by vehicle for the furthest 1.1 km plus 5 minutes to find the recipient and hand over. Server recomputes lead time and rejects early/invalid/next-day slots; enforced trading hours reject ASAP when arrival cannot fit before the applicable restaurant/Saturday/Food Truck/mixed-basket close. Shared slot cutoff now checks seconds as well as minutes. Requested arrival reaches staff/admin and existing email details; checkout confirmation and guest tracking include arrival estimates before dispatch and travel/handover after dispatch. Out-for-delivery queue target uses that same allowance. No schema migration or production data changes.
