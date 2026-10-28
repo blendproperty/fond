@@ -1,3 +1,13 @@
+## 2026-10-28 - Verified pinned Node 24.22.1 rollout (FOND and Hub)
+
+- Implementation: pin all existing Node 24 Docker stages to official patched 24.22.1 OCI digest and qualify the actual production image. Previous runtime was already 24.22.1; this makes it reproducible. No ordering, delivery estimates, payments, data model, provider, credential, security/network or business behavior changed.
+- Testing: PR 13 source 7c66f41336c356cc7d4b86968dbe1b2d5bd40d58 passed both source verification runs; exact-main Verify FOND 40636308614 passed complete existing type/unit/Python/build/browser/practice/Hub and Docker runtime checks.
+- Commit/push: scoped source/context published and read back. Merge: PR 13 normally merged as db9239aa99804f61993c06ab2bc908e9718bb537. This subsequent documentation-only [skip ci] record triggers no deployment.
+- Deployment/configuration: exact staging deployment 40636904689 passed; established production promotion 40637814249 verified that exact staged revision and succeeded. Normal pre-deploy consistent SQLite archive created; read-only integrity_check ok and foreign_key_check zero confirmed for 14069760 bytes. Prior production/staging images retained for rollback. No new migration or provider settings change; full restore not newly tested.
+- Live verification: 2026-10-28T05:26:36.352285+00:00; production and staging checkouts both db9239aa99804f61993c06ab2bc908e9718bb537, both containers healthy on Node v24.22.1, zero restarts/OOM false. Images: fond-fond-1 sha256:e529d0f40a14aea90d4a30e11e126069b510d72b36709cadb2f6510f047296ef; fond-test-fond-1 sha256:9958f39d7058596b379df920444dac88dcbe398460d376f34e06be7c39e593b9. FOND health/menu and Midpoint Hub homepage returned 200. Health retains liveOrdering=true, mode=ordering, payments=in-person. No order, payment, account change or outbound test message submitted.
+- Gates: all prior staff/customer/device/UAT, actual kitchen/vehicle/recipient timing calibration, source-data, provider delivery, financial execution, legal/privacy, training, physical-access, offline and full recovery/approval remain open. No organisation migration or paused REA work. No tracker in scope.
+
+
 ## 2026-10-27 - Node.js 24.22.1 runtime patch candidate
 
 - **Implementation:** pin the actual application Docker stages to official Node 24.22.1 Alpine OCI digest; qualify the built runtime in CI. Retain the existing supported production major. Existing tests and production build remain required. No business features, dependencies, schemas, secrets, provider, permission or network settings change.
