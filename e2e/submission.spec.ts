@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+test.beforeEach(async({page})=>{await page.clock.setFixedTime(new Date('2026-09-28T10:00:00+02:00'));});
 
 test('lost order response can be retried with the same submission key',async({page})=>{
  await page.goto('/');
