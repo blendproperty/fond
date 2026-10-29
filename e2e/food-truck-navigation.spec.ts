@@ -6,7 +6,19 @@ test('Food Truck sections are readable, responsive and keyboard accessible',asyn
     await page.setViewportSize({width,height:900});
     for(const route of ['/','/fond/menu']){
       await page.goto(route);
-      await page.getByRole('tab',{name:'Food Truck',exact:true}).click();
+      const truck=page.getByRole('button',{name:'Food Truck menu',exact:true});
+      await expect(truck).toBeVisible();
+      await expect(page.getByRole('tab',{name:'Food Truck',exact:true})).toHaveCount(0);
+      expect(await truck.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(238, 115, 40)');
+      const truckBox=(await truck.boundingBox())!,collectionBox=(await page.locator('.fond-order-mode').boundingBox())!;
+      expect(truckBox.height).toBeGreaterThanOrEqual(44);
+      expect(truckBox.x).toBeLessThanOrEqual(collectionBox.x);
+      expect(truckBox.y).toBeLessThanOrEqual(collectionBox.y);
+      await page.getByRole('searchbox',{name:'Search the menu'}).fill('coffee');
+      await truck.click();
+      await expect(truck).toHaveAttribute('aria-pressed','true');
+      await expect(page.getByRole('searchbox',{name:'Search the menu'})).toHaveValue('');
+      await expect(page.locator('.fond-order-mode').getByRole('button',{name:'Collection',exact:true})).toHaveAttribute('aria-pressed','true');
       const nav=page.getByRole('tablist',{name:'Food Truck menu section'});
       const tabs=nav.getByRole('tab');
       await expect(tabs).toHaveCount(4);
@@ -32,6 +44,7 @@ test('Food Truck sections are readable, responsive and keyboard accessible',asyn
       if(route==='/fond/menu'){
         await page.getByRole('tab',{name:'All-Day Breakfast',exact:true}).click();
         await expect(page.locator('.fond-favourites')).toBeVisible();
+        await expect(truck).toHaveAttribute('aria-pressed','false');
       }
     }
   }

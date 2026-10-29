@@ -76,7 +76,7 @@ test('delivery checkout uses the configured business and building directory',asy
 test('food truck menu is clearly separated and can be ordered',async({page},testInfo)=>{
  await page.clock.setFixedTime(new Date('2026-09-28T10:00:00+02:00'));
  await page.goto('/');
- const truckTab=page.getByRole('tab',{name:'Food Truck'});
+ const truckTab=page.getByRole('button',{name:'Food Truck menu',exact:true});
  await truckTab.scrollIntoViewIfNeeded();
  await expect(truckTab.locator('svg')).toBeVisible();
  await truckTab.click();

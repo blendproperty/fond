@@ -48,3 +48,11 @@
 @media(hover:hover){.fond-ordering-app .food-truck-sections button[aria-selected=false]:hover{background:#fffaf2;color:#23382e}}
 @media(max-width:600px){.fond-ordering-app .food-truck-sections{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:20px}.fond-ordering-app .food-truck-sections button{min-height:50px;padding:13px 10px}}
 @media(prefers-reduced-motion:reduce){.fond-ordering-app .food-truck-sections button{transition:none}}
+
+.fond-menu-actions{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:stretch;gap:10px}
+.fond-ordering-app .fond-food-truck-button{display:flex;align-items:center;justify-content:center;gap:9px;padding:10px 16px;min-height:52px;border:2px solid #ee7328;border-radius:14px;background:#ee7328;color:#17221e;font-size:14px;font-weight:800;white-space:nowrap;box-shadow:0 3px 8px #ee732826}
+.fond-food-truck-button svg{width:32px;height:28px;flex-shrink:0}
+.fond-ordering-app .fond-food-truck-button[aria-pressed=true]{border-color:#17221e;box-shadow:inset 0 0 0 1px #17221e}
+.fond-food-truck-button:focus-visible{outline:3px solid #17221e;outline-offset:3px}
+.fond-ordering-app .fond-menu-actions .fond-order-mode button{min-height:44px}
+@media(max-width:480px){.fond-menu-actions{grid-template-columns:minmax(0,1fr);gap:8px}.fond-ordering-app .fond-food-truck-button{justify-self:start;min-width:155px}}

@@ -33,7 +33,7 @@ for(const [label,time,restaurantOpen] of [['Saturday morning','2026-10-03T10:00:
       await expect(page.getByText('Today only · Kitchen closes at 12:00.')).toBeVisible();
       await expect(page.getByLabel('Preferred collection time (today)').locator('option').last()).toContainText('12:00');await page.keyboard.press('Escape');
     }else await expect(add).toBeDisabled();
-    await page.getByRole('tab',{name:'Food Truck',exact:true}).click();await page.getByRole('tab',{name:'Kotas',exact:true}).click();
+    await page.getByRole('button',{name:'Food Truck menu',exact:true}).click();await page.getByRole('tab',{name:'Kotas',exact:true}).click();
     await expect(page.getByRole('button',{name:'Add Kota · Russian',exact:true})).toBeDisabled();
     await expect(page.getByText(/Mon, Tue, Wed, Thu, Fri · from 07:00/)).toBeVisible();
   });
