@@ -1,12 +1,13 @@
 import type { Meal, Modifier } from './menu';
 
-export const FOOD_TRUCK_SECTIONS = ['Build Your Plate', 'Kotas', 'Chow for 1', 'Breakfast'] as const;
+export const FOOD_TRUCK_SECTIONS = ['Build Your Plate', 'Kotas', 'Chow for 1', 'Breakfast', 'Drinks'] as const;
 export type FoodTruckSection = (typeof FOOD_TRUCK_SECTIONS)[number];
 
 export function foodTruckSection(item: Pick<Meal, 'id'>): FoodTruckSection {
   if (item.id.startsWith('truck-kota-')) return 'Kotas';
   if (item.id.startsWith('truck-chow-')) return 'Chow for 1';
   if (item.id.startsWith('truck-breakfast-')) return 'Breakfast';
+  if (item.id.startsWith('truck-drink-')) return 'Drinks';
   return 'Build Your Plate';
 }
 
@@ -50,6 +51,14 @@ const FOOD_TRUCK_BASE_MENU: Meal[] = [
   // Breakfast
   { id: 'truck-breakfast-brekkie-bun', name: 'Food Truck Brekkie Bun', description: 'Bun with bacon, tomato relish, egg and cheese, served with chips.', category: 'Food Truck', price: 5500, symbol: '🍳' },
   { id: 'truck-breakfast-chicken-mayo-toastie', name: 'Food Truck Chicken Mayo Toastie', description: 'Chicken mayonnaise toastie from the Food Truck.', category: 'Food Truck', price: 5500, symbol: '🥪' },
+
+  // Drinks and flavour choices supplied by the owner on 2026-10-29.
+  { id: 'truck-drink-soda-2l', name: 'Soda 2L', description: '2-litre soda. Choose your flavour.', category: 'Food Truck', price: 3500, symbol: '🥤', modifiers: ['Coke', 'Sprite', 'Stoney', 'Fanta'].map(name => ({id: name.toLowerCase(), name, price: 0, choiceGroup: 'Flavour'})) },
+  { id: 'truck-drink-soda-300ml', name: 'Soda 300ml', description: '300ml soda. Choose your flavour.', category: 'Food Truck', price: 2000, symbol: '🥤', modifiers: ['Coke', 'Sprite', 'Stoney', 'Cream Soda', 'Coke Zero', 'Sprite Zero'].map(name => ({id: name.toLowerCase().replaceAll(' ', '-'), name, price: 0, choiceGroup: 'Flavour'})) },
+  { id: 'truck-drink-juice-350ml', name: 'Juice 350ml', description: '350ml juice. Choose apple, orange or cranberry.', category: 'Food Truck', price: 2500, symbol: '🧃', modifiers: ['Apple', 'Orange', 'Cranberry'].map(name => ({id: name.toLowerCase(), name, price: 0, choiceGroup: 'Flavour'})) },
+  { id: 'truck-drink-monster-500ml', name: 'Monster 500ml', description: '500ml Monster energy drink.', category: 'Food Truck', price: 2500, symbol: '🥤' },
+  { id: 'truck-drink-red-bull-250ml', name: 'Red Bull 250ml', description: '250ml Red Bull energy drink.', category: 'Food Truck', price: 2500, symbol: '🥤' },
+  { id: 'truck-drink-red-bull-sugar-free-250ml', name: 'Red Bull Sugar Free 250ml', description: '250ml sugar-free Red Bull energy drink.', category: 'Food Truck', price: 2500, symbol: '🥤' },
 ];
 
 export const FOOD_TRUCK_CHIP_OPTIONS: Modifier[] = [

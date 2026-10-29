@@ -18,7 +18,7 @@ const OVERRIDES:Record<string,number>={
   'confit-garlic-mushroom-pasta':14,'golden-fried-churros':10,'tiramisu-french-toast':12,
   'v60-single':6,'v60-double':8,'chemex-single':7,'chemex-double':9,'tasting-flight':10,
 };
-export function estimatedPrepMinutes(item:Pick<Meal,'id'|'category'>){return OVERRIDES[item.id]??CATEGORY_MINUTES[item.category]??10;}
+export function estimatedPrepMinutes(item:Pick<Meal,'id'|'category'>){return item.id.startsWith('truck-drink-')?2:OVERRIDES[item.id]??CATEGORY_MINUTES[item.category]??10;}
 export function weightedPrepMinutes(baseMinutes:number,weightPercent:number){return Math.ceil(baseMinutes*(1+weightPercent/100));}
 
 export type PreparationLine={quantity:number;prepMinutes?:number};

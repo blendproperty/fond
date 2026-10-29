@@ -4,7 +4,7 @@ import type {Meal} from '@/lib/menu';
 export function FondFoodArt({meal}:{meal:Meal}) {
  const name=meal.name.toLowerCase();
  const kind=/smoothie|milkshake|frappe/.test(name)||meal.category==='Smoothies'?'smoothie'
-  :/juice|iced|cold brew|lemonade|soda|water|coke|sprite|fanta|tonic|beer|cider|wine|lager|ale\b/.test(name)||meal.category==='Cold Bar & Juice'?'cold drink'
+  :meal.id.startsWith('truck-drink-')||/juice|iced|cold brew|lemonade|soda|water|coke|sprite|fanta|tonic|beer|cider|wine|lager|ale\b/.test(name)||meal.category==='Cold Bar & Juice'?'cold drink'
   :['Coffee','Tea & Steamers','Cold Brew & Iced'].includes(meal.category)?'hot drink'
   :/pizza|foldover/.test(name)||meal.category==='Pizzas & Foldovers'?'pizza'
   :/pasta|penne|napoletana/.test(name)||meal.category==='Pasta'?'pasta'

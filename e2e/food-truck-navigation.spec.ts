@@ -21,7 +21,8 @@ test('Food Truck sections are readable, responsive and keyboard accessible',asyn
       await expect(page.locator('.fond-order-mode').getByRole('button',{name:'Collection',exact:true})).toHaveAttribute('aria-pressed','true');
       const nav=page.getByRole('tablist',{name:'Food Truck menu section'});
       const tabs=nav.getByRole('tab');
-      await expect(tabs).toHaveCount(4);
+      await expect(tabs).toHaveCount(5);
+      await expect(tabs).toHaveText(['Build Your Plate','Kotas','Chow for 1','Breakfast','Drinks']);
       const geometry=await tabs.evaluateAll(elements=>elements.map(el=>({y:el.getBoundingClientRect().y,height:el.getBoundingClientRect().height,font:Number.parseFloat(getComputedStyle(el).fontSize),border:getComputedStyle(el).borderTopWidth})));
       expect(geometry.every(tab=>tab.height>=44&&tab.font>=14&&tab.border==='0px')).toBe(true);
       expect(geometry[1].y).toBe(geometry[0].y);
@@ -39,7 +40,8 @@ test('Food Truck sections are readable, responsive and keyboard accessible',asyn
       expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await nav.scrollIntoViewIfNeeded();
       await page.screenshot({path:info.outputPath(`sections-${route==='/'?'legacy':'fond'}-${width}.png`)});
-      await kotas.press('End');await expect(nav.getByRole('tab',{name:'Breakfast',exact:true})).toBeFocused();
+      await kotas.press('End');await expect(nav.getByRole('tab',{name:'Drinks',exact:true})).toBeFocused();
+      await expect(page.getByRole('tabpanel',{name:'Food Truck · Drinks'}).locator('.meal-card')).toHaveCount(6);
       await page.keyboard.press('Home');await expect(tabs.first()).toBeFocused();
       if(route==='/fond/menu'){
         await page.getByRole('tab',{name:'All-Day Breakfast',exact:true}).click();
