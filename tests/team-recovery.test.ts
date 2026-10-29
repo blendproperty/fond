@@ -57,3 +57,7 @@ test('administrator-approved address is verified only by a valid reset code and 
  completeTeamPasswordReset(reset.challenge,code,'replacement-password');assert.equal(teamRecoveryStatus(f.id).email,'approved@example.test');assert.ok(loginMember(f.username,'replacement-password'));assert.throws(()=>completeTeamPasswordReset(reset.challenge,code,'replacement-password'));
  const other=fixture('another-owner');db.prepare('INSERT INTO team_recovery_approved VALUES (?,?,?)').run(other.id,'other@example.test',new Date().toISOString());const stale=await beginTeamPasswordReset(other.username),staleCode=lastCode();saveMember({...other,name:'Changed',role:'owner',active:true},'shared-admin');assert.throws(()=>completeTeamPasswordReset(stale.challenge,staleCode,'replacement-password'));assert.equal(db.prepare('SELECT * FROM team_recovery_approved WHERE member_id=?').get(other.id),undefined);
 });
+
+test('a reset challenge cannot use an outdated approved destination',async()=>{
+ const f=fixture(),db=getDb();db.prepare('INSERT INTO team_recovery_approved VALUES (?,?,?)').run(f.id,'first@example.test','initial');const reset=await beginTeamPasswordReset(f.username),code=lastCode();db.prepare('UPDATE team_recovery_approved SET email=? WHERE member_id=?').run('new@example.test',f.id);assert.throws(()=>completeTeamPasswordReset(reset.challenge,code,'replacement-password'));assert.ok(loginMember(f.username,f.password));
+});

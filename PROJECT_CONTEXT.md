@@ -2236,3 +2236,5 @@ Implementation: prepare an administrator-approved pending recovery destination s
 Testing: local typecheck, production build, 230 unit tests including seven recovery cases, and two desktop/mobile recovery browser cases passed. Browser test responses are fixtures and do not establish real delivery or user acceptance.
 
 Commit and push: pending. Merge: pending. Deployment and configuration: pending staging and production gates; no production address assigned yet. Live production verification: pending. Real recipient code receipt and each staff member's own reset and sign-in remain outstanding, along with prior provider, data, training, UAT and approval gates. Unrelated tenant-email-preview.html change in the original checkout remains untouched; no tracker in scope.
+
+2026-10-29 follow-up: before release, added a destination equality check on code use to reject an outdated approved or verified destination even if an approval changes during issuance. Eight focused recovery tests pass locally; the earlier 230-test suite and build preceded this follow-up. Final hosted checks and all staging, production, delivery and staff acceptance gates remain pending.

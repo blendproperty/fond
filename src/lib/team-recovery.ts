@@ -59,6 +59,7 @@ export async function beginTeamPasswordReset(username:string,background?:(work:(
 function consume(challenge:string,code:string,purpose:Purpose,memberId?:string){
  const db=getDb(),row=db.prepare('SELECT * FROM team_recovery_challenges WHERE id=?').get(digest(challenge)) as Challenge|undefined;
  if(!row||row.purpose!==purpose||(memberId&&row.member_id!==memberId)||!row.ready||row.expires_at<=Date.now()||row.attempts>=5||!same(row.state_hash,state(row.member_id)))throw new Error('This code expired or is no longer valid. Start again.');
+ if(purpose==='reset'){const destination=db.prepare('SELECT COALESCE(r.email,a.email) AS email FROM team_members m LEFT JOIN team_recovery_emails r ON r.member_id=m.id LEFT JOIN team_recovery_approved a ON a.member_id=m.id WHERE m.id=?').get(row.member_id) as {email:string|null}|undefined;if(!destination?.email||destination.email!==row.email)throw new Error('This code expired or is no longer valid. Start again.');}
  db.prepare('UPDATE team_recovery_challenges SET attempts=attempts+1 WHERE id=?').run(row.id);
  if(!/^\d{6}$/.test(code)||!same(row.code_hash,mac(`${row.id}:${code}`)))throw new Error('Incorrect code. Please try again.');
  return row;
