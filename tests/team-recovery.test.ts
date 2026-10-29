@@ -49,3 +49,11 @@ test('authenticator proof is required for enrollment and password recovery prese
  const proof=await beginRecoveryEmail(f.id,{email:'fixture@example.test',password:f.password,twoFactorCode:recovery[0]});completeRecoveryEmail(f.id,proof.challenge,lastCode());assert.equal(loginMember(f.username,f.password,recovery[0]),null);
  const reset=await beginTeamPasswordReset(f.username);completeTeamPasswordReset(reset.challenge,lastCode(),'replacement-password');assert.equal(twoFactorActive(f.id),true);assert.equal(loginMember(f.username,'replacement-password'),null);assert.ok(loginMember(f.username,'replacement-password',recovery[1]));
 });
+
+test('administrator-approved address is verified only by a valid reset code and cannot survive account edits',async()=>{
+ const f=fixture(),db=getDb();db.prepare('INSERT INTO team_recovery_approved VALUES (?,?,?)').run(f.id,'approved@example.test',new Date().toISOString());
+ const reset=await beginTeamPasswordReset(f.username),code=lastCode();assert.equal(delivered.at(-1)?.to[0],'approved@example.test');assert.equal(teamRecoveryStatus(f.id).email,null);
+ assert.throws(()=>completeTeamPasswordReset(reset.challenge,code==='000000'?'111111':'000000','replacement-password'));assert.equal(teamRecoveryStatus(f.id).email,null);
+ completeTeamPasswordReset(reset.challenge,code,'replacement-password');assert.equal(teamRecoveryStatus(f.id).email,'approved@example.test');assert.ok(loginMember(f.username,'replacement-password'));assert.throws(()=>completeTeamPasswordReset(reset.challenge,code,'replacement-password'));
+ const other=fixture('another-owner');db.prepare('INSERT INTO team_recovery_approved VALUES (?,?,?)').run(other.id,'other@example.test',new Date().toISOString());const stale=await beginTeamPasswordReset(other.username),staleCode=lastCode();saveMember({...other,name:'Changed',role:'owner',active:true},'shared-admin');assert.throws(()=>completeTeamPasswordReset(stale.challenge,staleCode,'replacement-password'));assert.equal(db.prepare('SELECT * FROM team_recovery_approved WHERE member_id=?').get(other.id),undefined);
+});

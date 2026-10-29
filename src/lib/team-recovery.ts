@@ -15,8 +15,9 @@ function state(memberId:string){
  const db=getDb(),member=db.prepare('SELECT id,username,password_hash,role,active FROM team_members WHERE id=? AND active=1').get(memberId);
  if(!member)throw new Error('Account access changed. Start again.');
  const recovery=db.prepare('SELECT email,verified_at FROM team_recovery_emails WHERE member_id=?').get(memberId);
+ const approved=db.prepare('SELECT email,approved_at FROM team_recovery_approved WHERE member_id=?').get(memberId);
  const factor=db.prepare('SELECT hex(ciphertext) AS secret,active FROM team_two_factor WHERE member_id=?').get(memberId);
- return mac(JSON.stringify([member,recovery??null,factor??null]));
+ return mac(JSON.stringify([member,recovery??null,approved??null,factor??null]));
 }
 function limit(key:string,max:number,windowMs=3600000){
  const db=getDb(),now=Date.now();db.prepare('DELETE FROM team_recovery_limits WHERE expires_at<=?').run(now);
@@ -49,11 +50,11 @@ export async function beginTeamPasswordReset(username:string,background?:(work:(
  if(!emailConfigured())throw new Error('Email recovery is temporarily unavailable. Please try again later.');
  const challenge=token();
  const deliver=async()=>{
-  const row=getDb().prepare('SELECT m.id,r.email FROM team_members m JOIN team_recovery_emails r ON r.member_id=m.id WHERE m.username=? AND m.active=1').get(normalized) as {id:string;email:string}|undefined;
+  const row=getDb().prepare('SELECT m.id,COALESCE(r.email,a.email) AS email FROM team_members m LEFT JOIN team_recovery_emails r ON r.member_id=m.id LEFT JOIN team_recovery_approved a ON a.member_id=m.id WHERE m.username=? AND m.active=1 AND COALESCE(r.email,a.email) IS NOT NULL').get(normalized) as {id:string;email:string}|undefined;
   if(row){try{await issue(row.id,'reset',row.email,challenge);}catch{/* Known, unknown and unavailable accounts receive the same response. */}}
  };
  if(background)background(deliver);else await deliver();
- return {challenge,message:'If this team account has a verified recovery email, a reset code is on its way. Check your inbox and spam folder.'};
+ return {challenge,message:'If this team account has a recovery email, a reset code is on its way. Check your inbox and spam folder.'};
 }
 function consume(challenge:string,code:string,purpose:Purpose,memberId?:string){
  const db=getDb(),row=db.prepare('SELECT * FROM team_recovery_challenges WHERE id=?').get(digest(challenge)) as Challenge|undefined;
@@ -70,10 +71,10 @@ function finish(row:Challenge,work:()=>void){
 }
 export function completeRecoveryEmail(memberId:string,challenge:string,code:string){
  const row=consume(challenge,code,'verify',memberId);
- finish(row,()=>{getDb().prepare('INSERT INTO team_recovery_emails VALUES (?,?,?) ON CONFLICT(member_id) DO UPDATE SET email=excluded.email,verified_at=excluded.verified_at').run(memberId,row.email,new Date().toISOString());audit(`team:${memberId}`,'team-recovery-email-verified',memberId);});
+ finish(row,()=>{getDb().prepare('DELETE FROM team_recovery_approved WHERE member_id=?').run(memberId);getDb().prepare('INSERT INTO team_recovery_emails VALUES (?,?,?) ON CONFLICT(member_id) DO UPDATE SET email=excluded.email,verified_at=excluded.verified_at').run(memberId,row.email,new Date().toISOString());audit(`team:${memberId}`,'team-recovery-email-verified',memberId);});
 }
 export function completeTeamPasswordReset(challenge:string,code:string,password:string){
  if(password.length<12||password.length>128)throw new Error('Use a password of 12–128 characters.');
  const row=consume(challenge,code,'reset'),salt=randomBytes(16).toString('hex'),hash=salt+':'+scryptSync(password,salt,64).toString('hex');
- finish(row,()=>{getDb().prepare('UPDATE team_members SET password_hash=? WHERE id=?').run(hash,row.member_id);audit(`team:${row.member_id}`,'team-password-reset',row.member_id);});
+ finish(row,()=>{const db=getDb();const approved=db.prepare('SELECT email FROM team_recovery_approved WHERE member_id=?').get(row.member_id) as {email:string}|undefined;const verified=db.prepare('SELECT email FROM team_recovery_emails WHERE member_id=?').get(row.member_id) as {email:string}|undefined;if(!verified && approved?.email===row.email){db.prepare('INSERT INTO team_recovery_emails VALUES (?,?,?)').run(row.member_id,row.email,new Date().toISOString());db.prepare('DELETE FROM team_recovery_approved WHERE member_id=?').run(row.member_id);audit(`team:${row.member_id}`,'team-recovery-email-verified',row.member_id);}db.prepare('UPDATE team_members SET password_hash=? WHERE id=?').run(hash,row.member_id);audit(`team:${row.member_id}`,'team-password-reset',row.member_id);});
 }

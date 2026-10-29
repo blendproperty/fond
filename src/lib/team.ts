@@ -53,5 +53,6 @@ export function saveMember(input:{id?:string;name:string;username:string;role:st
   db.prepare('INSERT INTO team_members VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password_hash=excluded.password_hash,role=excluded.role,active=excluded.active').run(id,input.name.trim(),input.username.toLowerCase(),hash,input.role,input.active?1:0,new Date().toISOString());
   db.prepare('DELETE FROM team_sessions WHERE member_id=?').run(id);
   db.prepare('DELETE FROM team_recovery_challenges WHERE member_id=?').run(id);
+  db.prepare('DELETE FROM team_recovery_approved WHERE member_id=?').run(id);
   audit(actor,'team-update',id);return id;
 }
