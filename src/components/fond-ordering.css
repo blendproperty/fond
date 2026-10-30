@@ -41,12 +41,12 @@
 @media(max-width:350px){.fond-welcome-card{grid-template-columns:minmax(0,1fr) 85px;padding:18px 13px}.fond-ordering-app .fond-welcome-copy h1{font-size:22px}.fond-welcome-copy .eyebrow{font-size:6px}.fond-welcome-art>span{width:32px;height:32px;font-size:4px}}
 
 /* A separate selector avoids the primary category tabs' underline-only styling. */
-.fond-ordering-app .food-truck-sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:6px;margin:0 0 24px;background:#f0e8dd;border:1px solid #e4d9c8;border-radius:16px}
+.fond-ordering-app .food-truck-sections{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:6px;margin:0 0 24px;background:#f0e8dd;border:1px solid #e4d9c8;border-radius:16px}
 .fond-ordering-app .food-truck-sections button{min-width:0;min-height:54px;padding:14px 12px;border:0;border-radius:11px;background:transparent;color:#526356;font:inherit;font-size:14px;font-weight:600;line-height:1.35;text-align:center;cursor:pointer;transition:background .15s,color .15s}
 .fond-ordering-app .food-truck-sections button[aria-selected=true]{background:#23382e;color:#fffaf2;box-shadow:0 2px 6px #142c2220}
 .fond-ordering-app .food-truck-sections button:focus-visible{outline:3px solid #d96c37;outline-offset:2px}
 @media(hover:hover){.fond-ordering-app .food-truck-sections button[aria-selected=false]:hover{background:#fffaf2;color:#23382e}}
-@media(max-width:600px){.fond-ordering-app .food-truck-sections{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:20px}.fond-ordering-app .food-truck-sections button{min-height:50px;padding:13px 10px}}
+@media(max-width:600px){.fond-ordering-app .food-truck-sections{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:20px}.fond-ordering-app .food-truck-sections button{min-height:50px;padding:13px 10px}.fond-ordering-app .food-truck-sections button:last-child{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.fond-ordering-app .food-truck-sections button{transition:none}}
 
 .fond-menu-actions{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:stretch;gap:10px}

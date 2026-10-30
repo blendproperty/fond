@@ -188,6 +188,27 @@ function seedIfEmpty() {
     }
   }
 
+  const truckDrinksMarker = 'food-truck-drinks-2026-10-29-v1';
+  if (!db.prepare('SELECT key FROM app_documents WHERE key=?').get(truckDrinksMarker)) {
+    db.exec('SAVEPOINT fond_truck_drinks');
+    try {
+      const now = new Date().toISOString();
+      const insert = db.prepare(`INSERT OR IGNORE INTO menu_items
+        (id,name,description,category,price_cents,diet_json,symbol,sort_order,available,is_special,special_label,special_price_cents,modifiers_json,prep_minutes,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,1,0,NULL,NULL,?,?,?)`);
+      FOOD_TRUCK_MENU.forEach((meal, index) => {
+        if (!meal.id.startsWith('truck-drink-')) return;
+        insert.run(meal.id,meal.name,meal.description,meal.category,meal.price,JSON.stringify(meal.diet ?? []),meal.symbol,index,JSON.stringify(meal.modifiers ?? []),estimatedPrepMinutes(meal),now);
+      });
+      db.prepare('INSERT INTO app_documents (key,value,updated_at) VALUES (?,?,?)').run(truckDrinksMarker,'owner-supplied drinks, prices and flavours; existing items preserved',now);
+      db.exec('RELEASE fond_truck_drinks');
+    } catch (error) {
+      db.exec('ROLLBACK TO fond_truck_drinks');
+      db.exec('RELEASE fond_truck_drinks');
+      throw error;
+    }
+  }
+
   const truckOptionsMarker = 'food-truck-options-2026-10-27-v1';
   if (!db.prepare('SELECT key FROM app_documents WHERE key=?').get(truckOptionsMarker)) {
     db.exec('SAVEPOINT fond_truck_options');

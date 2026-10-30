@@ -1,10 +1,15 @@
 import type {Meal} from '@/lib/menu';
 
-/** Illustrations represent dish types, rather than product photographs. */
+// Panels in the owner's supplied product sheet, read left-to-right, top-to-bottom.
+const DRINK_PRODUCT_IMAGES = ['truck-drink-soda-2l','truck-drink-soda-300ml','truck-drink-juice-350ml','truck-drink-monster-500ml','truck-drink-red-bull-250ml','truck-drink-red-bull-sugar-free-250ml'];
+
+/** Owner-supplied product images for truck drinks; illustrations for other dish types. */
 export function FondFoodArt({meal}:{meal:Meal}) {
+ const drinkImage = DRINK_PRODUCT_IMAGES.indexOf(meal.id);
+ if(drinkImage>=0)return <svg viewBox={`${(drinkImage%2)*627+14} ${Math.floor(drinkImage/2)*418+12} 604 402`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${meal.name} product image`} data-food-art="product photo" style={{filter:'none',borderRadius:8}}><image href="/food-truck/drinks-products-20261030.png" width="1254" height="1254"/></svg>;
  const name=meal.name.toLowerCase();
  const kind=/smoothie|milkshake|frappe/.test(name)||meal.category==='Smoothies'?'smoothie'
-  :/juice|iced|cold brew|lemonade|soda|water|coke|sprite|fanta|tonic|beer|cider|wine|lager|ale\b/.test(name)||meal.category==='Cold Bar & Juice'?'cold drink'
+  :meal.id.startsWith('truck-drink-')||/juice|iced|cold brew|lemonade|soda|water|coke|sprite|fanta|tonic|beer|cider|wine|lager|ale\b/.test(name)||meal.category==='Cold Bar & Juice'?'cold drink'
   :['Coffee','Tea & Steamers','Cold Brew & Iced'].includes(meal.category)?'hot drink'
   :/pizza|foldover/.test(name)||meal.category==='Pizzas & Foldovers'?'pizza'
   :/pasta|penne|napoletana/.test(name)||meal.category==='Pasta'?'pasta'

@@ -95,12 +95,30 @@ test('food truck menu is added once to existing databases without overwriting la
 
   const menu = getFullMenu();
   const foodTruck = menu.filter(item => item.category === 'Food Truck');
-  assert.equal(foodTruck.length, 26);
+  assert.equal(foodTruck.length, 32);
   assert.equal(menu.find(item => item.id === 'truck-kota-steak')?.price, 7000);
   assert.equal(menu.find(item => item.id === 'truck-kota-vienna')?.price, 3100);
   assert.equal(menu.find(item => item.id === 'truck-kota-russian')?.modifiers?.[0]?.name, 'Kota: Atchar');
   assert.equal(menu.find(item => item.id === 'truck-kota-create-your-own')?.available, false);
   assert.equal(getAvailableMenu().find(item => item.id === 'truck-kota-create-your-own'), undefined);
+});
+
+test('Food Truck drinks reach existing databases once and preserve existing menu edits', () => {
+  const before = getFullMenu().filter(item => !item.id.startsWith('truck-drink-'));
+  const db = getDb();
+  db.prepare('DELETE FROM app_documents WHERE key=?').run('food-truck-drinks-2026-10-29-v1');
+  db.prepare("DELETE FROM menu_items WHERE id LIKE 'truck-drink-%'").run();
+  const menu = getFullMenu();
+  assert.deepEqual(menu.filter(item => !item.id.startsWith('truck-drink-')), before);
+  assert.deepEqual(menu.filter(item => item.id.startsWith('truck-drink-')).map(item => [item.name,item.price]), [
+    ['Soda 2L',3500],['Soda 300ml',2000],['Juice 350ml',2500],['Monster 500ml',2500],['Red Bull 250ml',2500],['Red Bull Sugar Free 250ml',2500],
+  ]);
+  updateMenuItem('truck-drink-soda-2l', {price:3600,available:false});
+  db.prepare('DELETE FROM app_documents WHERE key=?').run('food-truck-drinks-2026-10-29-v1');
+  const edited = getFullMenu().find(item => item.id === 'truck-drink-soda-2l')!;
+  assert.equal(edited.price,3600);
+  assert.equal(edited.available,false);
+  assert.equal(getAvailableMenu().some(item => item.id === edited.id),false);
 });
 
 test('unavailable items are hidden from the available menu but kept in the full menu', () => {

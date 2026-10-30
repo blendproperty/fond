@@ -1,4 +1,6 @@
 import {test,expect} from '@playwright/test';
+// Keep general ordering cases inside a trading window; dedicated tests cover closing time.
+test.beforeEach(async({page})=>{await page.clock.setFixedTime(new Date('2026-09-28T10:00:00+02:00'));});
 test('browse, adjust basket, place order and track it',async({page})=>{
  await page.goto('/');await expect(page.getByRole('heading',{name:/First, something/,level:1})).toBeVisible();
  await expect(page.locator('.meal-card').filter({has:page.getByRole('heading',{name:'Smashed Avo'})}).getByText(/Approx\. \d+ min/)).toBeVisible();
