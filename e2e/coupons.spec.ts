@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('management creates a batch of test coupons, previews emails, switches automation and revokes',async({page,request},info)=>{
  expect((await request.get('/api/admin/coupons')).status()).toBe(403);
+ expect((await request.get('/api/admin/coupons?recipients=')).status()).toBe(403);
  expect((await request.post('/api/admin/coupons',{data:{action:'settings'}})).status()).toBe(403);
  await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  await expect(page.getByRole('button',{name:'Loyalty',exact:true})).toHaveAttribute('aria-current','true');
@@ -14,11 +15,18 @@ test('management creates a batch of test coupons, previews emails, switches auto
  await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  const panel=page.getByRole('region',{name:'Loyalty coupons · testing'});
  await expect(panel.getByLabel('Enable automated test coupons')).toBeVisible();
+ await expect(panel.getByRole('button',{name:'Create test coupons'})).toBeDisabled();
  await panel.getByLabel('Enable automated test coupons').check();await panel.getByLabel('Consecutive purchase days').fill('5');await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');
  await panel.getByLabel('Enable automated test coupons').uncheck();await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');await expect(panel.getByLabel('Enable automated test coupons')).not.toBeChecked();
- const email=`loyalty-${info.project.name}-${Date.now()}@example.test`;
- await panel.getByLabel('Recipient email addresses').fill(`${email},second-${email}`);await panel.getByLabel('Coupon reason').fill('Isolated browser coupon test');await panel.getByLabel('Manual percentage').fill('15');await panel.getByLabel('Manual saving (Rand)').fill('20');await panel.getByRole('button',{name:'Create test coupons'}).click();await expect(panel.getByRole('status')).toContainText('Test coupons created');
- const coupon=panel.locator('article').filter({has:page.getByText(email,{exact:true})});await expect(coupon).toContainText('available');await coupon.getByText('Preview coupon email',{exact:true}).click();await expect(coupon).toContainText('15% off');await expect(coupon).toContainText('R20.00 off');await expect(coupon).toContainText('TEST ONLY');
+ const email=`loyalty-${info.project.name}-${Date.now()}@example.test`,second='second-'+email;
+ for(const recipient of [email,second])expect((await request.post('/api/auth/signup',{data:{email:recipient,password:'isolated-coupon-test-password'}})).status()).toBe(201);
+ await panel.getByLabel('Search app customer emails').fill(email);await panel.getByRole('checkbox',{name:'Select '+email,exact:true}).check();await panel.getByLabel('Search app customer emails').fill(second);await panel.getByRole('checkbox',{name:'Select '+second,exact:true}).check();await expect(panel.getByText('Selected app customers: 2',{exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'Remove '+email,exact:true}).click();await expect(panel.getByText('Selected app customers: 1',{exact:true})).toBeVisible();await panel.getByLabel('Search app customer emails').fill(email);await panel.getByRole('checkbox',{name:'Select '+email,exact:true}).check();
+ await panel.getByLabel('Search app customer emails').fill('no-matching-account-'+Date.now());await expect(panel.getByText('No matching app accounts.',{exact:true})).toBeVisible();await expect(panel.getByText('Selected app customers: 2',{exact:true})).toBeVisible();
+ await panel.getByText('Enter other email addresses',{exact:true}).click();await panel.getByLabel('Additional recipient email addresses',{exact:true}).fill(email);await expect(panel.getByText('Coupon recipients: 2 / 50',{exact:true})).toBeVisible();
+ await panel.getByRole('combobox',{name:'Coupon reason',exact:true}).selectOption('Other');await panel.getByLabel('Other reason',{exact:true}).fill('   ');await panel.getByRole('button',{name:'Create test coupons'}).click();await expect(panel.getByRole('status')).toHaveText('Enter an other reason.');
+ await panel.getByRole('combobox',{name:'Coupon reason',exact:true}).selectOption('Testing');await expect(panel.getByLabel('Other reason',{exact:true})).toHaveCount(0);await panel.getByLabel('Manual percentage').fill('15');await panel.getByLabel('Manual saving (Rand)').fill('20');await panel.getByRole('button',{name:'Create test coupons'}).click();await expect(panel.getByRole('status')).toContainText('Test coupons created');
+ const coupon=panel.locator('article').filter({has:page.getByText(email,{exact:true})});await expect(coupon).toContainText('available');await expect(coupon).toContainText('Reason: Testing');await coupon.getByText('Preview coupon email',{exact:true}).click();await expect(coupon).toContainText('15% off');await expect(coupon).toContainText('R20.00 off');await expect(coupon).toContainText('TEST ONLY');
  await panel.screenshot({path:info.outputPath('loyalty-coupons-management.png')});
  await coupon.getByRole('button',{name:'Revoke unused coupon'}).click();await expect(coupon).toContainText('revoked');
  const invalidOrigin=await page.evaluate(async()=>{const r=await fetch('/api/admin/coupons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'settings',enabled:'yes'})});return r.status;});expect(invalidOrigin).toBe(400);

@@ -10,6 +10,11 @@ export function couponSettings():CouponSettings{
  const row=getDb().prepare('SELECT value FROM coupon_settings WHERE id=1').get();
  return row?JSON.parse(String(row.value)):defaults;
 }
+export function couponRecipients(query:string){
+ if(query.length>100)throw new Error('Keep the customer search to 100 characters.');
+ const rows=getDb().prepare('SELECT email,email_verified_at IS NOT NULL AS verified FROM users WHERE instr(lower(email),?)>0 ORDER BY email LIMIT 51').all(query.trim().toLowerCase());
+ return {recipients:rows.slice(0,50).map(r=>({email:String(r.email),verified:!!r.verified})),hasMore:rows.length>50};
+}
 function terms(input:CouponTerms){
  if(!Number.isInteger(input.percent)||input.percent<0||input.percent>100||!Number.isInteger(input.amountCents)||input.amountCents<0||input.amountCents>100000||!(input.percent||input.amountCents)||!Number.isInteger(input.validDays)||input.validDays<1||input.validDays>365)throw new Error('Choose 0–100%, R0–R1000 and 1–365 days; at least one saving is required.');
 }
@@ -84,4 +89,4 @@ export function revokeCoupon(id:string,actor:string){
  if(!getDb().prepare("UPDATE loyalty_rewards SET status='revoked' WHERE id=? AND kind IN ('coupon-manual','coupon-auto') AND status='available'").run(id).changes)throw new Error('Only unused coupons can be revoked.');
  audit(id,'coupon-revoked',actor,'Management withdrew test coupon');
 }
-export function adminCoupons(){return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'preview-only',coupons:getDb().prepare('SELECT r.id,r.code,r.recipient_email,r.kind,r.status,c.percent,c.amount_cents,c.expires_at,c.email_preview FROM coupons c JOIN loyalty_rewards r ON r.id=c.reward_id ORDER BY r.rowid DESC LIMIT 100').all()};}
+export function adminCoupons(){return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'preview-only',coupons:getDb().prepare('SELECT r.id,r.code,r.recipient_email,r.kind,r.status,r.reason,c.percent,c.amount_cents,c.expires_at,c.email_preview FROM coupons c JOIN loyalty_rewards r ON r.id=c.reward_id ORDER BY r.rowid DESC LIMIT 100').all()};}

@@ -5,7 +5,7 @@ import {getDb,resetDbForTests} from '../src/lib/db';
 import {signUp} from '../src/lib/auth';
 import {createOrder,recordPosEntry,updateOrderStatus} from '../src/lib/orders';
 import {recordPayment} from '../src/lib/business-data';
-import {issueCoupons,couponSettings,saveCouponSettings,reconcileCoupons,revokeCoupon,adminCoupons} from '../src/lib/coupons';
+import {issueCoupons,couponSettings,couponRecipients,saveCouponSettings,reconcileCoupons,revokeCoupon,adminCoupons} from '../src/lib/coupons';
 import {quoteReward,reconcileOrderRewards,sendCustomerReward,saveRewardPreferences,quoteCounterReward} from '../src/lib/loyalty';
 import {getAvailableMenu} from '../src/lib/menu-store';
 import {processRewardMessages} from '../src/lib/loyalty-messages';
@@ -26,7 +26,14 @@ test('manual batch validates atomically, normalizes recipients and retries witho
  assert.throws(()=>issue(['c@example.com'],{requestKey}),/different/);
  assert.throws(()=>issue(['ok@example.com','bad']));assert.equal(coupons().length,2);
  for(const extra of [{percent:101},{amountCents:-1},{percent:0,amountCents:0},{validDays:0},{percent:1.5}])assert.throws(()=>issue(undefined,extra));
- assert.equal(coupons().length,2);assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+ assert.equal(coupons().length,2);assert.equal(coupons()[0].reason,'Loyalty testing');assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+});
+test('recipient search lists registered accounts with verification status, bounds results and exposes no credentials',()=>{
+ const db=getDb(),insert=db.prepare('INSERT INTO users (id,email,password_hash,created_at,email_verified_at) VALUES (?,?,?,?,?)');
+ for(let n=0;n<53;n++)insert.run(randomUUID(),`customer${String(n).padStart(2,'0')}@example.test`,'test-only-not-a-password','2026-10-30',n%2?'2026-10-30':null);
+ const first=couponRecipients('');assert.equal(first.recipients.length,50);assert.equal(first.hasMore,true);assert.deepEqual(Object.keys(first.recipients[0]).sort(),['email','verified']);
+ assert.deepEqual(couponRecipients(' CUSTOMER01@EXAMPLE.TEST '),{recipients:[{email:'customer01@example.test',verified:true}],hasMore:false});assert.equal(couponRecipients('customer00').recipients[0].verified,false);
+ assert.deepEqual(couponRecipients('%'),{recipients:[],hasMore:false});assert.deepEqual(couponRecipients('not-registered'),{recipients:[],hasMore:false});assert.throws(()=>couponRecipients('a'.repeat(101)),/100/);assert.equal(coupons().length,0);assert.equal(couponSettings().enabled,false);
 });
 test('percentage plus fixed saving spans lines without negative totals; expiry, ownership and live isolation apply',()=>{
  const u=customer(),other=customer('other@example.com'),r=issue(undefined,{percent:50,amountCents:100000})[0];
