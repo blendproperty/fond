@@ -15,7 +15,7 @@ test('staff receipt workflow previews, invalidates edits, records once and shows
  await page.route('**/api/staff/counter-rewards',r=>r.fulfill({status:400,json:{message:'This Yoco sale has already been recorded.'}}));await d.getByRole('button',{name:'Check Yoco receipt'}).click();await expect(d.getByRole('alert')).toContainText('already been recorded');await page.keyboard.press('Escape');await expect(d).not.toBeVisible();
 });
 test('admin trial defaults paused and rollback requires a reason and explicit confirmation',async({page,request},info)=>{
- expect((await request.get('/api/admin/counter-rewards')).status()).toBe(403);await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ expect((await request.get('/api/admin/counter-rewards')).status()).toBe(403);await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  const panel=page.locator('.counter-admin');await expect(panel).toContainText('Counter earning paused / setup required');await expect(panel.getByRole('button',{name:'Save items and enable counter trial'})).toBeDisabled();
  const adminCookie=(await page.context().cookies()).find(c=>c.name==='fond_admin')!;
  expect((await page.request.get('/api/admin/counter-rewards',{headers:{Cookie:adminCookie.name+'='+adminCookie.value}})).status()).toBe(200);

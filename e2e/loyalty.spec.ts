@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('gift codes require admin and can be issued without sending and revoked',async({page,request},info)=>{
  expect((await request.get('/api/admin/rewards')).status()).toBe(403);expect((await request.get('/api/account/rewards')).status()).toBe(401);
- await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  const panel=page.locator('.coffee-rewards');await expect(panel).toContainText('TEST codes');await panel.getByLabel('Gift recipient email').fill(`gift-${info.project.name}@example.test`);await panel.getByLabel('Gift reason').fill('Automated isolated gift test');await panel.getByLabel('Email this code').uncheck();await panel.getByRole('button',{name:'Issue free-coffee gift code'}).click();await expect(panel.getByRole('status')).toContainText('COFFEE-');
  const gift=panel.locator('p').filter({hasText:`gift-${info.project.name}@example.test`});await expect(gift).toContainText('available');await gift.getByRole('button',{name:'Revoke unused gift'}).click();await expect(gift).toContainText('revoked');
  const denied=await page.evaluate(async()=>{const r=await fetch('/api/admin/rewards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'gift',email:'bad'})});return r.status;});expect(denied).toBe(400);

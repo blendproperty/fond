@@ -2,7 +2,16 @@ import {test,expect} from '@playwright/test';
 test('management creates a batch of test coupons, previews emails, switches automation and revokes',async({page,request},info)=>{
  expect((await request.get('/api/admin/coupons')).status()).toBe(403);
  expect((await request.post('/api/admin/coupons',{data:{action:'settings'}})).status()).toBe(403);
- await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Loyalty',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Loyalty',exact:true})).toHaveAttribute('aria-current','true');
+ await expect(page.getByRole('heading',{name:'Loyalty',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Coffee rewards',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Counter coffee stamps',exact:true})).toBeVisible();
+ await page.screenshot({path:info.outputPath('loyalty-navigation.png')});
+ await page.getByRole('button',{name:'Marketing & CMS',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Website content',exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Loyalty coupons · testing'})).toHaveCount(0);
+ await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  const panel=page.getByRole('region',{name:'Loyalty coupons · testing'});
  await expect(panel.getByLabel('Enable automated test coupons')).toBeVisible();
  await panel.getByLabel('Enable automated test coupons').check();await panel.getByLabel('Consecutive purchase days').fill('5');await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');

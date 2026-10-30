@@ -47,6 +47,10 @@ export function CustomersPanel(){
     </div><section className="manage-card"><h2>Create profiles from recent orders</h2><p className="small">This does not grant marketing consent.</p>{state.data?.recentOrders?.slice(0,20).map((o:any)=><div className="manage-inline" key={o.id}><span>{o.customer_name} · {o.contact_number||'No phone'} · {o.reference.slice(0,13)}</span><button className="quiet" disabled={state.busy} onClick={()=>state.save('customers',{orderId:o.id})}>Create / find profile</button></div>)}</section></div>;
 }
 
+export function LoyaltyPanel(){
+  return <div className="manage-page"><LoyaltyCoupons/><AdminCounterRewards/><AdminCoffeeRewards/></div>;
+}
+
 export function MarketingPanel(){
   const [uploads,setUploads]=useState(0);const uploading=uploads>0;
   const state=useData('marketing'),[draft,setDraft]=useState<SiteContent|null>(null);
@@ -61,7 +65,6 @@ export function MarketingPanel(){
     <button className="outline" onClick={()=>setDraft({...draft,promotions:[...draft.promotions,{id:crypto.randomUUID(),title:'',body:'',display:'banner',buttonLabel:'View menu',active:true,startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000*7).toISOString()}]})}>Add promotion</button>
     <div className="manage-actions"><button className="outline" disabled={state.busy||uploading} onClick={()=>state.save('marketing',{content:draft})}>Save draft</button><button className="primary" disabled={state.busy||uploading} onClick={()=>state.save('marketing',{content:draft,publish:true})}>Publish to website</button><button className="quiet" disabled={state.busy||uploading} onClick={()=>state.save('restore-content',{})}>Restore previous publication</button></div>
     </section><section className="manage-card"><p className="eyebrow">DRAFT PREVIEW</p><h2>{draft.headline}</h2><p>{draft.intro}</p>{draft.announcement&&<p className="notice">{draft.announcement}</p>}{draft.promotions.map(p=><PromotionPreview key={p.id} promotion={p}/>)}<h3>Marketing contacts</h3><p>Use the consented-contact export in Customers with your approved messaging provider. Publishing here changes the website; it does not send messages.</p></section></div>
-    <LoyaltyCoupons/><AdminCounterRewards/><AdminCoffeeRewards/>
     {state.data?.messageDraft&&state.data?.messagePublished&&<MessagingStudio initialDraft={state.data.messageDraft} published={state.data.messagePublished} busy={state.busy} onSave={body=>state.save('message-templates',body)}/>}
     <section className="manage-card"><h2>Order notification log</h2><button className="quiet" onClick={state.refresh}>Refresh log</button><p>WhatsApp attempts are processed while the staff tablet is open. Provider acceptance does not prove delivery to the phone.</p>{state.data?.jobs.length?state.data.jobs.map((j:any)=><div className="manage-inline" key={j.id}><span>{j.template} · {j.status} · {j.attempts} attempt(s) {j.last_error&&`· ${j.last_error}`}</span>{['failed','not-configured'].includes(j.status)&&<button className="quiet" onClick={()=>state.save('notification-retry',{id:j.id})}>Retry</button>}</div>):<Empty/>}</section>
     <section className="manage-card"><h2>Customer SMS log</h2><p>Twilio delivery callbacks update each accepted and ready message. Queued or sent means Twilio is still processing it; delivered is handset confirmation from the network.</p>{state.data?.smsJobs?.length?state.data.smsJobs.map((j:any)=><div className="manage-inline" key={j.id}><span>{j.template} · {j.status} · {j.attempts} attempt(s) {j.provider_id&&`· ${j.provider_id}`} {j.last_error&&`· ${j.last_error}`}</span>{['failed','undelivered','not-configured'].includes(j.status)&&<button className="quiet" onClick={()=>state.save('sms-retry',{id:j.id})}>Retry SMS</button>}</div>):<Empty/>}</section>

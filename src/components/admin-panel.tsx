@@ -1,20 +1,21 @@
 'use client';
 import {formatCollectionTime} from '@/lib/fulfilment';
 import { useCallback, useEffect, useState } from 'react';
-import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
+import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Ticket, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
 
 import { ReportsDashboard } from './reports-dashboard';
-import { CustomersPanel,MarketingPanel,FinancePanel,SettingsPanel } from './management-panels';
+import { CustomersPanel,MarketingPanel,LoyaltyPanel,FinancePanel,SettingsPanel } from './management-panels';
 
 
-type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'reports' | 'finance' | 'settings';
+type AdminSection = 'menu' | 'orders' | 'customers' | 'marketing' | 'loyalty' | 'reports' | 'finance' | 'settings';
 
 const NAV: { key: AdminSection; label: string; icon: typeof UtensilsCrossed; ready: boolean }[] = [
   { key: 'menu', label: 'Menu & specials', icon: UtensilsCrossed, ready: true },
   { key: 'orders', label: 'Orders', icon: BarChart3, ready: true },
   { key: 'customers', label: 'Customers', icon: Users, ready: true },
   { key: 'marketing', label: 'Marketing & CMS', icon: Megaphone, ready: true },
+  { key: 'loyalty', label: 'Loyalty', icon: Ticket, ready: true },
   { key: 'reports', label: 'Reports', icon: BarChart3, ready: true },
   { key: 'finance', label: 'Finance', icon: Wallet, ready: true },
   { key: 'settings', label: 'Settings', icon: Settings, ready: true },
@@ -126,6 +127,7 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
         {tab === 'reports' && <ReportsDashboard />}
+        {tab === 'loyalty' && <LoyaltyPanel/>}
         {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel scope={workspace}/>}
       </div>
     </div>
