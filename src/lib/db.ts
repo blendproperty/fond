@@ -268,6 +268,9 @@ export function getDb(): DatabaseSync {
     }catch(error){db.exec('ROLLBACK');throw error;}
   }
   db.exec(`
+    CREATE TABLE IF NOT EXISTS coupon_settings (id INTEGER PRIMARY KEY CHECK(id=1),value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS coupon_batches (id TEXT PRIMARY KEY,payload TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS coupons (reward_id TEXT PRIMARY KEY,percent INTEGER NOT NULL,amount_cents INTEGER NOT NULL,expires_at TEXT NOT NULL,email_preview TEXT NOT NULL,qualification_key TEXT UNIQUE,qualification_days TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS loyalty_preferences (user_id TEXT PRIMARY KEY,email_enabled INTEGER NOT NULL DEFAULT 0,sms_enabled INTEGER NOT NULL DEFAULT 0,phone TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS loyalty_rewards (id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,recipient_email TEXT NOT NULL,environment TEXT NOT NULL,kind TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'available',order_id TEXT,created_at TEXT NOT NULL,actor TEXT NOT NULL,reason TEXT NOT NULL,request_key TEXT UNIQUE);
     CREATE INDEX IF NOT EXISTS loyalty_recipient ON loyalty_rewards(recipient_email,environment);

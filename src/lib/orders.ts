@@ -279,7 +279,11 @@ export function createOrder(input: {
     // Staff-entered orders are for walk-ins/phone orders already accepted at
     // the counter, so they start life a step ahead of the customer PWA queue.
     const status: OrderStatus = input.source === 'staff' ? 'accepted' : 'received';
-    const lines: PricedLine[] = priced.map((line,index) => ({
+    let remainingDiscount=reward.discountCents;
+    const lines: PricedLine[] = priced.map((line,index) => {
+      const discount=reward.lineIndex===-1?Math.min(line.subtotal,remainingDiscount):index===reward.lineIndex?reward.discountCents:0;
+      remainingDiscount-=discount;
+      return ({
       id: line.id,
       quantity: line.quantity,
       ...(line.note?{note:line.note}:{}),
@@ -287,10 +291,10 @@ export function createOrder(input: {
       modifiers: line.selectedModifiers.map(m => ({id:m.id,name:m.name,price:m.price})),
       name: line.name,
       unitPriceCents: line.unitPrice,
-      subtotalCents: line.subtotal-(index===reward.lineIndex?reward.discountCents:0),
-      rewardDiscountCents:index===reward.lineIndex?reward.discountCents:0,
+      subtotalCents: line.subtotal-discount,
+      rewardDiscountCents:discount,
       prepMinutes:line.prepMinutes??10,
-    }));
+    });});
     const record: OrderRecord = {
       id: orderId,
       reference: `FOND-${randomUUID().replaceAll('-', '').toUpperCase()}`,

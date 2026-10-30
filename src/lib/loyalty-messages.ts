@@ -10,6 +10,7 @@ export async function processRewardMessages(){
  db.prepare("UPDATE loyalty_messages SET status='unconfirmed',error='Check provider before retrying' WHERE status='sending' AND updated_at<?").run(new Date(Date.now()-120000).toISOString());
  const jobs=db.prepare("SELECT m.*,r.code,r.status AS reward_status,r.environment,r.kind,r.recipient_email FROM loyalty_messages m JOIN loyalty_rewards r ON r.id=m.reward_id WHERE m.status='pending' ORDER BY m.rowid LIMIT 10").all() as {id:string;channel:string;recipient:string;code:string;reward_status:string;environment:string;kind:string;recipient_email:string}[];
  for(const job of jobs){
+  if(job.kind.startsWith('coupon-')){db.prepare("UPDATE loyalty_messages SET status='cancelled',error='Test coupon: email preview only' WHERE id=?").run(job.id);continue;}
   if(job.reward_status!=='available'){db.prepare("UPDATE loyalty_messages SET status='cancelled' WHERE id=? AND status='pending'").run(job.id);continue;}
   if(job.kind==='earned'){const user=db.prepare('SELECT id FROM users WHERE email=?').get(job.recipient_email);const p=user?rewardPreferences(String(user.id)):null;if(!p||(job.channel==='email'?!p.email_enabled:!p.sms_enabled||p.phone!==job.recipient)){db.prepare("UPDATE loyalty_messages SET status='cancelled' WHERE id=? AND status='pending'").run(job.id);continue;}}
   if(job.channel==='email'?!emailConfigured():!smsConfigured())continue;
