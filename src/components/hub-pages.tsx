@@ -11,6 +11,7 @@ import { listEvents } from '@/lib/hub-store';
 import {settings} from '@/lib/management';
 import {orderingHoursMessage} from '@/lib/trading-hours';
 import {HubFondHours} from './hub-fond-hours';
+import {jsonLd,sitePageSchema} from '@/lib/site-schema';
 import {PadelLanding} from './padel-pages';
 import {GymLanding} from './gym-pages';
 
@@ -33,6 +34,7 @@ export function HubHome() {
  const hour=Number(new Intl.DateTimeFormat('en-ZA',{timeZone:'Africa/Johannesburg',hour:'numeric',hourCycle:'h23'}).format(new Date()));
  const greeting=hour<12?'Good morning.':hour<18?'Good afternoon.':'Good evening.';
  return <HubShell wide mood="home">
+  <script type="application/ld+json" dangerouslySetInnerHTML={{__html:jsonLd(sitePageSchema('hub'))}}/>
   <section className="hub-home-greeting"><h1>{greeting}</h1><p>More to your day.</p></section>
   <section className="hub-home-photo" aria-label="Life at Midpoint"><img className="hub-home-hero-image" src="/hub-assets/midpoint-hub-exterior.webp" alt="The Midpoint Hub building with FOND, rooftop padel courts and landscaped terraces" width="1280" height="853"/><p>COFFEE. WORKOUT.<br/>A GAME OR A GATHERING.<br/>IT ALL HAPPENS HERE.</p></section>
 

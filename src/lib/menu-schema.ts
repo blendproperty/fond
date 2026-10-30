@@ -1,6 +1,6 @@
 import type {Meal} from './menu';
+import {FOND_ID,MENU_URL,MENU_ID,jsonLd} from './site-schema';
 
-const MENU_URL='https://midpointhub.com/fond/menu';
 const offer=(price:number)=>({'@type':'Offer',price:(price/100).toFixed(2),priceCurrency:'ZAR',url:MENU_URL});
 
 // Use the live catalogue, including effective special prices, rather than a second price list.
@@ -14,9 +14,11 @@ export function menuJsonLd(menu:Meal[]){
  const schema={
   '@context':'https://schema.org',
   '@type':'Menu',
-  '@id':`${MENU_URL}#menu`,
+  '@id':MENU_ID,
   name:'FOND menu',
   url:MENU_URL,
+  provider:{'@id':FOND_ID},
+  inLanguage:'en-ZA',
   hasMenuSection:Array.from(sections,([name,items])=>({
    '@type':'MenuSection',name,
    hasMenuItem:items.map(item=>({
@@ -30,5 +32,5 @@ export function menuJsonLd(menu:Meal[]){
   })),
  };
  // Escape editable menu text so it cannot close the JSON-LD script element.
- return JSON.stringify(schema).replace(/</g,'\\u003c');
+ return jsonLd(schema);
 }

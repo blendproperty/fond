@@ -7,6 +7,7 @@ import { money, quoteCart, lineKey, categories, FOOD_TRUCK_SECTIONS, foodTruckSe
 import {FoodTruckIcon} from './food-truck-icon';
 import {CategoryNavigation} from './category-navigation';
 import {useMenuSwipe} from './use-menu-swipe';
+import {VENUE_ADDRESS,FOND_CUISINE,menuPriceRange} from '@/lib/site-schema';
 import {CustomerPromotions} from './promotions';
 import {BrandLogo} from './brand-logo';
 import {HubScene} from './hub-scene';
@@ -326,7 +327,7 @@ export function OrderingApp({premium=false}:{premium?:boolean}) {
         <p className="allergen-note">Our food is prepared in an environment that handles gluten and nuts. Please contact FOND about allergies before ordering.</p></section>
 
     </main>
-    <footer className="fond-public-footer"><a className="brand-link" href="/fond" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><a href="/hub">Midpoint Hub</a><a href="mailto:ray@midpointhub.com">Contact Ray</a><a href="/hub/privacy">Privacy policy</a><a href="/hub/terms">Terms and conditions</a>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
+    <footer className="fond-public-footer"><a className="brand-link" href="/fond" aria-label="Midpoint Cafe home"><BrandLogo className="brand-logo-footer" /></a><span>Good food. Everyday.</span><span>{VENUE_ADDRESS}</span><span>{FOND_CUISINE}{menuPriceRange(menu)&&<> · Menu prices {menuPriceRange(menu)}</>}</span>{store&&<span>{weeklyTradingHours(store.settings)}</span>}<a href="/hub">Midpoint Hub</a><a href="mailto:ray@midpointhub.com">Contact Ray</a><a href="/hub/privacy">Privacy policy</a><a href="/hub/terms">Terms and conditions</a>{store?.settings.contactPhone&&<a href={`tel:${store.settings.contactPhone.replace(/[^+0-9]/g,'')}`}>{store.settings.contactPhone}</a>}</footer>
     {offline && <div className="offline" role="status">You&rsquo;re offline. Reconnect to continue.</div>}
     {(!premium||count>0)&&<button className="mobile-basket" aria-label="Basket" onClick={() => setPanel('basket')}><ShoppingBag size={18} /> View basket ({count}) <strong>{money(total)}</strong></button>}
     {premium?<HubAppNav/>:<nav className="fond-app-nav" aria-label="FOND app navigation"><a href="#menu" aria-label="Menu"><Utensils size={20}/><span>Menu</span></a><a href="/rewards" aria-label="Coffee rewards"><Coffee size={20}/><span>Rewards</span></a><button aria-label="Track order" onClick={openTracking}><Search size={20}/><span>Track order</span></button><a href="/account" aria-label="My account"><UserRound size={20}/><span>Account</span></a></nav>}
