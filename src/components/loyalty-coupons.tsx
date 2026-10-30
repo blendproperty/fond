@@ -1,11 +1,13 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {buildCouponEmail,COUPON_EMAIL_REASONS} from '@/lib/coupon-email';
+import {CouponEmailPreview} from './coupon-email-preview';
 type Terms={percent:number;amountCents:number;validDays:number};
 type Settings=Terms&{enabled:boolean;days:number};
-type Coupon={id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;expires_at:string;email_preview:string};
+type Coupon={id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;expires_at:string;email_preview:string;email_html:string;email_subject:string;email_design:string};
 type Data={testingEnabled:boolean;settings:Settings;coupons:Coupon[]};
 type Recipient={email:string;verified:boolean};
-const reasons=['Customer appreciation','Frequent customer reward','Service recovery','Promotion','Birthday / special occasion','Testing','Other'];
+const reasons=COUPON_EMAIL_REASONS;
 export function LoyaltyCoupons(){
  const [data,setData]=useState<Data|null>(null),[settings,setSettings]=useState<Settings|null>(null),[gift,setGift]=useState<Terms>({percent:10,amountCents:0,validDays:30}),[emails,setEmails]=useState(''),[reason,setReason]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[key,setKey]=useState('');
  const [query,setQuery]=useState(''),[recipients,setRecipients]=useState<Recipient[]>([]),[selected,setSelected]=useState<string[]>([]),[hasMore,setHasMore]=useState(false),[searching,setSearching]=useState(true),[searchError,setSearchError]=useState(''),[otherReason,setOtherReason]=useState('');
@@ -44,9 +46,10 @@ export function LoyaltyCoupons(){
     <label className="field">Coupon reason<select required value={reason} onChange={e=>setReason(e.target.value)}><option value="" disabled>Select a reason</option>{reasons.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
     {reason==='Other'&&<label className="field">Other reason<input required maxLength={193} value={otherReason} onChange={e=>setOtherReason(e.target.value)}/></label>}
     {fields(gift,setGift,'Manual')}<button className="primary" disabled={busy||!recipientEmails.length||recipientEmails.length>50}>Create test coupons</button>
+    {reason&&<details className="coupon-draft-design"><summary>Preview email design for this reason</summary><p>Review this reason’s design before creating a coupon. The sample code below is not a redeemable coupon.</p><CouponEmailPreview title="Draft coupon email design" message={buildCouponEmail({code:'COUPON-PREVIEW-ONLY',email:recipientEmails[0]??'your.email@example.com',reason,percent:gift.percent,amountCents:gift.amountCents,expiresAt:new Date(Date.now()+gift.validDays*86400000).toISOString(),baseUrl:typeof window==='undefined'?'https://midpointhub.com':window.location.origin})}/></details>}
    </form>
    <h3>Coupon and email previews</h3><button className="quiet" disabled={busy} onClick={()=>void load().catch(e=>setMessage(e.message))}>Refresh coupons</button>
-   {!data.coupons.length&&<p>No coupons issued yet.</p>}{data.coupons.map(c=><article className="reward-card" key={c.id}><strong>{c.recipient_email}</strong><p>{c.kind==='coupon-auto'?'Automated':'Manual'} · {c.status} · expires {new Date(c.expires_at).toLocaleDateString('en-ZA')}</p><p>Reason: {c.reason}</p><code>{c.code}</code><details><summary>Preview coupon email</summary><p>{c.email_preview}</p></details>{c.status==='available'&&<button className="quiet" disabled={busy} onClick={()=>void save({action:'revoke',id:c.id})}>Revoke unused coupon</button>}</article>)}
+   {!data.coupons.length&&<p>No coupons issued yet.</p>}{data.coupons.map(c=><article className="reward-card" key={c.id}><strong>{c.recipient_email}</strong><p>{c.kind==='coupon-auto'?'Automated':'Manual'} · {c.status} · expires {new Date(c.expires_at).toLocaleDateString('en-ZA')}</p><p>Reason: {c.reason}</p><code>{c.code}</code><details><summary>Preview coupon email</summary><CouponEmailPreview title={'Coupon email '+c.code} message={{subject:c.email_subject,html:c.email_html,text:c.email_preview,designLabel:c.email_design}}/></details>{c.status==='available'&&<button className="quiet" disabled={busy} onClick={()=>void save({action:'revoke',id:c.id})}>Revoke unused coupon</button>}</article>)}
   </>}
  </section>;
 }

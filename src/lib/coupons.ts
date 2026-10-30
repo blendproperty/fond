@@ -1,5 +1,7 @@
 import {randomBytes,randomUUID} from 'node:crypto';
 import {getDb} from './db';
+import {buildCouponEmail} from './coupon-email';
+import {publicBaseUrl} from './public-url';
 
 export type CouponTerms={percent:number;amountCents:number;validDays:number};
 export type CouponSettings=CouponTerms&{enabled:boolean;days:number;since:string};
@@ -34,7 +36,7 @@ function issue(email:string,input:CouponTerms,key:string,kind:string,actor:strin
  if(existing)return {id:String(existing.id),code:String(existing.code)};
  const id=randomUUID(),code='COUPON-'+randomBytes(10).toString('hex').toUpperCase(),created=new Date().toISOString(),expires=new Date(Date.now()+input.validDays*86400000).toISOString();
  db.prepare("INSERT INTO loyalty_rewards (id,code,recipient_email,environment,kind,created_at,actor,reason,request_key) VALUES (?,?,?,'test',?,?,?,?,?)").run(id,code,email,kind,created,actor,reason,key);
- const preview=`TEST ONLY — FOND coupon ${code} for ${email}: ${input.percent}% off the food basket, then R${(input.amountCents/100).toFixed(2)} off. Saving capped at basket value; delivery excluded. One use in a test app order with this verified email. Expires ${expires}.`;
+ const preview=buildCouponEmail({code,email,reason,percent:input.percent,amountCents:input.amountCents,expiresAt:expires,kind,baseUrl:publicBaseUrl()}).text;
  db.prepare('INSERT INTO coupons VALUES (?,?,?,?,?,?,?)').run(id,input.percent,input.amountCents,expires,preview,kind==='coupon-auto'?key:null,JSON.stringify(days));
  audit(id,'coupon-issued',actor,reason);return {id,code};
 }
@@ -89,4 +91,11 @@ export function revokeCoupon(id:string,actor:string){
  if(!getDb().prepare("UPDATE loyalty_rewards SET status='revoked' WHERE id=? AND kind IN ('coupon-manual','coupon-auto') AND status='available'").run(id).changes)throw new Error('Only unused coupons can be revoked.');
  audit(id,'coupon-revoked',actor,'Management withdrew test coupon');
 }
-export function adminCoupons(){return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'preview-only',coupons:getDb().prepare('SELECT r.id,r.code,r.recipient_email,r.kind,r.status,r.reason,c.percent,c.amount_cents,c.expires_at,c.email_preview FROM coupons c JOIN loyalty_rewards r ON r.id=c.reward_id ORDER BY r.rowid DESC LIMIT 100').all()};}
+export function adminCoupons(){
+ const rows=getDb().prepare('SELECT r.id,r.code,r.recipient_email,r.kind,r.status,r.reason,c.percent,c.amount_cents,c.expires_at FROM coupons c JOIN loyalty_rewards r ON r.id=c.reward_id ORDER BY r.rowid DESC LIMIT 100').all() as {id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;percent:number;amount_cents:number;expires_at:string}[];
+ const coupons=rows.map(r=>{
+  const email=buildCouponEmail({code:String(r.code),email:String(r.recipient_email),reason:String(r.reason),percent:Number(r.percent),amountCents:Number(r.amount_cents),expiresAt:String(r.expires_at),kind:String(r.kind),baseUrl:publicBaseUrl()});
+  return {...r,email_preview:email.text,email_subject:email.subject,email_html:email.html,email_design:email.designLabel,email_theme:email.theme};
+ });
+ return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'preview-only',coupons};
+}

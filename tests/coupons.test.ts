@@ -27,6 +27,11 @@ test('manual batch validates atomically, normalizes recipients and retries witho
  assert.throws(()=>issue(['ok@example.com','bad']));assert.equal(coupons().length,2);
  for(const extra of [{percent:101},{amountCents:-1},{percent:0,amountCents:0},{validDays:0},{percent:1.5}])assert.throws(()=>issue(undefined,extra));
  assert.equal(coupons().length,2);assert.equal(coupons()[0].reason,'Loyalty testing');assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+ assert.match(String(coupons()[0].email_html),/midpoint-cafe-powered-by-fond.png/);assert.match(String(coupons()[0].email_subject),/\[TEST\]/);
+});
+test('existing coupon previews are redesigned from original terms without rewriting codes, reasons, expiry or delivery',()=>{
+ const r=issue(undefined,{reason:'Testing'})[0],db=getDb(),before=db.prepare('SELECT * FROM coupons WHERE reward_id=?').get(r.id)!;db.prepare('UPDATE coupons SET email_preview=? WHERE reward_id=?').run('Old plain text placeholder',r.id);
+ const preview=coupons()[0];assert.match(String(preview.email_html),/Good design/);assert.equal(preview.email_theme,'testing');assert.match(String(preview.email_preview),/TEST ONLY/);assert.equal(preview.code,r.code);assert.equal(preview.expires_at,before.expires_at);assert.equal(db.prepare('SELECT email_preview FROM coupons WHERE reward_id=?').get(r.id)?.email_preview,'Old plain text placeholder');assert.equal(db.prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
 });
 test('recipient search lists registered accounts with verification status, bounds results and exposes no credentials',()=>{
  const db=getDb(),insert=db.prepare('INSERT INTO users (id,email,password_hash,created_at,email_verified_at) VALUES (?,?,?,?,?)');
