@@ -56,3 +56,5 @@
 .fond-food-truck-button:focus-visible{outline:3px solid #17221e;outline-offset:3px}
 .fond-ordering-app .fond-menu-actions .fond-order-mode button{min-height:44px}
 @media(max-width:480px){.fond-menu-actions{grid-template-columns:minmax(0,1fr);gap:8px}.fond-ordering-app .fond-food-truck-button{justify-self:start;min-width:155px}}
+
+.menu-swipe-area{touch-action:pan-y pinch-zoom}.menu-swipe-hint{display:none}@media(pointer:coarse){.menu-swipe-hint{display:block;font-size:11px;color:#64756a;margin:0 0 14px}}
