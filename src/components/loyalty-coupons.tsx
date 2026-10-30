@@ -33,7 +33,7 @@ export function LoyaltyCoupons(){
     {fields(settings,next=>setSettings({...settings,...next}),'Automated')}<button className="primary" disabled={busy}>Save coupon automation</button>
    </form>
    <form onSubmit={e=>{e.preventDefault();if(reason==='Other'&&!otherReason.trim()){setMessage('Enter an other reason.');return;}void save({action:'issue',...gift,emails:recipientEmails,reason:reason==='Other'?'Other: '+otherReason.trim():reason});}}><h3>Issue manual coupons</h3>
-    <label className="field">Search app customer emails<input type="search" maxLength={100} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search registered app accounts"/></label>
+    <label className="field">Search app customer emails<input type="search" maxLength={100} onKeyDown={e=>{if(e.key==='Enter')e.preventDefault();}} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search registered app accounts"/></label>
     <p>Choose one or more registered app customers. Email verification is required to redeem a coupon.</p>
     {searchError&&<p role="alert">{searchError}</p>}{searching&&<p aria-live="polite">Searching app accounts…</p>}
     <fieldset className="loyalty-recipient-list"><legend>App customer recipients</legend>{!searching&&!searchError&&!recipients.length&&<p>No matching app accounts.</p>}{recipients.map(r=><label className="field-check" key={r.email}><input type="checkbox" aria-label={'Select '+r.email} checked={selected.includes(r.email)} disabled={!selected.includes(r.email)&&selected.length>=50} onChange={e=>setSelected(current=>e.target.checked?[...current,r.email]:current.filter(email=>email!==r.email))}/><span>{r.email}<small>{r.verified?'Verified email':'Email not verified yet'}</small></span></label>)}</fieldset>
