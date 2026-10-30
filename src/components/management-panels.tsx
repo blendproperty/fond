@@ -47,8 +47,8 @@ export function CustomersPanel(){
     </div><section className="manage-card"><h2>Create profiles from recent orders</h2><p className="small">This does not grant marketing consent.</p>{state.data?.recentOrders?.slice(0,20).map((o:any)=><div className="manage-inline" key={o.id}><span>{o.customer_name} · {o.contact_number||'No phone'} · {o.reference.slice(0,13)}</span><button className="quiet" disabled={state.busy} onClick={()=>state.save('customers',{orderId:o.id})}>Create / find profile</button></div>)}</section></div>;
 }
 
-export function LoyaltyPanel(){
-  return <div className="manage-page"><LoyaltyCoupons/><AdminCounterRewards/><AdminCoffeeRewards/></div>;
+export function LoyaltyPanel({canConfigure=false}:{canConfigure?:boolean}){
+  return <div className="manage-page"><LoyaltyCoupons/>{canConfigure&&<AdminCounterRewards/>}<AdminCoffeeRewards/></div>;
 }
 
 export function MarketingPanel(){

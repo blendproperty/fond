@@ -42,16 +42,18 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
+  const [role,setRole]=useState<string|null>(null);
   const [named,setNamed]=useState(false);
   const [username,setUsername]=useState('');
   const [twoFactorCode,setTwoFactorCode]=useState('');
   const [loginError, setLoginError] = useState('');
   const [tab, setTab] = useState<AdminSection>(workspace==='operations'?'settings':'menu');
 
-  const navigation=workspace==='operations'?NAV.filter(n=>n.key==='settings').map(n=>({...n,label:'Team & settings'})):NAV;
+  const canConfigure=role==='owner'||role==='super-admin';
+  const navigation=(workspace==='operations'?NAV.filter(n=>n.key==='settings').map(n=>({...n,label:'Team & settings'})):NAV).filter(n=>n.key!=='settings'||canConfigure);
   const check = useCallback(async () => {
     const res = await fetch('/api/admin/menu', { cache: 'no-store' });
-    setLocked(res.status === 401);
+    setLocked(!res.ok);if(res.ok)setRole((await res.json()).role);
   }, []);
 
   useEffect(() => { check().finally(() => setChecking(false)); }, [check]);
@@ -67,7 +69,7 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
     }
     setCode('');
     setTwoFactorCode('');
-    setLocked(false);
+    await check();
   }
 
   async function logout() {
@@ -127,8 +129,8 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
         {tab === 'menu' && <MenuAdmin />}
         {tab === 'orders' && <OrdersAdmin />}
         {tab === 'reports' && <ReportsDashboard />}
-        {tab === 'loyalty' && <LoyaltyPanel/>}
-        {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && <SettingsPanel scope={workspace}/>}
+        {tab === 'loyalty' && <LoyaltyPanel canConfigure={role==='super-admin'}/>}
+        {tab === 'customers' && <CustomersPanel/>}{tab === 'marketing' && <MarketingPanel/>}{tab === 'finance' && <FinancePanel/>}{tab === 'settings' && canConfigure && <SettingsPanel scope={workspace}/>}
       </div>
     </div>
   );

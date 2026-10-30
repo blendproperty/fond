@@ -5,10 +5,13 @@ import {getDb,resetDbForTests} from '../src/lib/db';
 import {signUp} from '../src/lib/auth';
 import {createOrder,recordPosEntry,updateOrderStatus} from '../src/lib/orders';
 import {recordPayment} from '../src/lib/business-data';
-import {issueCoupons,couponSettings,couponRecipients,saveCouponSettings,reconcileCoupons,revokeCoupon,adminCoupons} from '../src/lib/coupons';
+import {issueCoupons,couponSettings,couponRecipients,saveCouponSettings,reconcileCoupons,revokeCoupon,adminCoupons,reviewCouponCandidate,issueApprovedCoupon} from '../src/lib/coupons';
 import {quoteReward,reconcileOrderRewards,sendCustomerReward,saveRewardPreferences,quoteCounterReward} from '../src/lib/loyalty';
 import {getAvailableMenu} from '../src/lib/menu-store';
 import {processRewardMessages} from '../src/lib/loyalty-messages';
+import {sendCouponEmail,couponEmailStatus} from '../src/lib/coupon-delivery';
+import {saveProviderSecret} from '../src/lib/provider-secrets';
+import {saveDocument} from '../src/lib/management';
 process.env.FOND_DB_PATH=':memory:';
 process.env.FOND_COUPON_TESTING='true';
 beforeEach(resetDbForTests);
@@ -20,6 +23,8 @@ function complete(o:ReturnType<typeof order>){if(o.status==='received')updateOrd
 function purchase(userId:string,day:string){const o=order(userId);getDb().prepare('UPDATE orders SET created_at=? WHERE id=?').run(day,o.id);complete(o);return o;}
 function automation(){saveCouponSettings({...terms,enabled:true,days:2},'admin:test');const c=couponSettings();getDb().prepare('UPDATE coupon_settings SET value=?').run(JSON.stringify({...c,since:'2026-01-01T00:00:00Z'}));}
 function coupons(){return adminCoupons().coupons;}
+function candidates(){return adminCoupons().candidates;}
+function approveAndIssue(){const c=candidates().find(c=>c.status==='pending')!;reviewCouponCandidate(String(c.id),'approved','admin:manager');return issueApprovedCoupon(String(c.id),'admin:manager');}
 test('manual batch validates atomically, normalizes recipients and retries without duplicates',()=>{
  const requestKey=randomUUID(),r=issue([' A@example.com ','a@example.com','b@example.com'],{requestKey});assert.equal(r.length,2);
  assert.deepEqual(issue(['b@example.com','a@example.com'],{requestKey}),r);
@@ -57,7 +62,7 @@ test('discount order retains payable remainder and single-use redemption; coupon
 test('automation defaults off, counts paid completed consecutive SA days once and refunds revoke unused coupons',()=>{
  const u=customer();assert.equal(couponSettings().enabled,false);purchase(u.id,'2025-12-01T12:00:00Z');assert.equal(coupons().length,0);automation();
  purchase(u.id,'2026-02-01T22:30:00Z');purchase(u.id,'2026-02-02T12:00:00Z');assert.equal(coupons().length,0);
- const next=purchase(u.id,'2026-02-02T22:30:00Z');assert.equal(coupons().length,1);reconcileOrderRewards(next.id);reconcileCoupons(u.id,'test');assert.equal(coupons().length,1);
+ const next=purchase(u.id,'2026-02-02T22:30:00Z');assert.equal(coupons().length,0);assert.equal(candidates().length,1);approveAndIssue();assert.equal(coupons().length,1);reconcileOrderRewards(next.id);reconcileCoupons(u.id,'test');assert.equal(coupons().length,1);
  recordPayment({orderId:next.id,amountCents:1,method:'refund',reference:randomUUID()},'test');assert.equal(coupons()[0].status,'revoked');
 });
 test('missing days reset streak; live, unpaid and unverified purchases do not qualify; off stops issuance',()=>{
@@ -77,7 +82,7 @@ test('installing the scaffold does not enable coupons without an explicit test e
  try{assert.equal(adminCoupons().testingEnabled,false);assert.throws(()=>issue(),/disabled/);assert.throws(()=>saveCouponSettings({...terms,enabled:true,days:2},'test'),/disabled/);assert.throws(()=>quoteReward(u.id,'test',r.code,[{id:'espresso-single',quantity:1}],getAvailableMenu()),/disabled/);reconcileCoupons(u.id,'test');assert.equal(coupons().length,1);}finally{process.env.FOND_COUPON_TESTING='true';}
 });
 test('refunds revoke an unused automated coupon even after automation is switched off',()=>{
- const u=customer();automation();purchase(u.id,'2026-04-01T12:00:00Z');const last=purchase(u.id,'2026-04-02T12:00:00Z');assert.equal(coupons()[0].status,'available');
+ const u=customer();automation();purchase(u.id,'2026-04-01T12:00:00Z');const last=purchase(u.id,'2026-04-02T12:00:00Z');approveAndIssue();assert.equal(coupons()[0].status,'available');
  saveCouponSettings({...terms,enabled:false,days:2},'admin:test');recordPayment({orderId:last.id,amountCents:1,method:'refund',reference:randomUUID()},'test');assert.equal(coupons()[0].status,'revoked');
 });
 test('unverified users do not qualify and saving identical settings retains the test period',()=>{
@@ -85,7 +90,48 @@ test('unverified users do not qualify and saving identical settings retains the 
  getDb().prepare('UPDATE users SET email_verified_at=NULL WHERE id=?').run(u.id);purchase(u.id,'2026-05-01T12:00:00Z');purchase(u.id,'2026-05-02T12:00:00Z');assert.equal(coupons().length,0);
 });
 test('a refunded or revoked reward cannot recycle its purchase days into overlapping coupons',()=>{
- const u=customer();automation();const first=purchase(u.id,'2026-06-01T12:00:00Z');purchase(u.id,'2026-06-02T12:00:00Z');purchase(u.id,'2026-06-03T12:00:00Z');assert.equal(coupons().length,1);
+ const u=customer();automation();const first=purchase(u.id,'2026-06-01T12:00:00Z');purchase(u.id,'2026-06-02T12:00:00Z');purchase(u.id,'2026-06-03T12:00:00Z');approveAndIssue();assert.equal(coupons().length,1);
  recordPayment({orderId:first.id,amountCents:1,method:'refund',reference:randomUUID()},'test');assert.equal(coupons().length,1);assert.equal(coupons()[0].status,'revoked');
- purchase(u.id,'2026-06-04T12:00:00Z');assert.equal(coupons().length,2);reconcileCoupons(u.id,'test');assert.equal(coupons().length,2);
+ purchase(u.id,'2026-06-04T12:00:00Z');approveAndIssue();assert.equal(coupons().length,2);reconcileCoupons(u.id,'test');assert.equal(coupons().length,2);
+});
+
+test('selection and approval create no coupons or messages; manager push issues once and records both actors',()=>{
+ const u=customer();automation();purchase(u.id,'2026-07-01T12:00:00Z');purchase(u.id,'2026-07-02T12:00:00Z');
+ const c=candidates()[0],id=String(c.id);assert.equal(c.status,'pending');assert.equal(coupons().length,0);
+ assert.throws(()=>issueApprovedCoupon(id,'admin:ray'),/approval/);
+ reviewCouponCandidate(id,'approved','admin:ray');assert.equal(candidates()[0].status,'approved');assert.equal(coupons().length,0);
+ assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+ const r=issueApprovedCoupon(id,'admin:michelle');assert.deepEqual(issueApprovedCoupon(id,'admin:michelle'),r);assert.equal(coupons().length,1);assert.equal(candidates()[0].status,'issued');
+ assert.equal(getDb().prepare('SELECT actor FROM loyalty_rewards WHERE id=?').get(r.id)?.actor,'admin:michelle');assert.equal(candidates()[0].reviewed_by,'admin:ray');
+ assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+});
+
+test('rejection consumes the qualification once; later non-overlapping streaks can qualify again',()=>{
+ const u=customer();automation();purchase(u.id,'2026-08-01T12:00:00Z');purchase(u.id,'2026-08-02T12:00:00Z');const id=String(candidates()[0].id);
+ reviewCouponCandidate(id,'rejected','admin:ali');reconcileCoupons(u.id,'test');assert.equal(candidates().length,1);assert.equal(coupons().length,0);assert.throws(()=>reviewCouponCandidate(id,'approved','admin:ray'),/pending/);assert.throws(()=>issueApprovedCoupon(id,'admin:ray'),/approval/);
+ purchase(u.id,'2026-08-03T12:00:00Z');purchase(u.id,'2026-08-04T12:00:00Z');assert.equal(candidates().length,2);assert.equal(candidates().filter(c=>c.status==='pending').length,1);
+});
+
+test('refunds, rule changes, email verification and off switch prevent stale approvals from issuing',()=>{
+ const u=customer();automation();purchase(u.id,'2026-09-01T12:00:00Z');const last=purchase(u.id,'2026-09-02T12:00:00Z'),id=String(candidates()[0].id);
+ reviewCouponCandidate(id,'approved','admin:ray');getDb().prepare('UPDATE users SET email_verified_at=NULL WHERE id=?').run(u.id);assert.throws(()=>issueApprovedCoupon(id,'admin:ray'),/verified/);
+ getDb().prepare('UPDATE users SET email_verified_at=? WHERE id=?').run(new Date().toISOString(),u.id);
+ recordPayment({orderId:last.id,amountCents:1,method:'refund',reference:randomUUID()},'test');assert.equal(candidates()[0].status,'cancelled');assert.throws(()=>issueApprovedCoupon(id,'admin:ray'),/approval/);
+ purchase(u.id,'2026-09-03T12:00:00Z');purchase(u.id,'2026-09-04T12:00:00Z');const next=String(candidates()[0].id);reviewCouponCandidate(next,'approved','admin:ray');
+ saveCouponSettings({...terms,enabled:false,days:2},'admin:test');assert.throws(()=>issueApprovedCoupon(next,'admin:ray'),/off/);assert.throws(()=>reviewCouponCandidate(next,'rejected','admin:ray'),/off/);
+ saveCouponSettings({...terms,enabled:true,days:3},'admin:test');assert.throws(()=>issueApprovedCoupon(next,'admin:ray'),/approval/);assert.equal(coupons().length,0);
+});
+
+test('approved candidate emails the exact offer once only on manager push; off blocks sending',async()=>{
+ const u=customer();automation();purchase(u.id,'2026-10-01T12:00:00Z');purchase(u.id,'2026-10-02T12:00:00Z');const id=String(candidates()[0].id);
+ reviewCouponCandidate(id,'approved','admin:ray');assert.equal(getDb().prepare('SELECT count(*) n FROM loyalty_messages').get()?.n,0);
+ process.env.FOND_CREDENTIALS_KEY='ab'.repeat(32);saveProviderSecret('email-api','re_synthetic-no-real-provider','test');saveDocument('email-from','orders@example.test','test');
+ const reward=issueApprovedCoupon(id,'admin:michelle'),original=global.fetch;let calls=0;
+ global.fetch=async(_url,init)=>{calls++;const b=JSON.parse(String(init?.body));assert.deepEqual(b.to,[u.email]);assert.match(b.text,/10% off/);assert.match(b.text,/R5.00 off/);assert.match(b.html,new RegExp(reward.code));return Response.json({id:'isolated-approved-coupon-message'});};
+ try{await Promise.allSettled([sendCouponEmail(reward.id,'admin:michelle'),sendCouponEmail(reward.id,'admin:michelle')]);assert.equal(calls,1);assert.equal(couponEmailStatus(reward.id)?.status,'provider-accepted');saveCouponSettings({...terms,enabled:false,days:2},'admin:test');await assert.rejects(sendCouponEmail(reward.id,'admin:ray'),/Automation/);assert.equal(calls,1);}finally{global.fetch=original;}
+});
+
+test('legacy automatic coupons without a recorded manager approval cannot be emailed',async()=>{
+ automation();const r=issue()[0];getDb().prepare("UPDATE loyalty_rewards SET kind='coupon-auto' WHERE id=?").run(r.id);
+ await assert.rejects(sendCouponEmail(r.id,'admin:ray'),/approve/);assert.equal(couponEmailStatus(r.id),undefined);
 });

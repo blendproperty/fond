@@ -16,13 +16,13 @@ test('super admin owns provider settings while named admin can manage operations
   const login = await request.post('/api/admin/login', { data: { username, password: 'manager-password-123' } });
   expect(login.ok()).toBe(true);
   const adminHeaders = { Cookie: login.headers()['set-cookie'].split(';')[0] };
-  const settings = await (await request.get('/api/admin/manage/settings', { headers: adminHeaders })).json();
-  expect(settings.role).toBe('manager'); expect(settings.team).toEqual([]);
+  expect((await request.get('/api/admin/manage/settings', { headers: adminHeaders })).status()).toBe(403);
+  const settings = await (await request.get('/api/admin/manage/settings', { headers: superHeaders })).json();
   expect((await request.get('/api/admin/provider-credentials', { headers: adminHeaders })).status()).toBe(403);
   expect((await request.post('/api/admin/provider-credentials', { headers: adminHeaders, data: { name: 'yoco-secret', value: 'sk_test_fake' } })).status()).toBe(403);
   expect((await request.post('/api/admin/manage/team', { headers: adminHeaders, data: { name: 'Another', username: `${username}.2`, role: 'staff', active: true, password: 'long-password-123' } })).status()).toBe(403);
   const operational = await request.post('/api/admin/manage/settings', { headers: adminHeaders, data: settings.settings });
-  expect(operational.ok()).toBe(true);
+  expect(operational.status()).toBe(403);
   const forbidden = await request.post('/api/admin/manage/settings', { headers: adminHeaders, data: { ...settings.settings, onlinePaymentsEnabled: !settings.settings.onlinePaymentsEnabled } });
   expect(forbidden.status()).toBe(403);
 });

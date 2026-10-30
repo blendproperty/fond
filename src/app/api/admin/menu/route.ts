@@ -6,7 +6,7 @@ export async function GET() {
   if (!(await currentAdmin())) {
     return NextResponse.json({ code: 'ADMIN_AUTH_REQUIRED', message: 'Enter the admin access code.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
-  return NextResponse.json({ menu: getFullMenu() }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ menu: getFullMenu(), role:(await currentAdmin())!.role }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // Add a new menu item — e.g. a limited-time special that isn't in the

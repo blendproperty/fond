@@ -10,8 +10,12 @@ export function couponEmailStatus(rewardId:string){
 }
 export async function sendCouponEmail(rewardId:string,actor:string){
  if(process.env.FOND_COUPON_TESTING!=='true')throw new Error('Coupon testing is disabled in this environment.');
- const db=getDb(),r=db.prepare("SELECT r.*,c.percent,c.amount_cents,c.expires_at FROM loyalty_rewards r JOIN coupons c ON c.reward_id=r.id WHERE r.id=? AND r.kind='coupon-manual'").get(rewardId);
- if(!r||r.status!=='available'||String(r.expires_at)<=new Date().toISOString())throw new Error('Only an available, unexpired manual coupon can be emailed.');
+ const db=getDb(),r=db.prepare("SELECT r.*,c.percent,c.amount_cents,c.expires_at FROM loyalty_rewards r JOIN coupons c ON c.reward_id=r.id WHERE r.id=? AND r.kind IN ('coupon-manual','coupon-auto')").get(rewardId);
+ if(!r||r.status!=='available'||String(r.expires_at)<=new Date().toISOString())throw new Error('Only an available, unexpired coupon can be emailed.');
+ if(r.kind==='coupon-auto'){
+  const config=db.prepare('SELECT value FROM coupon_settings WHERE id=1').get(),approved=db.prepare("SELECT id FROM coupon_candidates WHERE reward_id=? AND status='issued' AND reviewed_by IS NOT NULL").get(rewardId);
+  if(!config||!JSON.parse(String(config.value)).enabled||!approved)throw new Error('Automation must be on and a manager must approve and issue this coupon before sending.');
+ }
  const prior=couponEmailStatus(rewardId);
  if(prior){if(prior.provider_id)return prior;throw new Error('Email already requested. Check delivery before retrying; it will not be sent twice.');}
  if(!emailConfigured())throw new Error('Email provider is not configured. Coupon remains available and unsent.');

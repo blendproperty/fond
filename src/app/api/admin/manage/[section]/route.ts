@@ -21,6 +21,7 @@ export async function GET(request:Request,context:Context){
   const {section}=await context.params,u=new URL(request.url);
   try{
     if(section==='settings'){
+      if(!['owner','super-admin'].includes((await role())??''))return Response.json({message:'Owner or super admin access required for settings.'},{status:403,headers});
       const currentRole=await role(),oversight=currentRole==='super-admin'||currentRole==='owner';
       const team=currentRole==='super-admin'?listTeam():currentRole==='owner'?(listTeam() as {role:string}[]).filter(member=>['manager','staff','gym','padel'].includes(member.role)):[];
       return Response.json({settings:settings(),team,role:currentRole,providers:{yoco:onlinePaymentsConfigured(),whatsapp:whatsappConfigured(),sms:smsConfigured()},changes:oversight?listAdminChanges():[],audit:oversight?getDb().prepare('SELECT * FROM admin_events ORDER BY created_at DESC LIMIT 100').all():[]}, {headers});
@@ -46,6 +47,7 @@ export async function POST(request:Request,context:Context){
   if(!b||typeof b!=='object')return Response.json({message:'Invalid request.'},{status:400,headers});
   try{
     if(section==='settings'){
+      if(!['owner','super-admin'].includes((await role())??''))return Response.json({message:'Owner or super admin access required for settings.'},{status:403,headers});
       const next=validateSettings(b),prior=settings();
       if((await role())!=='super-admin'&&(next.onlinePaymentsEnabled!==prior.onlinePaymentsEnabled||next.allowTestPayments!==prior.allowTestPayments||next.whatsappEnabled!==prior.whatsappEnabled||next.smsEnabled!==prior.smsEnabled))return Response.json({message:'Super admin access is required to change provider switches.'},{status:403,headers});
       saveDocument('trading',next,who);

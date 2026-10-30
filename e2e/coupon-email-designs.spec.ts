@@ -4,7 +4,7 @@ const designs=[['Customer appreciation','A little thank you.'],['Frequent custom
 test('all seven coupon reasons render branded photography, accurate offers and responsive full email previews without issuance',async({page},info)=>{
  test.setTimeout(60000);
  await page.goto('/admin');await page.getByLabel('Admin access code').fill(process.env.FOND_ADMIN_CODE!);await page.getByRole('button',{name:'Unlock',exact:true}).click();await page.getByRole('button',{name:'Loyalty',exact:true}).click();
- const panel=page.getByRole('region',{name:'Loyalty coupons · testing'}),automation=await panel.getByLabel('Enable automated test coupons').isChecked(),mutations:string[]=[];
+ const panel=page.getByRole('region',{name:'Loyalty coupons · testing'}),automation=await panel.getByLabel('Enable loyalty candidate selection').isChecked(),mutations:string[]=[];
  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/admin/coupons'&&request.method()!=='GET')mutations.push(request.method());});
  for(const [i,[reason,heading]] of designs.entries()){
   await panel.getByRole('combobox',{name:'Coupon reason',exact:true}).selectOption(reason);
@@ -16,7 +16,7 @@ test('all seven coupon reasons render branded photography, accurate offers and r
   await expect.poll(()=>preview.locator('iframe').evaluate(el=>el.clientHeight>=((el as HTMLIFrameElement).contentDocument?.body.getBoundingClientRect().height??99999)-2)).toBe(true);
   await frame.locator('body').screenshot({path:info.outputPath(`coupon-email-${i}.png`)});
  }
- const after=await page.evaluate(async()=>await (await fetch('/api/admin/coupons')).json());expect(mutations).toEqual([]);expect(after.delivery).toBe('manual');expect(await panel.getByLabel('Enable automated test coupons').isChecked()).toBe(automation);
+ const after=await page.evaluate(async()=>await (await fetch('/api/admin/coupons')).json());expect(mutations).toEqual([]);expect(after.delivery).toBe('manual');expect(await panel.getByLabel('Enable loyalty candidate selection').isChecked()).toBe(automation);
  if(info.project.name==='desktop'){
   const escape=(s:string)=>s.replaceAll('&','&amp;').replaceAll('"','&quot;');
   await page.setViewportSize({width:1320,height:1000});await page.setContent(`<html><head><style>body{margin:0;padding:28px;background:#e5ece7;font-family:Arial,sans-serif}h1{color:#123f35;margin:0 0 8px}p{color:#496157;margin:0 0 24px}.gallery{display:grid;grid-template-columns:repeat(4,300px);gap:20px}.card{background:white;border:1px solid #cbd9d0;border-radius:10px;overflow:hidden}.label{padding:14px;font-size:13px;font-weight:bold;color:#123f35}.frame{width:294px;position:relative}iframe{border:0;width:640px;height:2200px;transform:scale(.46);transform-origin:top left}</style></head><body><h1>FOND / The coupon collection</h1><p>Seven reasons. Seven designs. Preview only — no email delivery.</p><div class="gallery">${designs.map(([reason])=>`<div class="card"><div class="label">${reason}</div><div class="frame"><iframe srcdoc="${escape(buildCouponEmail({reason,code:'COUPON-PREVIEW-ONLY',email:'your.email@example.com',percent:10,amountCents:0,expiresAt:'2026-11-29T07:04:48Z',baseUrl:'http://127.0.0.1:3100'}).html)}"></iframe></div></div>`).join('')}</div></body></html>`);

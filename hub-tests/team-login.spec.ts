@@ -12,9 +12,12 @@ test('one team login enforces every role, two-factor and global sign-out',async(
  expect((await signIn(credentials)).ok()).toBe(true);
  const all=['super-admin','owner'].includes(role);
  expect((await c.get('/api/admin/menu')).ok()).toBe(all||role==='manager');
- expect((await c.get('/api/hub/manage?service=gym')).ok()).toBe(all||role==='gym');
- expect((await c.get('/api/hub/manage?service=padel')).ok()).toBe(all||role==='padel');
- expect((await c.get('/api/functions/manage?month=2026-10')).ok()).toBe(all||role==='functions');
+ expect((await c.get('/api/admin/coupons')).ok()).toBe(all||role==='manager');
+ expect((await c.get('/api/admin/manage/settings')).ok()).toBe(all);
+ if(role==='manager')expect((await c.post('/api/admin/coupons',{data:{action:'settings'}})).status()).toBe(403);
+ expect((await c.get('/api/hub/manage?service=gym')).ok()).toBe(all||['manager','gym'].includes(role));
+ expect((await c.get('/api/hub/manage?service=padel')).ok()).toBe(all||['manager','padel'].includes(role));
+ expect((await c.get('/api/functions/manage?month=2026-10')).ok()).toBe(all||['manager','functions'].includes(role));
  expect((await c.get('/api/staff/orders')).ok()).toBe(all||['staff','manager'].includes(role));
  if(role==='owner'){
  const enrollment=await(await c.post('/api/hub/two-factor',{data:{action:'begin'}})).json();

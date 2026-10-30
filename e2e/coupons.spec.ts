@@ -14,10 +14,10 @@ test('management creates a batch of test coupons, previews emails, switches auto
  await expect(page.getByRole('region',{name:'Loyalty coupons · testing'})).toHaveCount(0);
  await page.getByRole('button',{name:'Loyalty',exact:true}).click();
  const panel=page.getByRole('region',{name:'Loyalty coupons · testing'});
- await expect(panel.getByLabel('Enable automated test coupons')).toBeVisible();
+ await expect(panel.getByLabel('Enable loyalty candidate selection')).toBeVisible();
  await expect(panel.getByRole('button',{name:'Create test coupons'})).toBeDisabled();
- await panel.getByLabel('Enable automated test coupons').check();await panel.getByLabel('Consecutive purchase days').fill('5');await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');
- await panel.getByLabel('Enable automated test coupons').uncheck();await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');await expect(panel.getByLabel('Enable automated test coupons')).not.toBeChecked();
+ await panel.getByLabel('Enable loyalty candidate selection').check();await panel.getByLabel('Consecutive purchase days').fill('5');await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');
+ await panel.getByLabel('Enable loyalty candidate selection').uncheck();await panel.getByRole('button',{name:'Save coupon automation'}).click();await expect(panel.getByRole('status')).toHaveText('Saved.');await expect(panel.getByLabel('Enable loyalty candidate selection')).not.toBeChecked();
  const email=`loyalty-${info.project.name}-${Date.now()}@example.test`,second='second-'+email;
  for(const recipient of [email,second])expect((await request.post('/api/auth/signup',{data:{email:recipient,password:'isolated-coupon-test-password'}})).status()).toBe(201);
  await panel.getByLabel('Search app customer emails').fill(email);await panel.getByRole('checkbox',{name:'Select '+email,exact:true}).check();await panel.getByLabel('Search app customer emails').fill(second);await panel.getByRole('checkbox',{name:'Select '+second,exact:true}).check();await expect(panel.getByText('Selected app customers: 2',{exact:true})).toBeVisible();
