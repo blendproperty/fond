@@ -1,14 +1,21 @@
 import {test,expect} from '@playwright/test';
 
-test('Food Truck Drinks selects a flavour and adds the correct drink and price to the basket',async({page})=>{
+test('Food Truck Drinks selects a flavour and adds the correct drink and price to the basket',async({page},info)=>{
   await page.route('**/api/store',async route=>{const response=await route.fetch();const body=await response.json();body.open=true;body.settings.enforceHours=false;await route.fulfill({response,json:body});});
   await page.goto('/fond/menu');
   await page.getByRole('button',{name:'Food Truck menu',exact:true}).click();
   await page.getByRole('tab',{name:'Drinks',exact:true}).click();
   await expect(page.getByRole('tabpanel',{name:'Food Truck · Drinks'}).locator('.meal-card')).toHaveCount(6);
-  await expect(page.locator('[data-food-art="cold drink"]')).toHaveCount(6);
+  await expect(page.locator('[data-food-art="product photo"]')).toHaveCount(6);
+  const image=await page.request.get('/food-truck/drinks-products-20261030.png');
+  expect(image.ok()).toBe(true);
+  expect(image.headers()['content-type']).toContain('image/png');
+  await page.getByRole('tab',{name:'Drinks',exact:true}).scrollIntoViewIfNeeded();
+  await page.screenshot({path:info.outputPath('drink-product-images.png'),fullPage:true});
   await page.getByRole('button',{name:'Add Soda 300ml',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Soda 300ml',exact:true});
+  await expect(dialog.getByRole('img',{name:'Soda 300ml product image',exact:true})).toBeVisible();
+  await page.screenshot({path:info.outputPath('drink-product-dialog.png')});
   const add=dialog.getByRole('button',{name:/Add to basket/});
   await expect(add).toBeDisabled();
   await expect(dialog.getByRole('radio')).toHaveCount(6);
