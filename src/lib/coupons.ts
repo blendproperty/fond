@@ -2,6 +2,8 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {getDb} from './db';
 import {buildCouponEmail} from './coupon-email';
 import {publicBaseUrl} from './public-url';
+import {couponEmailStatus} from './coupon-delivery';
+import {emailConfigured} from './email';
 
 export type CouponTerms={percent:number;amountCents:number;validDays:number};
 export type CouponSettings=CouponTerms&{enabled:boolean;days:number;since:string};
@@ -95,7 +97,7 @@ export function adminCoupons(){
  const rows=getDb().prepare('SELECT r.id,r.code,r.recipient_email,r.kind,r.status,r.reason,c.percent,c.amount_cents,c.expires_at FROM coupons c JOIN loyalty_rewards r ON r.id=c.reward_id ORDER BY r.rowid DESC LIMIT 100').all() as {id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;percent:number;amount_cents:number;expires_at:string}[];
  const coupons=rows.map(r=>{
   const email=buildCouponEmail({code:String(r.code),email:String(r.recipient_email),reason:String(r.reason),percent:Number(r.percent),amountCents:Number(r.amount_cents),expiresAt:String(r.expires_at),kind:String(r.kind),baseUrl:publicBaseUrl()});
-  return {...r,email_preview:email.text,email_subject:email.subject,email_html:email.html,email_design:email.designLabel,email_theme:email.theme};
+  return {...r,email_preview:email.text,email_subject:email.subject,email_html:email.html,email_design:email.designLabel,email_theme:email.theme,email_delivery:couponEmailStatus(r.id)??null};
  });
- return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'preview-only',coupons};
+ return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'manual',emailConfigured:emailConfigured(),coupons};
 }

@@ -4,13 +4,14 @@ import {buildCouponEmail,COUPON_EMAIL_REASONS} from '@/lib/coupon-email';
 import {CouponEmailPreview} from './coupon-email-preview';
 type Terms={percent:number;amountCents:number;validDays:number};
 type Settings=Terms&{enabled:boolean;days:number};
-type Coupon={id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;expires_at:string;email_preview:string;email_html:string;email_subject:string;email_design:string};
-type Data={testingEnabled:boolean;settings:Settings;coupons:Coupon[]};
+type Coupon={id:string;code:string;recipient_email:string;kind:string;status:string;reason:string;expires_at:string;email_preview:string;email_html:string;email_subject:string;email_design:string;email_delivery:{status:string;provider_id:string|null;error:string|null}|null};
+type Data={testingEnabled:boolean;emailConfigured:boolean;settings:Settings;coupons:Coupon[]};
 type Recipient={email:string;verified:boolean};
 const reasons=COUPON_EMAIL_REASONS;
 export function LoyaltyCoupons(){
  const [data,setData]=useState<Data|null>(null),[settings,setSettings]=useState<Settings|null>(null),[gift,setGift]=useState<Terms>({percent:10,amountCents:0,validDays:30}),[emails,setEmails]=useState(''),[reason,setReason]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[key,setKey]=useState('');
  const [query,setQuery]=useState(''),[recipients,setRecipients]=useState<Recipient[]>([]),[selected,setSelected]=useState<string[]>([]),[hasMore,setHasMore]=useState(false),[searching,setSearching]=useState(true),[searchError,setSearchError]=useState(''),[otherReason,setOtherReason]=useState('');
+ const [emailEnabled,setEmailEnabled]=useState(false);
  async function load(){const r=await fetch('/api/admin/coupons',{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.message);setData(d);setSettings(d.settings);}
  useEffect(()=>{setKey(crypto.randomUUID());void load().catch(e=>setMessage(e.message));},[]);
  useEffect(()=>{
@@ -19,13 +20,13 @@ export function LoyaltyCoupons(){
   return()=>{clearTimeout(timer);controller.abort();};
  },[query]);
  const recipientEmails=[...new Set([...selected,...emails.split(/[\s,;]+/).filter(Boolean)].map(email=>email.trim().toLowerCase()))];
- async function save(body:unknown){setBusy(true);setMessage('');try{const r=await fetch('/api/admin/coupons',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw new Error(d.message);if(d.rewards)setKey(crypto.randomUUID());await load();setMessage(d.rewards?'Test coupons created. Review their email previews below.':'Saved.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
+ async function save(body:unknown){setBusy(true);setMessage('');try{const r=await fetch('/api/admin/coupons',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw new Error(d.message);if(d.rewards)setKey(crypto.randomUUID());await load();setMessage(d.rewards?`Test coupons created. ${d.deliveries?.length?'Email requests processed; check each delivery status below.':'Review their email previews below.'}`:d.delivery?'Email status updated. Provider acceptance is not yet confirmed delivery.':'Saved.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
  function fields(value:Terms,change:(next:Terms)=>void,prefix:string){return <>
   <label className="field">{prefix} percentage<input type="number" min="0" max="100" step="1" required value={value.percent} onChange={e=>change({...value,percent:Number(e.target.value)})}/></label>
   <label className="field">{prefix} saving (Rand)<input type="number" min="0" max="1000" step="0.01" required value={value.amountCents/100} onChange={e=>change({...value,amountCents:Math.round(Number(e.target.value)*100)})}/></label>
   <label className="field">{prefix} validity (days)<input type="number" min="1" max="365" required value={value.validDays} onChange={e=>change({...value,validDays:Number(e.target.value)})}/></label></>;}
  return <section className="manage-card" aria-labelledby="loyalty-coupons-title"><h2 id="loyalty-coupons-title">Loyalty coupons · testing</h2>
-  <p>Test coupons only. Email previews are saved; no coupon emails are sent. Percentage applies first, then the Rand saving, capped at basket value. Delivery is excluded. Verified recipients redeem once through a test app checkout.</p>
+  <p>Test coupons only. Preview the email, then send it to the selected recipients. Email delivery is manual; automation does not send coupon emails. Percentage applies first, then the Rand saving, capped at basket value. Delivery is excluded. Verified recipients redeem once through a test app checkout.</p>
   {message&&<p role="status">{message}</p>}
   {!data||!settings?<p>Coupon settings unavailable until loaded.</p>:!data.testingEnabled?<p>Coupon testing is disabled in this environment.</p>:<>
    <form onSubmit={e=>{e.preventDefault();void save({action:'settings',...settings});}}><h3>Automated daily-purchase reward</h3>
@@ -34,7 +35,7 @@ export function LoyaltyCoupons(){
     <label className="field">Consecutive purchase days<input type="number" min="2" max="90" required value={settings.days} onChange={e=>setSettings({...settings,days:Number(e.target.value)})}/></label>
     {fields(settings,next=>setSettings({...settings,...next}),'Automated')}<button className="primary" disabled={busy}>Save coupon automation</button>
    </form>
-   <form onSubmit={e=>{e.preventDefault();if(reason==='Other'&&!otherReason.trim()){setMessage('Enter an other reason.');return;}void save({action:'issue',...gift,emails:recipientEmails,reason:reason==='Other'?'Other: '+otherReason.trim():reason});}}><h3>Issue manual coupons</h3>
+   <form onSubmit={e=>{e.preventDefault();if(reason==='Other'&&!otherReason.trim()){setMessage('Enter an other reason.');return;}void save({action:'issue',...gift,emailEnabled,emails:recipientEmails,reason:reason==='Other'?'Other: '+otherReason.trim():reason});}}><h3>Issue manual coupons</h3>
     <label className="field">Search app customer emails<input type="search" maxLength={100} onKeyDown={e=>{if(e.key==='Enter')e.preventDefault();}} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search registered app accounts"/></label>
     <p>Choose one or more registered app customers. Email verification is required to redeem a coupon.</p>
     {searchError&&<p role="alert">{searchError}</p>}{searching&&<p aria-live="polite">Searching app accounts…</p>}
@@ -45,11 +46,11 @@ export function LoyaltyCoupons(){
     <p>Coupon recipients: {recipientEmails.length} / 50</p>
     <label className="field">Coupon reason<select required value={reason} onChange={e=>setReason(e.target.value)}><option value="" disabled>Select a reason</option>{reasons.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
     {reason==='Other'&&<label className="field">Other reason<input required maxLength={193} value={otherReason} onChange={e=>setOtherReason(e.target.value)}/></label>}
-    {fields(gift,setGift,'Manual')}<button className="primary" disabled={busy||!recipientEmails.length||recipientEmails.length>50}>Create test coupons</button>
+    {fields(gift,setGift,'Manual')}<label className="field-check"><input type="checkbox" checked={emailEnabled} disabled={!data.emailConfigured} onChange={e=>setEmailEnabled(e.target.checked)}/> Email these coupons after creation</label><p>{data.emailConfigured?'This sends a real email to every selected recipient when checked. Leave unchecked to create without sending.':'Email provider is not configured; coupons can be created without sending.'}</p><button className="primary" disabled={busy||!recipientEmails.length||recipientEmails.length>50}>{emailEnabled?'Create and email test coupons':'Create test coupons'}</button>
     {reason&&<details className="coupon-draft-design"><summary>Preview email design for this reason</summary><p>Review this reason’s design before creating a coupon. The sample code below is not a redeemable coupon.</p><CouponEmailPreview title="Draft coupon email design" message={buildCouponEmail({code:'COUPON-PREVIEW-ONLY',email:recipientEmails[0]??'your.email@example.com',reason,percent:gift.percent,amountCents:gift.amountCents,expiresAt:new Date(Date.now()+gift.validDays*86400000).toISOString(),baseUrl:typeof window==='undefined'?'https://midpointhub.com':window.location.origin})}/></details>}
    </form>
    <h3>Coupon and email previews</h3><button className="quiet" disabled={busy} onClick={()=>void load().catch(e=>setMessage(e.message))}>Refresh coupons</button>
-   {!data.coupons.length&&<p>No coupons issued yet.</p>}{data.coupons.map(c=><article className="reward-card" key={c.id}><strong>{c.recipient_email}</strong><p>{c.kind==='coupon-auto'?'Automated':'Manual'} · {c.status} · expires {new Date(c.expires_at).toLocaleDateString('en-ZA')}</p><p>Reason: {c.reason}</p><code>{c.code}</code><details><summary>Preview coupon email</summary><CouponEmailPreview title={'Coupon email '+c.code} message={{subject:c.email_subject,html:c.email_html,text:c.email_preview,designLabel:c.email_design}}/></details>{c.status==='available'&&<button className="quiet" disabled={busy} onClick={()=>void save({action:'revoke',id:c.id})}>Revoke unused coupon</button>}</article>)}
+   {!data.coupons.length&&<p>No coupons issued yet.</p>}{data.coupons.map(c=><article className="reward-card" key={c.id}><strong>{c.recipient_email}</strong><p>{c.kind==='coupon-auto'?'Automated':'Manual'} · {c.status} · expires {new Date(c.expires_at).toLocaleDateString('en-ZA')}</p><p>Reason: {c.reason}</p><code>{c.code}</code><details><summary>Preview coupon email</summary><CouponEmailPreview title={'Coupon email '+c.code} message={{subject:c.email_subject,html:c.email_html,text:c.email_preview,designLabel:c.email_design}}/></details><p>Email: {c.email_delivery?.status??'not sent'}{c.email_delivery?.provider_id&&<> / Reference: <code>{c.email_delivery.provider_id}</code></>}</p>{c.email_delivery?.error&&<p role="alert">{c.email_delivery.error}</p>}{c.email_delivery?.provider_id&&<button className="outline" disabled={busy} onClick={()=>void save({action:'check-email',id:c.id})}>Check email delivery</button>}{!c.email_delivery&&c.kind==='coupon-manual'&&c.status==='available'&&new Date(c.expires_at).getTime()>Date.now()&&<button className="primary" disabled={busy||!data.emailConfigured} onClick={()=>void save({action:'send-email',id:c.id})}>Send coupon email</button>}{c.status==='available'&&<button className="quiet" disabled={busy} onClick={()=>void save({action:'revoke',id:c.id})}>Revoke unused coupon</button>}</article>)}
   </>}
  </section>;
 }
