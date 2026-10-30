@@ -20,7 +20,7 @@ export async function sendCouponEmail(rewardId:string,actor:string){
  db.prepare('INSERT INTO loyalty_events VALUES (?,?,?,?,?,?)').run(randomUUID(),rewardId,'coupon-email-requested',actor,'Manual email to coupon recipient',now);
  try{
   const message=buildCouponEmail({code:String(r.code),email:String(r.recipient_email),reason:String(r.reason),percent:Number(r.percent),amountCents:Number(r.amount_cents),expiresAt:String(r.expires_at),kind:String(r.kind),baseUrl:publicBaseUrl()});
-  const providerId=await sendEmailMessage(String(r.recipient_email),message,`fond-coupon-${id}`,'Midpoint Café · FOND');
+  const providerId=await sendEmailMessage(String(r.recipient_email),{subject:message.subject,text:message.text,html:message.html},`fond-coupon-${id}`,'Midpoint Café · FOND');
   if(!providerId)throw new Error('Provider response did not include a message ID.');
   db.prepare("UPDATE loyalty_messages SET status='provider-accepted',provider_id=?,error=NULL,updated_at=? WHERE id=?").run(providerId,new Date().toISOString(),id);
  }catch{

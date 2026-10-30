@@ -15,7 +15,7 @@ test('manual creation stays unsent; explicit send delivers exact branded coupon 
  global.fetch=async(url,init)=>{calls.push({url:String(url),init});return Response.json({id:'provider-coupon-id'});};
  try{
   await Promise.allSettled([sendCouponEmail(reward.id,'admin:test'),sendCouponEmail(reward.id,'admin:test')]);await sendCouponEmail(reward.id,'admin:test');
-  assert.equal(calls.length,1);const body=JSON.parse(String(calls[0].init?.body));assert.deepEqual(body.to,['coupon@example.test']);assert.match(body.html,new RegExp(reward.code));assert.match(body.html,/midpoint-cafe-powered-by-fond/);assert.match(body.subject,/\[TEST\]/);assert.match(body.text,/10% off/);assert.match(String((calls[0].init?.headers as Record<string,string>)['Idempotency-Key']),/^fond-coupon-/);assert.equal(couponEmailStatus(reward.id)?.status,'provider-accepted');assert.equal(couponSettings().enabled,false);
+  assert.equal(calls.length,1);const body=JSON.parse(String(calls[0].init?.body));assert.deepEqual(body.to,['coupon@example.test']);assert.deepEqual(Object.keys(body).sort(),['from','html','subject','text','to']);assert.match(body.html,new RegExp(reward.code));assert.match(body.html,/midpoint-cafe-powered-by-fond/);assert.match(body.subject,/\[TEST\]/);assert.match(body.text,/10% off/);assert.match(String((calls[0].init?.headers as Record<string,string>)['Idempotency-Key']),/^fond-coupon-/);assert.equal(couponEmailStatus(reward.id)?.status,'provider-accepted');assert.equal(couponSettings().enabled,false);
  }finally{global.fetch=original;}
 });
 test('missing provider, disabled coupons, revoked and expired coupons cannot send',async()=>{
