@@ -4,6 +4,7 @@ import {buildCouponEmail} from './coupon-email';
 import {publicBaseUrl} from './public-url';
 import {couponEmailStatus} from './coupon-delivery';
 import {emailConfigured} from './email';
+import {queueApprovalAlerts,approvalNotificationStatus} from './loyalty-approval-alerts';
 
 export type CouponTerms={percent:number;amountCents:number;validDays:number};
 export type CouponSettings=CouponTerms&{enabled:boolean;days:number;since:string};
@@ -97,7 +98,7 @@ export function reconcileCoupons(userId:string,environment:string){
   if(c.period!==config.since||c.email!==u.email||snapshot.days!==config.days||snapshot.percent!==config.percent||snapshot.amountCents!==config.amountCents||snapshot.validDays!==config.validDays||(JSON.parse(c.qualification_days) as string[]).some(day=>!paidDays.has(day))){db.prepare("UPDATE coupon_candidates SET status='cancelled',decision_note=? WHERE id=?").run('Qualification changed; no coupon issued',c.id);audit(c.id,'coupon-candidate-cancelled','system','Qualification changed');}
  }
  if(config.enabled)for(const [key,days] of eligible){
-  const id=randomUUID();if(db.prepare('INSERT OR IGNORE INTO coupon_candidates (id,user_id,email,qualification_key,qualification_days,terms,period,created_at) VALUES (?,?,?,?,?,?,?,?)').run(id,userId,String(u.email),key,JSON.stringify(days),JSON.stringify(config),config.since,new Date().toISOString()).changes)audit(id,'coupon-candidate-selected','system',`${config.days} consecutive paid app purchase days`);
+  const id=randomUUID();if(db.prepare('INSERT OR IGNORE INTO coupon_candidates (id,user_id,email,qualification_key,qualification_days,terms,period,created_at) VALUES (?,?,?,?,?,?,?,?)').run(id,userId,String(u.email),key,JSON.stringify(days),JSON.stringify(config),config.since,new Date().toISOString()).changes){audit(id,'coupon-candidate-selected','system',`${config.days} consecutive paid app purchase days`);queueApprovalAlerts(id);}
  }
 }
 export function reviewCouponCandidate(id:string,decision:'approved'|'rejected',actor:string){
@@ -130,5 +131,5 @@ export function adminCoupons(){
   return {...r,email_preview:email.text,email_subject:email.subject,email_html:email.html,email_design:email.designLabel,email_theme:email.theme,email_delivery:couponEmailStatus(r.id)??null};
  });
  const candidates=getDb().prepare('SELECT c.*,m.name AS reviewer_name FROM coupon_candidates c LEFT JOIN team_members m ON c.reviewed_by=\'admin:\'||m.id ORDER BY c.rowid DESC').all();
- return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'manual',emailConfigured:emailConfigured(),coupons,candidates};
+ return {testingEnabled:testingEnabled(),settings:couponSettings(),environment:'test',delivery:'manual',emailConfigured:emailConfigured(),coupons,candidates,approvalAlerts:approvalNotificationStatus().alerts};
 }

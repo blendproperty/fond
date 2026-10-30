@@ -5,6 +5,7 @@ import { AdminPanel } from '@/components/admin-panel';
 
 export const metadata: Metadata = { title: 'Midpoint Hub Team', robots: { index: false, follow: false } };
 
-export default function AdminPage() {
-  return hubEnabled()?<TeamPortal/>:<AdminPanel />;
+export default async function AdminPage({searchParams}:{searchParams:Promise<{section?:string}>}) {
+  const initialSection=(await searchParams).section==='loyalty'?'loyalty':undefined;
+  return hubEnabled()?<TeamPortal initialSection={initialSection}/>:<AdminPanel initialSection={initialSection}/>;
 }

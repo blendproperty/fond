@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Grid2x2, List, Lock, LogOut, Megaphone, Minus, Pencil, Plus, RefreshCw, Rows3, Save, Settings, Sparkles, Ticket, Trash2, TrendingDown, TrendingUp, UtensilsCrossed, Users, Wallet } from 'lucide-react';
 import { money, categories, type Category, type Meal, type Modifier } from '@/lib/menu';
 
+import {LoyaltyApprovalBadge} from './loyalty-approval-badge';
 import { ReportsDashboard } from './reports-dashboard';
 import { CustomersPanel,MarketingPanel,LoyaltyPanel,FinancePanel,SettingsPanel } from './management-panels';
 
@@ -38,7 +39,7 @@ type AdminOrder = {
   createdAt: string;
 };
 
-export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<void>;workspace?:'all'|'fond'|'operations'}={}) {
+export function AdminPanel({onLogout,workspace='all',initialSection}:{onLogout?:()=>Promise<void>;workspace?:'all'|'fond'|'operations';initialSection?:'loyalty'}={}) {
   const [locked, setLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [code, setCode] = useState('');
@@ -47,7 +48,7 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
   const [username,setUsername]=useState('');
   const [twoFactorCode,setTwoFactorCode]=useState('');
   const [loginError, setLoginError] = useState('');
-  const [tab, setTab] = useState<AdminSection>(workspace==='operations'?'settings':'menu');
+  const [tab, setTab] = useState<AdminSection>(workspace==='operations'?'settings':initialSection??'menu');
 
   const canConfigure=role==='owner'||role==='super-admin';
   const navigation=(workspace==='operations'?NAV.filter(n=>n.key==='settings').map(n=>({...n,label:'Team & settings'})):NAV).filter(n=>n.key!=='settings'||canConfigure);
@@ -111,7 +112,7 @@ export function AdminPanel({onLogout,workspace='all'}:{onLogout?:()=>Promise<voi
           return (
             <button key={n.key} aria-label={n.label} title={n.label} className="admin-nav-item" aria-current={tab === n.key} onClick={() => setTab(n.key)}>
               <Icon size={17} />
-              <span>{n.label}</span>
+              <span>{n.label}</span>{n.key==='loyalty'&&<LoyaltyApprovalBadge compact/>}
 
             </button>
           );

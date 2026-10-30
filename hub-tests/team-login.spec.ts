@@ -13,6 +13,8 @@ test('one team login enforces every role, two-factor and global sign-out',async(
  const all=['super-admin','owner'].includes(role);
  expect((await c.get('/api/admin/menu')).ok()).toBe(all||role==='manager');
  expect((await c.get('/api/admin/coupons')).ok()).toBe(all||role==='manager');
+ expect((await c.get('/api/admin/loyalty-approvals?count=1')).ok()).toBe(all||role==='manager');
+ if(role!=='super-admin')expect((await c.post('/api/admin/loyalty-approvals',{data:{action:'test-alerts'}})).status()).toBe(403);
  expect((await c.get('/api/admin/manage/settings')).ok()).toBe(all);
  if(role==='manager')expect((await c.post('/api/admin/coupons',{data:{action:'settings'}})).status()).toBe(403);
  expect((await c.get('/api/hub/manage?service=gym')).ok()).toBe(all||['manager','gym'].includes(role));
