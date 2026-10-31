@@ -1,0 +1,6 @@
+nav.root { display: block; box-sizing: border-box; width: 100%; max-width: 1216px; margin: 24px auto 80px; padding: 20px 24px; border-top: 1px solid #cdd9cf; color: #173b2b; }
+.root .heading { margin: 0 0 14px; font-size: 13px; font-weight: 700; line-height: 1.5; }
+.root .links { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.root .links a { display: inline-block; width: auto; color: inherit; font-size: 14px; line-height: 1.6; text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.root .links a:focus-visible { outline: 2px solid currentColor; outline-offset: 5px; border-radius: 2px; }
+@media (max-width: 480px) { .root .links a { flex: 1 1 120px; min-width: 0; } }

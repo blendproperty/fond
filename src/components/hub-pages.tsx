@@ -14,6 +14,7 @@ import {HubFondHours} from './hub-fond-hours';
 import {jsonLd,sitePageSchema} from '@/lib/site-schema';
 import {PadelLanding} from './padel-pages';
 import {GymLanding} from './gym-pages';
+import {GroupNetwork} from './group-network';
 
 export function HubShell({children,service,wide=false,mood}:{children:React.ReactNode;service?:HubService;wide?:boolean;mood?:'home'|'functions'}) {
   return <main className={`hub-shell hub-app ${service==='padel'?'hub-padel':''} ${wide?'hub-wide':''} hub-mood-${mood||service||'neutral'}`}>
@@ -25,6 +26,7 @@ export function HubShell({children,service,wide=false,mood}:{children:React.Reac
     <div className="hub-content">{children}</div>
     <HubAppNav/>
     <footer className="hub-footer"><div><strong>A little more to your day.</strong><p>162 Tonetti Street, Halfway House, Midrand</p></div><nav aria-label="Footer destinations"><Link href="/fond">FOND</Link><Link href="/gym">Gym</Link><Link href="/padel">Padel</Link><Link href="/functions">Functions</Link></nav><div><Link href="/hub/privacy">Privacy policy</Link><Link href="/hub/terms">Terms and conditions</Link><Link href="/admin">Team sign in</Link></div></footer>
+    <GroupNetwork/>
   </main>;
 }
 export function HubBack({href,children}:{href:string;children:React.ReactNode}) {return <Link href={href} className="hub-back"><ArrowLeft size={16}/>{children}</Link>;}
