@@ -1,3 +1,11 @@
+## 2026-11-16 — WhatChimp workspace cutover: Midpoint workflow gates
+
+- Implementation: no Midpoint application code changed. Brett authorised the whole-workspace WhatChimp switch; provider reports it is complete.
+- Testing: read-only provider inspection shows the main Midpoint Hub menu Active with four migration warnings. The Functions form shows most answers saved only in the flow, its Submitted output is unconnected, and its message says submission emails Michelle. Two Gym form steps have equivalent migration warnings; their actual delivery remains unverified. Assignment to Alistair reports fallback to the workspace owner because the provider says he left. Two active Functions continuation bots have the same keyword; precedence and old-platform booked campaigns need review. No customer test or recipient delivery was performed in this audit.
+- Commit and push: this record is a documentation candidate; consult Git and its PR for exact publication and promotion status.
+- Merge: record not yet promoted to main; verify the remote branch before claiming completion.
+- Deployment and configuration: provider UI says 42 chats and 53 contacts moved and 67 imported bots activated; some flows stayed Draft. No application deployment performed. Old-platform booked campaigns may still send.
+- Live verification and outstanding: provider reports the switch complete, not that all Midpoint automations work. Restore verified form destinations and post-submit delivery, review staff assignment, active and draft bots, duplicate triggers and scheduled campaigns, and verify operational continuity and staff acceptance. Preserve all provider, customer, data, legal, finance, payment, recovery and approval gates.
 ## 2026-10-28 - Verified pinned Node 24.22.1 rollout (FOND and Hub)
 
 - Implementation: pin all existing Node 24 Docker stages to official patched 24.22.1 OCI digest and qualify the actual production image. Previous runtime was already 24.22.1; this makes it reproducible. No ordering, delivery estimates, payments, data model, provider, credential, security/network or business behavior changed.
