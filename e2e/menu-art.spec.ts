@@ -18,3 +18,20 @@ test('menu illustrations remain visible behind compact dietary labels and match 
  await expect(page.locator('.fond-favourite-art svg').first()).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+
+test('food truck and beverages display their own images',async({page})=>{
+ await page.goto('/fond/menu');
+ const search=page.getByRole('searchbox',{name:'Search the menu'});
+ for(const [name,id] of [['Kota · Steak','truck-kota-steak'],['Flat White','flat-white'],['Classic Matcha','classic-matcha'],['Berry Oat Bliss','berry-oat-bliss']]){
+  await search.fill(name);
+  const card=page.locator('.meal-card').filter({has:page.getByRole('button',{name,exact:true})}).first();
+  const art=card.locator('svg[data-food-art="generated illustration"]');
+  await expect(art).toHaveAccessibleName(`${name} AI-generated illustration`);
+  const href=await art.locator('image').getAttribute('href');
+  expect(href).toBe(`/truck-drinks-photos-20261124/${id}-ai.webp`);
+  const response=await page.request.get(href!);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('image/webp');
+ }
+});
