@@ -1,3 +1,11 @@
+## 2026-11-24 — FOND food menu photography prepared; publication pending
+
+Implementation: isolated draft on codex/fond-food-photos-20261124 based on origin/main d15a7115c7114ffb429ae1db051a6af08f2e7f62. All 61 published food menu entries have image mappings: five user-supplied photographs cover six item IDs and 55 separately generated illustrative images cover the remainder. User photos are tentative best guesses, and generated dishes may differ from actual preparation; see docs/food-photo-draft-20261124.md. Menu database, prices and availability were not changed.
+
+Testing: all 61 published menu IDs were checked against the image files; the generated contact sheets were visually reviewed and an incorrect bread illustration was regenerated. TypeScript and production build passed, and desktop/mobile menu-art browser checks passed (2/2). Initial parallel typecheck raced against the build's generated files; a sequential rerun passed. Build initially stopped on a Next.js security upgrade warning; the retry passed while retaining that warning. Kitchen review of actual dishes, full visual UAT and live verification remain outstanding.
+
+Commit and push: this local draft and context are being prepared for branch review; see Git for exact revision. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, UAT, data, training, approval and operational gates remain open.
+
 ## 2026-11-16 — WhatChimp workspace cutover: Midpoint workflow gates
 
 - Implementation: no Midpoint application code changed. Brett authorised the whole-workspace WhatChimp switch; provider reports it is complete.

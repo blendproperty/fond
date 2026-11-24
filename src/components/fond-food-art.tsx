@@ -3,8 +3,75 @@ import type {Meal} from '@/lib/menu';
 // Panels in the owner's supplied product sheet, read left-to-right, top-to-bottom.
 const DRINK_PRODUCT_IMAGES = ['truck-drink-soda-2l','truck-drink-soda-300ml','truck-drink-juice-350ml','truck-drink-monster-500ml','truck-drink-red-bull-250ml','truck-drink-red-bull-sugar-free-250ml'];
 
-/** Owner-supplied product images for truck drinks; illustrations for other dish types. */
+// Photo identifications are provisional until confirmed by the FOND kitchen.
+const FOOD_PHOTOS: Record<string, {file:string; generated?:boolean}> = {
+ 'brekkie-bun': {file:'brekkie-bun'},
+ 'fond-smashburger': {file:'fond-smashburger'},
+ 'rump-280': {file:'rump-steak'},
+ 'rump-350': {file:'rump-steak'},
+ 'honey-halloumi-bowl': {file:'honey-halloumi-bowl'},
+ 'greens-benedict': {file:'greens-benedict'},
+ 'bagel-gluten-free': {file:'bagel-gluten-free-ai',generated:true},
+ 'balsamic-avocado-pizza': {file:'balsamic-avocado-pizza-ai',generated:true},
+ 'basil-chicken-penne-pasta': {file:'basil-chicken-penne-pasta-ai',generated:true},
+ 'bbq-chicken-pizza': {file:'bbq-chicken-pizza-ai',generated:true},
+ 'bread-gluten-free': {file:'bread-gluten-free-ai',generated:true},
+ 'bread-thick-brioche': {file:'bread-thick-brioche-ai',generated:true},
+ 'breakfast-foldover': {file:'breakfast-foldover-ai',generated:true},
+ 'chicken-foldover': {file:'chicken-foldover-ai',generated:true},
+ 'chicken-torched-brie-bagel': {file:'chicken-torched-brie-bagel-ai',generated:true},
+ 'classic-eggs-benedict': {file:'classic-eggs-benedict-ai',generated:true},
+ 'classic-greek-salad': {file:'classic-greek-salad-ai',generated:true},
+ 'classic-margherita-pizza': {file:'classic-margherita-pizza-ai',generated:true},
+ 'confit-garlic-mushroom-pasta': {file:'confit-garlic-mushroom-pasta-ai',generated:true},
+ 'croque-madame-crepe': {file:'croque-madame-crepe-ai',generated:true},
+ 'everyday-breakfast': {file:'everyday-breakfast-ai',generated:true},
+ 'falafel-hummus-wrap': {file:'falafel-hummus-wrap-ai',generated:true},
+ 'fond-club-sandwich': {file:'fond-club-sandwich-ai',generated:true},
+ 'four-cheese-pizza': {file:'four-cheese-pizza-ai',generated:true},
+ 'golden-goddess-bowl': {file:'golden-goddess-bowl-ai',generated:true},
+ 'green-caesar-salad': {file:'green-caesar-salad-ai',generated:true},
+ 'halloumi-brinjal-burger': {file:'halloumi-brinjal-burger-ai',generated:true},
+ 'ham-mushroom-pizza': {file:'ham-mushroom-pizza-ai',generated:true},
+ 'happy-herbivore-sandwich': {file:'happy-herbivore-sandwich-ai',generated:true},
+ 'korean-steak-foldover': {file:'korean-steak-foldover-ai',generated:true},
+ 'loaded-potato-bacon-pizza': {file:'loaded-potato-bacon-pizza-ai',generated:true},
+ 'pasta-napoletana': {file:'pasta-napoletana-ai',generated:true},
+ 'pepperoni-classic-pizza': {file:'pepperoni-classic-pizza-ai',generated:true},
+ 'protein-dream': {file:'protein-dream-ai',generated:true},
+ 'quesadilla': {file:'quesadilla-ai',generated:true},
+ 'roast-pumpkin-salad': {file:'roast-pumpkin-salad-ai',generated:true},
+ 'salmon-poke': {file:'salmon-poke-ai',generated:true},
+ 'sauce-cheese': {file:'sauce-cheese-ai',generated:true},
+ 'sauce-green-peppercorn': {file:'sauce-green-peppercorn-ai',generated:true},
+ 'sauce-wild-mushroom-bechamel': {file:'sauce-wild-mushroom-bechamel-ai',generated:true},
+ 'side-creamed-spinach': {file:'side-creamed-spinach-ai',generated:true},
+ 'side-sauteed-spinach': {file:'side-sauteed-spinach-ai',generated:true},
+ 'side-seasonal-green-salad': {file:'side-seasonal-green-salad-ai',generated:true},
+ 'side-seasonal-roast-vegetables': {file:'side-seasonal-roast-vegetables-ai',generated:true},
+ 'side-triple-fried-chips': {file:'side-triple-fried-chips-ai',generated:true},
+ 'slow-braised-shortrib': {file:'slow-braised-shortrib-ai',generated:true},
+ 'smashed-avo': {file:'smashed-avo-ai',generated:true},
+ 'smoked-salmon-avo-wrap': {file:'smoked-salmon-avo-wrap-ai',generated:true},
+ 'smoky-lentil-bowl': {file:'smoky-lentil-bowl-ai',generated:true},
+ 'soba-noodle-salad': {file:'soba-noodle-salad-ai',generated:true},
+ 'spicy-chicken-burger': {file:'spicy-chicken-burger-ai',generated:true},
+ 'spicy-chicken-caesar-wrap': {file:'spicy-chicken-caesar-wrap-ai',generated:true},
+ 'steak-chimichurri-wrap': {file:'steak-chimichurri-wrap-ai',generated:true},
+ 'supreme-vegetarian-pizza': {file:'supreme-vegetarian-pizza-ai',generated:true},
+ 'teriyaki-chicken-bowl': {file:'teriyaki-chicken-bowl-ai',generated:true},
+ 'the-gatsby': {file:'the-gatsby-ai',generated:true},
+ 'three-egg-omelette': {file:'three-egg-omelette-ai',generated:true},
+ 'toastie-bacon-cheese-tomato': {file:'toastie-bacon-cheese-tomato-ai',generated:true},
+ 'toastie-cheddar-tomato': {file:'toastie-cheddar-tomato-ai',generated:true},
+ 'toastie-smoked-chicken-mayo': {file:'toastie-smoked-chicken-mayo-ai',generated:true},
+ 'tofu-poke': {file:'tofu-poke-ai',generated:true},
+};
+
+/** Photographs where available, illustrations for other dish types. */
 export function FondFoodArt({meal}:{meal:Meal}) {
+ const photo = FOOD_PHOTOS[meal.id];
+ if(photo)return <svg viewBox="0 0 150 130" role="img" aria-label={`${meal.name} ${photo.generated?'AI-generated illustration':'photograph'}`} data-food-art={photo.generated?'generated illustration':'food photo'} style={{filter:'none',borderRadius:8}}><image href={`/food-photos-20261124/${photo.file}.webp`} width="150" height="130" preserveAspectRatio="xMidYMid slice"/></svg>;
  const drinkImage = DRINK_PRODUCT_IMAGES.indexOf(meal.id);
  if(drinkImage>=0)return <svg viewBox={`${(drinkImage%2)*627+14} ${Math.floor(drinkImage/2)*418+12} 604 402`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${meal.name} product image`} data-food-art="product photo" style={{filter:'none',borderRadius:8}}><image href="/food-truck/drinks-products-20261030.png" width="1254" height="1254"/></svg>;
  const name=meal.name.toLowerCase();
