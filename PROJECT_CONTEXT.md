@@ -4,7 +4,7 @@ Implementation: isolated draft on codex/fond-food-photos-20261124 based on origi
 
 Testing: all 61 published menu IDs were checked against the image files; the generated contact sheets were visually reviewed and an incorrect bread illustration was regenerated. TypeScript and production build passed, and desktop/mobile menu-art browser checks passed (2/2). Initial parallel typecheck raced against the build's generated files; a sequential rerun passed. Build initially stopped on a Next.js security upgrade warning; the retry passed while retaining that warning. Kitchen review of actual dishes, full visual UAT and live verification remain outstanding.
 
-Commit and push: this local draft and context are being prepared for branch review; see Git for exact revision. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, UAT, data, training, approval and operational gates remain open.
+Commit and push: implementation and context committed as 99d1825 and pushed to origin/codex/fond-food-photos-20261124; this follow-up records the push and is included on the same branch. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, UAT, data, training, approval and operational gates remain open.
 
 ## 2026-11-16 — WhatChimp workspace cutover: Midpoint workflow gates
 
