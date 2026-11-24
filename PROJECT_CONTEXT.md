@@ -1,3 +1,19 @@
+## 2026-11-24 — Next.js security patch and FOND food photos: release in progress
+
+Implementation: Next.js upgraded from 16.4.3 to 16.4.6 in package.json and package-lock.json on codex/fond-food-photos-20261124, alongside 61 food image mappings described below. Next.js maintainers identify 16.4.5 as the first patched version for GHSA-7qx7-33qx-rqx2, GHSA-f3mh-rxg3-f5g2 and associated November 3 advisories. This is a dependency update, not proof every advisory was exploitable in this application. Pre-change package-lock SHA256 06B7EC9F52D613DF93D5B0D5D07E1802B470C95195148E30DCF1965A41DE8B52; post-change EA3B95393E2A714CA7A8BA3F24F4E3123577602BA2071E83394BD4146BD69796.
+
+Testing: 274 unit tests, production build, and TypeScript check passed; npm audit --omit=dev reported zero vulnerabilities. Full browser suite and release checks are in progress.
+
+Commit and push: pending for upgrade. Merge: none yet. Deployment and configuration: none yet. Live production verification: none yet. Supplied image identifications are best guesses; generated illustrations do not verify actual ingredients or plating. Kitchen review, staff UAT, and all previous provider, data, training, approval and operational gates remain open.
+
+## 2026-11-24 — FOND food menu photography prepared; publication pending
+
+Implementation: isolated draft on codex/fond-food-photos-20261124 based on origin/main d15a7115c7114ffb429ae1db051a6af08f2e7f62. All 61 published food menu entries have image mappings: five user-supplied photographs cover six item IDs and 55 separately generated illustrative images cover the remainder. User photos are tentative best guesses, and generated dishes may differ from actual preparation; see docs/food-photo-draft-20261124.md. Menu database, prices and availability were not changed.
+
+Testing: all 61 published menu IDs were checked against the image files; the generated contact sheets were visually reviewed and an incorrect bread illustration was regenerated. TypeScript and production build passed, and desktop/mobile menu-art browser checks passed (2/2). Initial parallel typecheck raced against the build's generated files; a sequential rerun passed. Build initially stopped on a Next.js security upgrade warning; the retry passed while retaining that warning. Kitchen review of actual dishes, full visual UAT and live verification remain outstanding.
+
+Commit and push: implementation and context committed as 99d1825 and pushed to origin/codex/fond-food-photos-20261124; this follow-up records the push and is included on the same branch. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, UAT, data, training, approval and operational gates remain open.
+
 ## 2026-11-16 — WhatChimp workspace cutover: Midpoint workflow gates
 
 - Implementation: no Midpoint application code changed. Brett authorised the whole-workspace WhatChimp switch; provider reports it is complete.
