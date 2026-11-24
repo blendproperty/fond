@@ -1,3 +1,11 @@
+## 2026-11-24 — Food-truck and beverage imagery prepared; release pending
+
+Implementation: added 95 distinct AI-generated illustrations matching the published descriptions for food-truck food and café beverages; existing six food-truck packaged-drink product photos remain in use. Coverage check against SEED_MENU confirms all 101 items across Food Truck (32), Coffee (24), Tea & Steamers (17), Cold Brew & Iced (8), Smoothies (9) and Cold Bar & Juice (11) have corresponding images. The illustrative images are not photographs of served items; portion sizes, ingredients and presentation require staff review. The pre-existing disabled create-your-own kota remains unavailable and no menu data, prices or options were changed.
+
+Testing: production build, TypeScript and 12 desktop/mobile menu-art and food-truck option checks passed. All 95 image files were checked for seed coverage and their contact sheets visually reviewed; half-loaf-and-chips and beef images were regenerated to remove misleading extras.
+
+Commit and push: pending. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, UAT, data, training, approval and operational gates remain open.
+
 ## 2026-11-24 — Next.js 16.4.6 and FOND food images deployed
 
 Implementation: upgraded direct Next.js dependency from 16.4.3 to 16.4.6 and mapped the 61 published food-menu item IDs to 60 image files: five supplied photographs cover six IDs and 55 AI-generated illustrations cover the remaining IDs. Photo matches are best guesses; generated plating and ingredients may differ from the kitchen's actual dishes. Documentation: docs/food-photo-draft-20261124.md. The editable menu database, prices and availability were not altered. Previous 2026-11-24 draft and release-in-progress entries below are superseded only as to deployment status.
