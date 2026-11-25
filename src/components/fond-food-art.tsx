@@ -68,6 +68,36 @@ const FOOD_PHOTOS: Record<string, {file:string; generated?:boolean}> = {
  'tofu-poke': {file:'tofu-poke-ai',generated:true},
 };
 
+// Food truck images use the owner-approved takeaway packaging concept.
+const TRUCK_PACKAGING_IMAGES = new Set([
+ 'truck-breakfast-brekkie-bun',
+ 'truck-breakfast-chicken-mayo-toastie',
+ 'truck-chow-cheeseburger-chips',
+ 'truck-chow-club-sandwich',
+ 'truck-chow-dagwood-chips',
+ 'truck-chow-half-loaf-chips',
+ 'truck-chow-russian-chips',
+ 'truck-chow-vienna-chips',
+ 'truck-chow-wings-chips',
+ 'truck-kota-create-your-own',
+ 'truck-kota-russian',
+ 'truck-kota-steak',
+ 'truck-kota-vienna-russian',
+ 'truck-kota-vienna',
+ 'truck-plate-beef',
+ 'truck-plate-drumsticks',
+ 'truck-plate-quarter-chicken',
+ 'truck-plate-wors',
+ 'truck-sauce-chakalaka',
+ 'truck-sauce-tomato-onion',
+ 'truck-side-green-salad',
+ 'truck-side-grilled-veg',
+ 'truck-side-large-chips',
+ 'truck-side-medium-chips',
+ 'truck-side-pap-gravy',
+ 'truck-side-small-chips',
+]);
+
 // Illustrative images generated from the published truck and beverage descriptions.
 const TRUCK_AND_DRINK_IMAGES = new Set([
  'americano',
@@ -169,6 +199,7 @@ const TRUCK_AND_DRINK_IMAGES = new Set([
 
 /** Photographs where available, illustrations for other dish types. */
 export function FondFoodArt({meal}:{meal:Meal}) {
+ if(TRUCK_PACKAGING_IMAGES.has(meal.id))return <svg viewBox="0 0 150 130" preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${meal.name} AI-generated illustration`} data-food-art="generated illustration" style={{filter:'none',borderRadius:8}}><image href={`/truck-packaging-20261125/${meal.id}.webp`} width="150" height="130" preserveAspectRatio="xMidYMid slice"/></svg>;
  const photo = FOOD_PHOTOS[meal.id];
  if(photo)return <svg viewBox="0 0 150 130" preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${meal.name} ${photo.generated?'AI-generated illustration':'photograph'}`} data-food-art={photo.generated?'generated illustration':'food photo'} style={{filter:'none',borderRadius:8}}><image href={`/food-photos-20261124/${photo.file}.webp`} width="150" height="130" preserveAspectRatio="xMidYMid slice"/></svg>;
  if(TRUCK_AND_DRINK_IMAGES.has(meal.id))return <svg viewBox="0 0 150 130" preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${meal.name} AI-generated illustration`} data-food-art="generated illustration" style={{filter:'none',borderRadius:8}}><image href={`/truck-drinks-photos-20261124/${meal.id}-ai.webp`} width="150" height="130" preserveAspectRatio="xMidYMid slice"/></svg>;

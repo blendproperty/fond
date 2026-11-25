@@ -29,7 +29,7 @@ test('food truck and beverages display their own images',async({page})=>{
   const art=card.locator('svg[data-food-art="generated illustration"]');
   await expect(art).toHaveAccessibleName(`${name} AI-generated illustration`);
   const href=await art.locator('image').getAttribute('href');
-  expect(href).toBe(`/truck-drinks-photos-20261124/${id}-ai.webp`);
+  expect(href).toBe(id.startsWith('truck-') ? `/truck-packaging-20261125/${id}.webp` : `/truck-drinks-photos-20261124/${id}-ai.webp`);
   const response=await page.request.get(href!);
   expect(response.status()).toBe(200);
   expect(response.headers()['content-type']).toContain('image/webp');
