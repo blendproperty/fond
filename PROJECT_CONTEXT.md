@@ -1,3 +1,9 @@
+## 2026-11-25 — Production promotion guard GitHub filter correction: pending release
+
+Implementation: the promotion guard now queries staging runs by exact commit and checks matching SHA, completed status and success in the response. GitHub API returned staging run 45537920615 as completed/success for bd80d295d2102b34b5220c5c89e96cbe84098977 when filtered by head_sha alone, but returned zero when the completed status filter was also applied. Promotion 45538144818 and two retries consequently stopped at the guard; no production change occurred. This change retains the exact revision, completed, success and production-main checks.
+
+Testing: workflow diff reviewed; release CI, guard execution, staging and production remain pending. Commit and push: pending. Merge: none. Deployment and configuration: none. Live production verification: none. Food-truck image rollout remains staged, not live. All kitchen review, UAT, data, provider, training and approval gates remain open.
+
 ## 2026-11-25 — Food-truck takeaway image rollout: release pending
 
 Implementation: user approved the Wings & Chips sample featuring a white divided takeaway container on a food-truck counter. Applied that illustrative style to all 26 published food-truck food item IDs, retaining six existing packaged beverage product images. The create-your-own kota remains unavailable; prices, availability and options are unchanged. These are AI-generated representations, not photographs of actual portions, venue or preparation. Kitchen and staff review remain open.

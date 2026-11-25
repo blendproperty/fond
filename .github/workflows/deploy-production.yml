@@ -32,9 +32,8 @@ jobs:
               repo: context.repo.repo,
               workflow_id: 'deploy.yml',
               head_sha: sha,
-              status: 'completed',
             });
-            if (!data.workflow_runs.some(run => run.conclusion === 'success')) {
+            if (!data.workflow_runs.some(run => run.head_sha === sha && run.status === 'completed' && run.conclusion === 'success')) {
               core.setFailed(`Revision ${sha} has no successful staging deployment.`);
             }
       - name: Promote the exact staging revision over SSH
