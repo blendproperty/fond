@@ -1,3 +1,11 @@
+## 2026-11-25 — Food-truck takeaway image rollout: release pending
+
+Implementation: user approved the Wings & Chips sample featuring a white divided takeaway container on a food-truck counter. Applied that illustrative style to all 26 published food-truck food item IDs, retaining six existing packaged beverage product images. The create-your-own kota remains unavailable; prices, availability and options are unchanged. These are AI-generated representations, not photographs of actual portions, venue or preparation. Kitchen and staff review remain open.
+
+Testing: production build and 14 targeted desktop/mobile menu-art and food-truck option checks passed. Contact sheets were visually reviewed; the half-loaf image was regenerated to show plain bread instead of meat. Release CI, staging and production verification pending.
+
+Commit and push: pending. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, data, UAT, staff training, approval and operational gates remain open.
+
 ## 2026-11-25 — FOND menu image framing and badges deployed
 
 Implementation: food photos fill the menu-card and item-detail image frames. Each dietary label and any special appear together in contrasting icon-and-text badges on both views, using existing menu data. Photos are cropped to fit. Prices, dietary data, availability and allergy information were not intentionally changed. Existing photo identifications and AI-generated plating remain subject to kitchen review. The earlier release-pending entry is superseded as to deployment status.
