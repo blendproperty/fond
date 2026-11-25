@@ -1,3 +1,11 @@
+## 2026-11-25 — FOND menu image framing and badges: release pending
+
+Implementation: menu card and item-detail photographs fill their image frames; both views display individual icon-and-text badges for each dietary label and any special, without one suppressing the other. Existing meal data, price, availability, labels and allergy information are unchanged. Image cropping is expected; food-photo identifications and generated plating remain subject to kitchen review.
+
+Testing: Next.js production build passed; six menu-art browser tests passed on desktop and mobile, including frame dimensions, existing photo coverage and simultaneous special, vegetarian and gluten-free badges in both views. Phone preview of the card and dialog was visually inspected. Release CI, staging and production verification remain pending.
+
+Commit and push: pending. Merge: none. Deployment and configuration: none. Live production verification: none. Existing provider, data, kitchen-review, UAT, training, approval and operational gates remain open.
+
 ## 2026-11-24 — Food-truck and café beverage imagery deployed
 
 Implementation: added 95 separately generated illustrative images for published food-truck food and café beverages. The existing six food-truck packaged-drink product images remain. Seed coverage verified 101 items: Food Truck 32, Coffee 24, Tea & Steamers 17, Cold Brew & Iced 8, Smoothies 9, Cold Bar & Juice 11. Illustrations are not actual dish photographs; ingredients, portions and presentation need staff review. Menu records, prices, options and availability were not changed; the create-your-own kota remains unavailable. The release-pending entry below is superseded as to deployment status.

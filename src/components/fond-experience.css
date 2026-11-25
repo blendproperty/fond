@@ -10,3 +10,14 @@
 
 .fond-experience,.fond-ordering-app.fond-premium{max-width:760px;margin:auto;font-family:Figtree,'Segoe UI',Arial,sans-serif;background:#faf8f2}.fond-experience .hub-app-nav,.fond-ordering-app.fond-premium .hub-app-nav,.profile-account .hub-app-nav{width:min(100%,760px)}.fond-experience .primary,.fond-ordering-app.fond-premium .primary,.fond-item-footer .primary{background:#ee7328;color:#17221e;border-color:#ee7328}.fond-ordering-app.fond-premium .category-navigation .tabs button[aria-selected=true]{border-bottom-color:#ee7328}.fond-item-option input{accent-color:#ee7328}.fond-experience .gym-page-header a{color:#faf8f2}.fond-ordering-app.fond-premium .fond-order-header{background:#17221e;color:#fff}
 .fond-ordering-app.fond-premium .mobile-basket{display:flex;max-width:728px;bottom:calc(78px + env(safe-area-inset-bottom))}
+
+/* Full-bleed food imagery and readable overlays on cards and details. */
+.fond-ordering-app.fond-premium .meal-art{padding:0;overflow:hidden}
+.fond-ordering-app.fond-premium .meal-art>svg,.fond-item-art>svg{width:100%;height:100%;display:block;filter:none}
+.fond-item-art{position:relative;overflow:hidden}
+.fond-menu-badges{position:absolute;left:5px;right:5px;bottom:5px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-end;pointer-events:none}
+.fond-menu-badge{display:inline-flex;align-items:center;gap:3px;max-width:100%;padding:4px 6px;border-radius:6px;background:#173d32;color:#fff;font-size:10px;font-weight:700;line-height:1.15;overflow-wrap:anywhere;text-align:left;box-shadow:0 1px 4px #0005}
+.fond-menu-badge-special{background:#8c3126}
+.fond-ordering-app.fond-premium .meal-art .fond-menu-badge svg,.fond-item-art .fond-menu-badge svg{width:12px;height:12px;flex:none;stroke-width:2.4;filter:none}
+.fond-item-art .fond-menu-badges{left:10px;right:10px;bottom:10px;gap:5px}
+.fond-item-art .fond-menu-badge{font-size:12px;padding:6px 9px}
