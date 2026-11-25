@@ -1,3 +1,13 @@
+## 2026-11-25 — FOND menu image framing and badges deployed
+
+Implementation: food photos fill the menu-card and item-detail image frames. Each dietary label and any special appear together in contrasting icon-and-text badges on both views, using existing menu data. Photos are cropped to fit. Prices, dietary data, availability and allergy information were not intentionally changed. Existing photo identifications and AI-generated plating remain subject to kitchen review. The earlier release-pending entry is superseded as to deployment status.
+
+Testing: production build and six targeted desktop/mobile menu-art tests passed, including image-frame dimensions and simultaneous special, vegetarian and gluten-free badges in both views. Phone card and dialog visually inspected. PR Verify FOND 45531300346 and exact merged revision Verify FOND 45532064258 passed, including browser, practice, Hub and container checks.
+
+Commit and push: implementation 799820b pushed through PR #21; this evidence-only context checkpoint is committed to main with CI skipped. Merge: PR #21 squash merged as c266197e7a6e60cecb468e49b91db7394b0dc6c2. Deployment and configuration: staging 45532792335 and guarded production promotion 45533047520 both succeeded for that exact runtime revision; no intentional configuration change. Remote main context presence verified after push.
+
+Live production verification: /fond/menu returned HTTP 200 at 390 and 1440px; Greens Benedict image filled card and dialog frames, and Vegetarian badge was visible in both without page overflow. Equivalent staging checks passed. No orders, payments or messages were sent. Kitchen confirmation of dietary accuracy, photo matches and real plating, staff acceptance and pre-existing provider, data, training, UAT, approval and operational gates remain open. No tracker in scope.
+
 ## 2026-11-25 — FOND menu image framing and badges: release pending
 
 Implementation: menu card and item-detail photographs fill their image frames; both views display individual icon-and-text badges for each dietary label and any special, without one suppressing the other. Existing meal data, price, availability, labels and allergy information are unchanged. Image cropping is expected; food-photo identifications and generated plating remain subject to kitchen review.
