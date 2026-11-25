@@ -35,3 +35,17 @@ test('food truck and beverages display their own images',async({page})=>{
   expect(response.headers()['content-type']).toContain('image/webp');
  }
 });
+
+
+test('photos fill their frames and dietary and special badges are clear in both views',async({page})=>{
+ await page.route('**/api/menu',async route=>{const response=await route.fetch();const body=await response.json();const items=Array.isArray(body)?body:body.menu;const greens=items.find((item:{id:string})=>item.id==='greens-benedict');greens.isSpecial=true;greens.specialLabel='Chef special';greens.diet=['vegetarian','gluten-free'];await route.fulfill({response,json:body});});
+ await page.goto('/fond/menu');
+ await page.getByRole('searchbox',{name:'Search the menu'}).fill('Greens Benedict');
+ const card=page.locator('.meal-card').filter({has:page.getByRole('button',{name:'Greens Benedict',exact:true})}).first();
+ const imageButton=card.getByRole('button',{name:'View Greens Benedict'});
+ for(const label of ['Chef special','Vegetarian','Gluten-free'])await expect(imageButton.locator('.fond-menu-badge',{hasText:label})).toBeVisible();
+ const imageBounds=await imageButton.locator(':scope > svg').boundingBox();const frame=await imageButton.boundingBox();expect(imageBounds!.width).toBeCloseTo(frame!.width,0);expect(imageBounds!.height).toBeCloseTo(frame!.height,0);
+ await imageButton.click();const art=page.locator('.fond-item-art');
+ for(const label of ['Chef special','Vegetarian','Gluten-free'])await expect(art.locator('.fond-menu-badge',{hasText:label})).toBeVisible();
+ const detailImage=await art.locator(':scope > svg').boundingBox();const detailFrame=await art.boundingBox();expect(detailImage!.width).toBeCloseTo(detailFrame!.width,0);expect(detailImage!.height).toBeCloseTo(detailFrame!.height,0);
+});
