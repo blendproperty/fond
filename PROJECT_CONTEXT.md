@@ -1,3 +1,12 @@
+## 2026-11-27 — Midpoint Cafe WhatsApp fallback activated
+
+- **Implementation:** The imported No Match flow was assigned to Midpoint Cafe (+27 69 042 0108) and was in Draft. Reviewed the existing message and the “Any other message” trigger. See [the WhatChimp bot](https://dashboard.whatchimp.com/bots?id=2fca4b89-1b17-4adc-81e2-4b342a53f9c1).
+- **Testing:** Used the WhatChimp Test tab with a pretend contact. The fallback returned the saved MENU guidance and Ray’s urgent order support contact. The active Midpoint Hub menu simulator accepted MENU and displayed Choose an option. No real WhatsApp message was sent.
+- **Commit and push:** This is a documentation-only evidence update. Git history records its revision and publication.
+- **Merge:** Refer to the Git history and pull request for this record’s publication to main. The WhatChimp setting is independent of repository promotion.
+- **Deployment and configuration:** Changed only the bot status from Draft to Active in WhatChimp. No message copy, keywords, billing settings, or application runtime changed or required deployment.
+- **Live production verification:** Reopened the WhatChimp Bots list and verified Active, “Any other message” and the expected WhatsApp channel. Live handset receipt and routing still require confirmation. Existing Functions and Gym submission, Alistair routing, staff acceptance, campaigns, billing, data, training and approval gates remain open.
+
 ## 2026-11-25 — Approved food-truck takeaway imagery deployed
 
 Implementation: owner approved the Wings & Chips sample in a divided white takeaway container on a food-truck counter. Added 26 separately generated illustrative food-truck food images in this style; six existing packaged beverage product images remain. Menu records, prices, availability and options were not changed; create-your-own kota remains unavailable. Images are AI representations and actual portion sizes, ingredients, packaging and venue require staff/kitchen confirmation. Earlier rollout-pending entries are superseded as to deployment status.
